@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="1から9までを順番にタップして反射神経を測る、Python・Pyxel製ブラウザゲーム。"
+    />
+    <meta name="theme-color" content="#0d1021" />
+    <title>NUMBER RUSH | 数字タップゲーム</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family:
+          Inter, "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+        background: #090b18;
+        color: #f4f4f4;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        margin: 0;
+        padding: max(20px, env(safe-area-inset-top)) 16px
+          max(20px, env(safe-area-inset-bottom));
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 50% 12%, rgba(41, 173, 255, 0.2), transparent 34rem),
+          linear-gradient(160deg, #121731 0%, #090b18 55%, #181024 100%);
+      }
+
+      main {
+        width: min(100%, 460px);
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.5rem, 8vw, 2.4rem);
+        letter-spacing: 0.16em;
+        line-height: 1;
+      }
+
+      .subtitle {
+        margin: 0.75rem 0 1rem;
+        color: #a9b1d6;
+        font-size: 0.9rem;
+      }
+
+      .game-shell {
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 18px;
+        background: #0d1021;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+        touch-action: manipulation;
+      }
+
+      pyxel-run {
+        display: block;
+        width: 100%;
+        min-height: 540px;
+      }
+
+      .help {
+        margin: 0.9rem 0 0;
+        color: #9aa4c8;
+        font-size: 0.78rem;
+        line-height: 1.7;
+      }
+
+      noscript {
+        display: block;
+        padding: 1rem;
+        color: #ff7777;
+      }
+
+      @media (max-height: 720px) and (orientation: landscape) {
+        body {
+          display: block;
+        }
+
+        main {
+          margin-inline: auto;
+        }
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@v2.9.8/wasm/pyxel.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>NUMBER RUSH</h1>
+      <p class="subtitle">1 → 9 を順番にタップ。あなたは何秒？</p>
+      <section class="game-shell" aria-label="数字タップゲーム">
+        <pyxel-run root="." name="game.py"></pyxel-run>
+        <noscript>このゲームを遊ぶにはJavaScriptを有効にしてください。</noscript>
+      </section>
+      <p class="help">PCはクリック、スマートフォンはタップで操作できます。</p>
+    </main>
+  </body>
+</html>
