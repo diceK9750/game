@@ -2,7 +2,7 @@
 # author: diceK9750 / Codex
 # desc: Find 1 to 40 in order or follow a shuffled target sequence.
 # site: https://dicek9750.github.io/game/
-# version: 6.1
+# version: 6.2
 
 """横持ちブラウザ向けの数字タップゲーム NUMBER RUSH 40。"""
 
@@ -40,7 +40,7 @@ COUNTDOWN_FRAMES = 180
 BGM_NOTES_PER_PHRASE = 32
 BGM_SOUND_SPEED = 9
 PYXEL_AUDIO_TICKS_PER_SECOND = 120
-BGM_PHRASE_COUNT = 8
+BGM_PHRASE_COUNT = 32
 BGM_PHRASE_FRAMES = (
     BGM_NOTES_PER_PHRASE * BGM_SOUND_SPEED * FPS // PYXEL_AUDIO_TICKS_PER_SECOND
 )
@@ -161,8 +161,11 @@ class NumberRush:
             volume: str,
             effect: str = "n",
         ) -> None:
-            if len(notes.split()) != 32:
-                raise ValueError(f"BGM phrase {index} must contain 32 notes")
+            if len(notes.split()) != BGM_NOTES_PER_PHRASE:
+                raise ValueError(
+                    f"BGM phrase {index} must contain "
+                    f"{BGM_NOTES_PER_PHRASE} notes"
+                )
             pyxel.sounds[index].set(notes, tone, volume, effect, BGM_SOUND_SPEED)
 
         # Dドリアンを基調にした完全オリジナルのA-A'-B-C構成。
@@ -204,6 +207,64 @@ class NumberRush:
             "g1 d2 g2 d2 g1 d2 a1 e2 f1 c2 f2 c2 e1 b1 e2 b1 "
             "d1 a1 d2 a1 f1 c2 a1 e2 g1 d2 a1 e2 c2 a1 d2 a1",
         )
+        # 長尺フォーム後半用の独自変奏。短い動機を入れ替えながら、
+        # 前半の探索感から中盤の応酬、終盤の上昇へ段階的に展開する。
+        lead_variations = (
+            "r a3 c4 d4 f4 d4 c4 a3 r g3 a3 c4 e4 c4 a3 g3 "
+            "r f3 a3 d4 c4 a3 g3 f3 e3 f3 g3 a3 c4 a3 g3 r",
+            "r d4 a3 f3 r e3 g3 a3 c4 r a3 g3 f3 e3 d3 r "
+            "r f3 a3 c4 d4 r c4 a3 g3 f3 e3 f3 a3 g3 d3 r",
+            "r f3 g3 a3 c4 d4 f4 e4 r d4 c4 a3 g3 a3 c4 d4 "
+            "r a3 c4 e4 g4 e4 c4 a3 g3 f3 e3 f3 a3 c4 d4 r",
+            "d4 r d4 f4 a4 r f4 e4 c4 r c4 e4 g4 r e4 d4 "
+            "a3 r c4 d4 f4 r d4 c4 g3 a3 c4 a3 g3 f3 e3 r",
+            "d3 e3 f3 a3 c4 a3 f3 e3 g3 a3 c4 e4 g4 e4 c4 a3 "
+            "f3 g3 a3 d4 f4 d4 c4 a3 e3 f3 g3 a3 c4 a3 f3 r",
+            "g3 a3 b3 d4 e4 d4 b3 a3 f3 a3 c4 e4 f4 e4 c4 a3 "
+            "g3 b3 d4 f4 e4 d4 b3 a3 f3 g3 a3 c4 b3 a3 g3 r",
+            "a3 c4 d4 f4 a4 f4 d4 c4 b3 d4 e4 g4 b4 g4 e4 d4 "
+            "c4 e4 f4 a4 b4 a4 f4 e4 d4 c4 b3 a3 g3 a3 c4 r",
+            "f4 e4 d4 c4 a3 g3 f3 e3 d3 f3 a3 d4 c4 a3 g3 e3 "
+            "f3 a3 c4 e4 d4 c4 a3 g3 f3 e3 d3 c3 a2 e3 a3 r",
+        )
+        bass_variations = (
+            "d1 a1 d2 a1 f1 c2 f2 c2 g1 d2 g2 d2 a1 e2 a2 e2 "
+            "d1 a1 f2 a1 c2 g1 e2 g1 f1 c2 a2 c2 g1 d2 a2 e2",
+            "c1 g1 c2 g1 e1 b1 e2 b1 f1 c2 f2 c2 g1 d2 g2 d2 "
+            "a1 e2 a2 e2 f1 c2 a2 c2 e1 b1 g2 b1 a1 e2 c2 a1",
+            "f1 c2 f2 c2 a1 e2 a2 e2 g1 d2 g2 d2 e1 b1 e2 b1 "
+            "d1 a1 d2 a1 f1 c2 f2 c2 g1 d2 a2 d2 c2 g1 d2 a1",
+            "g1 d2 g2 d2 a1 e2 a2 e2 f1 c2 f2 c2 e1 b1 e2 b1 "
+            "d1 a1 f2 a1 g1 d2 e2 b1 f1 c2 g2 c2 a1 e2 d2 a1",
+        )
+        high_variations = (
+            "d4 f4 a4 b4 a4 f4 e4 d4 c4 e4 g4 b4 a4 g4 e4 c4 "
+            "d4 f4 a4 g4 f4 e4 d4 c4 a3 c4 d4 f4 e4 d4 a3 r",
+            "e4 g4 b4 a4 g4 e4 d4 c4 f4 a4 b4 a4 f4 e4 d4 c4 "
+            "g4 b4 a4 g4 e4 d4 c4 a3 d4 e4 f4 a4 g4 f4 e4 r",
+            "a3 d4 a4 d4 f4 d4 a4 d4 c4 e4 b4 e4 g4 e4 b4 e4 "
+            "f4 a4 c4 a4 d4 a4 f4 a4 g4 b4 d4 b4 e4 d4 c4 r",
+            "b3 d4 g4 b4 a4 g4 d4 b3 c4 e4 a4 c4 b4 a4 e4 c4 "
+            "d4 f4 a4 d4 c4 a3 f3 a3 g3 b3 d4 g4 f4 e4 d4 r",
+            "f4 f4 a4 b4 a4 f4 e4 d4 a4 a4 b4 a4 g4 e4 d4 c4 "
+            "g4 g4 b4 a4 g4 e4 d4 c4 f4 a4 g4 f4 e4 d4 c4 r",
+            "a4 f4 d4 f4 a4 b4 a4 g4 e4 c4 e4 g4 b4 a4 g4 e4 "
+            "f4 d4 c4 d4 f4 a4 g4 f4 e4 g4 b4 a4 g4 f4 e4 r",
+            "d4 a4 f4 a4 d4 a4 f4 a4 e4 b4 g4 b4 e4 b4 g4 b4 "
+            "f4 a4 c4 a4 f4 a4 c4 a4 g4 b4 d4 b4 g4 a4 b4 r",
+            "a4 g4 f4 e4 d4 f4 a4 b4 a4 g4 f4 e4 d4 c4 a3 c4 "
+            "d4 f4 a4 g4 f4 e4 d4 c4 a3 g3 f3 e3 d3 a3 d4 r",
+        )
+        drum_variations = (
+            "c2 r c1 c1 c2 r c1 c1 c2 c1 c1 c2 c1 r c2 c1 "
+            "c2 r c1 c1 c2 c1 c2 c1 c2 c1 c1 c2 c2 c1 c2 c1",
+            "c2 c1 c1 c2 c1 c2 c1 c1 c2 c1 c2 c1 c2 c1 c2 c1 "
+            "c2 c1 c1 c2 c1 c2 c2 c1 c2 c2 c1 c2 c2 c1 c2 c2",
+            "c2 c1 c2 c1 c2 c1 c2 c1 c2 c2 c1 c2 c2 c1 c2 c1 "
+            "c2 c1 c2 c2 c1 c2 c2 c1 c2 c2 c2 c1 c2 c2 c2 c1",
+            "c2 c1 c1 c2 c1 c2 c1 c1 c2 c1 c2 c1 c2 c2 c1 c2 "
+            "c2 c2 c1 c2 c2 c2 c1 c2 c2 c2 c2 c2 c1 c2 c1 r",
+        )
 
         for index, notes in enumerate(lead_phrases, start=8):
             set_phrase(index, notes, "ppps", "6776", "nnvn")
@@ -215,6 +276,14 @@ class NumberRush:
         set_phrase(23, "c2 c2 c1 c2 c1 c2 c1 c1 " * 4, "n", "76646554", "f")
         for index, notes in enumerate(high_phrases, start=24):
             set_phrase(index, notes, "pssp", "6777", "nvnn")
+        for index, notes in enumerate(lead_variations, start=28):
+            set_phrase(index, notes, "ppss", "6776", "nvvn")
+        for index, notes in enumerate(bass_variations, start=36):
+            set_phrase(index, notes, "t", "5666", "nnvn")
+        for index, notes in enumerate(high_variations, start=40):
+            set_phrase(index, notes, "pssp", "6777", "nvnn")
+        for index, notes in enumerate(drum_variations, start=48):
+            set_phrase(index, notes, "n", "6765", "f")
 
     def update(self) -> None:
         clicked = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)
@@ -408,21 +477,66 @@ class NumberRush:
 
     @staticmethod
     def bgm_sequences(stage: int) -> tuple[list[int], list[int], list[int]]:
-        """同じ長さに揃えた旋律・ベース・ドラム列を返す。"""
+        """約77秒の同じ長さに揃えた旋律・ベース・ドラム列を返す。"""
         melody_sequences = {
-            0: [8, 9, 10, 11, 12, 13, 14, 15],
-            1: [8, 9, 24, 11, 12, 25, 14, 15],
-            2: [24, 25, 26, 27, 24, 26, 25, 27],
+            0: [
+                8, 28, 9, 29, 10, 30, 11, 31,
+                12, 28, 13, 29, 14, 30, 15, 32,
+                10, 33, 11, 34, 12, 35, 13, 31,
+                14, 32, 15, 33, 9, 34, 8, 35,
+            ],
+            1: [
+                8, 28, 24, 29, 10, 30, 25, 31,
+                12, 32, 26, 29, 14, 30, 27, 33,
+                28, 40, 29, 41, 32, 42, 33, 43,
+                12, 44, 14, 45, 32, 46, 34, 47,
+            ],
+            2: [
+                24, 25, 40, 41, 26, 27, 42, 43,
+                40, 41, 44, 45, 42, 43, 46, 47,
+                24, 40, 25, 41, 26, 44, 27, 45,
+                42, 43, 46, 47, 44, 45, 46, 47,
+            ],
         }
         bass_sequences = {
-            0: [16, 17, 18, 19, 16, 17, 18, 19],
-            1: [16, 17, 18, 19, 17, 18, 19, 16],
-            2: [18, 19, 16, 17, 18, 16, 19, 17],
+            0: [
+                16, 16, 17, 17, 18, 18, 19, 19,
+                16, 17, 18, 19, 16, 17, 18, 19,
+                17, 18, 19, 16, 18, 19, 17, 16,
+                18, 17, 19, 16, 17, 18, 19, 39,
+            ],
+            1: [
+                16, 36, 17, 37, 18, 38, 19, 39,
+                36, 17, 37, 19, 36, 18, 38, 39,
+                37, 38, 39, 36, 38, 39, 37, 36,
+                38, 37, 39, 36, 37, 38, 39, 39,
+            ],
+            2: [
+                36, 36, 37, 37, 38, 38, 39, 39,
+                36, 37, 38, 39, 36, 37, 38, 39,
+                37, 38, 39, 36, 38, 39, 37, 36,
+                38, 37, 39, 36, 37, 38, 39, 39,
+            ],
         }
         drum_sequences = {
-            0: [20, 20, 21, 20, 20, 21, 20, 22],
-            1: [21, 21, 22, 21, 21, 22, 21, 23],
-            2: [22, 22, 23, 22, 23, 22, 23, 23],
+            0: [
+                20, 20, 20, 21, 20, 20, 21, 48,
+                20, 21, 20, 21, 20, 21, 21, 48,
+                21, 21, 20, 21, 21, 22, 21, 49,
+                21, 22, 21, 22, 21, 22, 21, 51,
+            ],
+            1: [
+                21, 21, 22, 21, 21, 22, 21, 49,
+                21, 22, 21, 22, 22, 21, 22, 49,
+                22, 22, 21, 22, 22, 23, 22, 50,
+                22, 23, 22, 23, 22, 23, 49, 51,
+            ],
+            2: [
+                22, 22, 23, 22, 23, 22, 23, 49,
+                22, 23, 22, 23, 23, 22, 23, 50,
+                23, 23, 22, 23, 23, 50, 23, 50,
+                23, 50, 23, 50, 23, 50, 49, 51,
+            ],
         }
         return melody_sequences[stage], bass_sequences[stage], drum_sequences[stage]
 
@@ -469,7 +583,7 @@ class NumberRush:
             return
         position_frames = self.current_bgm_position_frames()
         if self.pending_bgm_stage is not None:
-            # 8句形式の現在位置を保ったまま編曲だけを切り替える。
+            # 32句形式の現在位置を保ったまま編曲だけを切り替える。
             self.start_bgm(self.pending_bgm_stage, position_frames)
             return
         phrase_offset = position_frames % BGM_PHRASE_FRAMES
