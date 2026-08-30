@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta
       name="description"
-      content="1から9までを順番にタップして反射神経を測る、Python・Pyxel製ブラウザゲーム。"
+      content="1から40までの順番モードとランダムお題モードで遊べる、Python・Pyxel製ブラウザゲーム。"
     />
     <meta name="theme-color" content="#0d1021" />
     <title>NUMBER RUSH | 数字タップゲーム</title>
@@ -33,10 +33,11 @@
         background:
           radial-gradient(circle at 50% 12%, rgba(41, 173, 255, 0.2), transparent 34rem),
           linear-gradient(160deg, #121731 0%, #090b18 55%, #181024 100%);
+        overscroll-behavior: none;
       }
 
       main {
-        width: min(100%, 460px);
+        width: min(100%, 760px);
         text-align: center;
       }
 
@@ -59,13 +60,30 @@
         border-radius: 18px;
         background: #0d1021;
         box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
-        touch-action: manipulation;
+        touch-action: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      canvas {
+        touch-action: none !important;
       }
 
       pyxel-run {
         display: block;
         width: 100%;
-        min-height: 540px;
+        min-height: 360px;
+      }
+
+      .rotate-notice {
+        display: none;
+        margin: 0 0 0.8rem;
+        padding: 0.65rem 0.8rem;
+        border: 1px solid rgba(255, 204, 0, 0.55);
+        border-radius: 10px;
+        color: #ffd866;
+        background: rgba(20, 22, 40, 0.9);
+        font-size: 0.82rem;
       }
 
       .help {
@@ -90,18 +108,28 @@
           margin-inline: auto;
         }
       }
+
+      @media (orientation: portrait) and (max-width: 900px) {
+        .rotate-notice {
+          display: block;
+        }
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@v2.9.8/wasm/pyxel.js"></script>
   </head>
   <body>
     <main>
       <h1>NUMBER RUSH</h1>
-      <p class="subtitle">1 → 9 を順番にタップ。あなたは何秒？</p>
+      <p class="subtitle">2匹と挑む高速ナンバースキャン。40個すべて見つけよう。</p>
+      <p class="rotate-notice">スマートフォンは横向きにしてプレイしてください。</p>
       <section class="game-shell" aria-label="数字タップゲーム">
         <pyxel-run root="." name="game.py"></pyxel-run>
         <noscript>このゲームを遊ぶにはJavaScriptを有効にしてください。</noscript>
       </section>
-      <p class="help">PCはクリック、スマートフォンはタップで操作できます。</p>
+      <p class="help">
+        PCはクリック、スマートフォンは横持ちでタップ操作できます。<br />
+        ゲーム中はRETRY・TITLE・BGM ON/OFF・SFX ON/OFFをいつでも操作できます。
+      </p>
     </main>
   </body>
 </html>
