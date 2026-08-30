@@ -7,6 +7,9 @@ import time
 from collections.abc import Callable
 
 
+BOARD_CELL_COUNT = 40
+
+
 def correct_points(streak: int) -> int:
     """正解1回分の得点。連続正解ボーナスは200点を上限にする。"""
     if streak < 1:
@@ -16,11 +19,15 @@ def correct_points(streak: int) -> int:
 
 def music_stage_for_progress(completed: int, *, max_number: int = 40) -> int:
     """発見数に応じてBGMの厚みを0～2の段階で返す。"""
+    if max_number < 1:
+        raise ValueError("max_number must be at least 1")
     if not 0 <= completed <= max_number:
         raise ValueError("completed must be within the round")
-    if completed >= 30:
+    stage_two_at = (3 * max_number + 3) // 4
+    stage_one_at = (max_number + 1) // 2
+    if completed >= stage_two_at:
         return 2
-    if completed >= 20:
+    if completed >= stage_one_at:
         return 1
     return 0
 
@@ -35,13 +42,16 @@ class NumberTapRound:
         rng: random.Random | None = None,
         clock: Callable[[], float] = time.perf_counter,
     ) -> None:
-        if max_number < 1:
-            raise ValueError("max_number must be at least 1")
+        if not 1 <= max_number <= BOARD_CELL_COUNT:
+            raise ValueError(
+                f"max_number must be between 1 and {BOARD_CELL_COUNT}"
+            )
         self.max_number = max_number
         self._rng = rng or random.Random()
         self._clock = clock
         self.mode = "ordered"
         self.numbers: list[int] = []
+        self.board_cells: list[int | None] = []
         self.targets: list[int] = []
         self.target_index = 0
         self.found_numbers: set[int] = set()
@@ -87,8 +97,11 @@ class NumberTapRound:
             raise ValueError("mode must be 'ordered' or 'random'")
 
         self.mode = mode
-        self.numbers = list(range(1, self.max_number + 1))
-        self._rng.shuffle(self.numbers)
+        board_cells: list[int | None] = list(range(1, self.max_number + 1))
+        board_cells.extend([None] * (BOARD_CELL_COUNT - self.max_number))
+        self._rng.shuffle(board_cells)
+        self.board_cells = board_cells
+        self.numbers = [number for number in board_cells if number is not None]
         self.targets = list(range(1, self.max_number + 1))
         if mode == "random":
             self._rng.shuffle(self.targets)
@@ -102,10 +115,13 @@ class NumberTapRound:
         self.total_paused = 0.0
         self.started_at = self._clock()
 
-    def tap(self, number: int) -> str:
+    def tap(self, number: int | None) -> str:
         """押された数字を判定し、判定結果を文字列で返す。"""
         if not self.is_playing or self.is_paused:
             return "inactive"
+
+        if number is None:
+            return "empty"
 
         if number != self.current_target:
             self.mistakes += 1

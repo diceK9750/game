@@ -1,16 +1,21 @@
-# title: Number Rush 40
+# title: Number Rush
 # author: diceK9750 / Codex
-# desc: Find 1 to 40 in order or follow a shuffled target sequence.
+# desc: Find 1 to 10, 20, 30, or 40 in order or in a shuffled sequence.
 # site: https://dicek9750.github.io/game/
-# version: 6.2
+# version: 6.3
 
-"""横持ちブラウザ向けの数字タップゲーム NUMBER RUSH 40。"""
+"""横持ちブラウザ向けの数字タップゲーム NUMBER RUSH。"""
 
 from __future__ import annotations
 
 import pyxel
 
-from game_logic import NumberTapRound, correct_points, music_stage_for_progress
+from game_logic import (
+    BOARD_CELL_COUNT,
+    NumberTapRound,
+    correct_points,
+    music_stage_for_progress,
+)
 
 
 WIDTH = 640
@@ -23,10 +28,19 @@ GRID_Y = 58
 CELL_WIDTH = 54
 CELL_HEIGHT = 32
 CELL_GAP = 3
-MAX_NUMBER = GRID_COLUMNS * GRID_ROWS
+GRID_CELL_COUNT = GRID_COLUMNS * GRID_ROWS
+NUMBER_LIMITS = (10, 20, 30, 40)
+if GRID_CELL_COUNT != BOARD_CELL_COUNT:
+    raise ValueError("The UI grid and game board must contain the same cells")
 
-ORDER_BUTTON = (124, 226, 188, 44)
-RANDOM_BUTTON = (328, 226, 188, 44)
+RANGE_BUTTONS = {
+    10: (124, 126, 86, 32),
+    20: (226, 126, 86, 32),
+    30: (328, 126, 86, 32),
+    40: (430, 126, 86, 32),
+}
+ORDER_BUTTON = (124, 204, 188, 44)
+RANDOM_BUTTON = (328, 204, 188, 44)
 REPLAY_BUTTON = (124, 226, 188, 44)
 MODE_BUTTON = (328, 226, 188, 44)
 RETRY_BUTTON = (368, 9, 58, 32)
@@ -110,10 +124,11 @@ class NumberRush:
     """描画と入力を受け持つPyxelアプリケーション。"""
 
     def __init__(self) -> None:
-        pyxel.init(WIDTH, HEIGHT, title="NUMBER RUSH 40", fps=FPS)
+        pyxel.init(WIDTH, HEIGHT, title="NUMBER RUSH", fps=FPS)
         pyxel.mouse(True)
         self.configure_sounds()
-        self.round = NumberTapRound(max_number=MAX_NUMBER)
+        self.selected_max_number = 40
+        self.round = NumberTapRound(max_number=self.selected_max_number)
         self.screen = "ready"
         self.selected_mode = "ordered"
         self.confirm_action: str | None = None
@@ -139,10 +154,7 @@ class NumberRush:
         self.sfx_on = True
         self.sfx_priority_until_frame = 0
         self.is_new_best = False
-        self.best_times: dict[str, float | None] = {
-            "ordered": None,
-            "random": None,
-        }
+        self.best_times: dict[tuple[int, str], float] = {}
         pyxel.run(self.update, self.draw)
 
     @staticmethod
@@ -305,11 +317,20 @@ class NumberRush:
             self.update_bgm_transition()
 
         if self.screen == "ready":
-            if pyxel.btnp(pyxel.KEY_1) or (
+            range_keys = (pyxel.KEY_1, pyxel.KEY_2, pyxel.KEY_3, pyxel.KEY_4)
+            for key, max_number in zip(range_keys, NUMBER_LIMITS):
+                if pyxel.btnp(key):
+                    self.selected_max_number = max_number
+            for max_number, button in RANGE_BUTTONS.items():
+                if clicked and point_in_rect(*mouse, button):
+                    self.selected_max_number = max_number
+                    return
+
+            if pyxel.btnp(pyxel.KEY_O) or (
                 clicked and point_in_rect(*mouse, ORDER_BUTTON)
             ):
                 self.begin_countdown("ordered")
-            elif pyxel.btnp(pyxel.KEY_2) or (
+            elif pyxel.btnp(pyxel.KEY_R) or (
                 clicked and point_in_rect(*mouse, RANDOM_BUTTON)
             ):
                 self.begin_countdown("random")
@@ -379,6 +400,7 @@ class NumberRush:
 
     def start_round(self, mode: str) -> None:
         self.selected_mode = mode
+        self.round = NumberTapRound(max_number=self.selected_max_number)
         self.round.start(mode)
         self.screen = "playing"
         self.score = 0
@@ -396,7 +418,10 @@ class NumberRush:
         self.play_sfx(4)
 
     def handle_tap(self, cell_index: int) -> None:
-        result = self.round.tap(self.round.numbers[cell_index])
+        number = self.round.board_cells[cell_index]
+        result = self.round.tap(number)
+        if result == "empty":
+            return
         if result == "wrong":
             self.streak = 0
             self.wrong_cell = cell_index
@@ -411,7 +436,14 @@ class NumberRush:
         self.score += correct_points(self.streak)
         self.correct_cell = cell_index
         self.correct_until_frame = pyxel.frame_count + 18
-        is_milestone = self.round.completed_count in {10, 20, 30}
+        max_number = self.round.max_number
+        milestone_counts = {
+            (max_number + 3) // 4,
+            (max_number + 1) // 2,
+            (3 * max_number + 3) // 4,
+        }
+        milestone_counts.discard(max_number)
+        is_milestone = self.round.completed_count in milestone_counts
         if is_milestone:
             self.milestone_value = self.round.completed_count
             self.milestone_until_frame = pyxel.frame_count + 60
@@ -424,16 +456,20 @@ class NumberRush:
         else:
             self.play_sfx(0)
 
-        next_stage = music_stage_for_progress(self.round.completed_count)
+        next_stage = music_stage_for_progress(
+            self.round.completed_count,
+            max_number=self.round.max_number,
+        )
         if next_stage != self.bgm_stage:
             self.pending_bgm_stage = next_stage
 
         if result == "finished":
             elapsed = self.round.elapsed()
-            best = self.best_times[self.selected_mode]
+            result_key = (self.round.max_number, self.selected_mode)
+            best = self.best_times.get(result_key)
             self.is_new_best = best is None or elapsed < best
             if self.is_new_best:
-                self.best_times[self.selected_mode] = elapsed
+                self.best_times[result_key] = elapsed
             self.stop_bgm()
             self.play_sfx(3, protect_frames=15)
             self.screen = "finished"
@@ -467,7 +503,12 @@ class NumberRush:
             if self.bgm_has_started:
                 self.resume_bgm()
             else:
-                self.start_bgm(music_stage_for_progress(self.round.completed_count))
+                self.start_bgm(
+                    music_stage_for_progress(
+                        self.round.completed_count,
+                        max_number=self.round.max_number,
+                    )
+                )
 
     def toggle_sfx(self) -> None:
         self.sfx_on = not self.sfx_on
@@ -603,7 +644,12 @@ class NumberRush:
         if not self.bgm_on or self.screen != "playing":
             return
         if not self.bgm_has_started:
-            self.start_bgm(music_stage_for_progress(self.round.completed_count))
+            self.start_bgm(
+                music_stage_for_progress(
+                    self.round.completed_count,
+                    max_number=self.round.max_number,
+                )
+            )
         elif self.bgm_paused:
             self.start_bgm(
                 self.bgm_stage,
@@ -633,7 +679,7 @@ class NumberRush:
 
     @staticmethod
     def cell_at(x: int, y: int) -> int | None:
-        for index in range(MAX_NUMBER):
+        for index in range(GRID_CELL_COUNT):
             row, column = divmod(index, GRID_COLUMNS)
             left = GRID_X + column * (CELL_WIDTH + CELL_GAP)
             top = GRID_Y + row * (CELL_HEIGHT + CELL_GAP)
@@ -648,13 +694,13 @@ class NumberRush:
 
         if self.screen == "ready":
             self.draw_placeholder_grid()
-            self.draw_progress_frame(0)
+            self.draw_progress_frame(0, self.selected_max_number)
             self.draw_characters()
             self.draw_ready_panel()
             return
         if self.screen == "countdown":
             self.draw_placeholder_grid()
-            self.draw_progress_frame(0)
+            self.draw_progress_frame(0, self.selected_max_number)
             self.draw_characters()
             self.draw_countdown_panel()
             return
@@ -662,7 +708,10 @@ class NumberRush:
             self.draw_confirmation_panel()
             return
 
-        self.draw_progress_frame(self.round.completed_count)
+        self.draw_progress_frame(
+            self.round.completed_count,
+            self.round.max_number,
+        )
         self.draw_side_console()
         self.draw_game_board()
         self.draw_characters()
@@ -687,10 +736,12 @@ class NumberRush:
             pyxel.rect(x + 3, y + 3, 3, 3, DEEP_BLUE)
 
     def draw_header(self) -> None:
-        pyxel.text(18, 18, "N U M B E R  R U S H  4 0", YELLOW)
-        if self.screen != "ready":
+        pyxel.text(18, 18, "N U M B E R  R U S H", YELLOW)
+        if self.screen == "ready":
+            pyxel.text(116, 18, f"RANGE 1-{self.selected_max_number}", MUTED)
+        else:
             mode = "ORDER" if self.selected_mode == "ordered" else "RANDOM"
-            pyxel.text(128, 18, mode, MUTED)
+            pyxel.text(116, 18, f"{self.selected_max_number} {mode}", MUTED)
         if self.screen in {"playing", "finished"}:
             pyxel.text(188, 18, f"T {self.round.elapsed():05.1f}", CARD)
             pyxel.text(242, 18, f"S {self.score:05d}", YELLOW)
@@ -702,7 +753,7 @@ class NumberRush:
         self.draw_small_button(SFX_BUTTON, "SFX ON" if self.sfx_on else "SFX OFF", PINK, True)
 
     @staticmethod
-    def draw_progress_frame(completed: int) -> None:
+    def draw_progress_frame(completed: int, max_number: int) -> None:
         """盤面を囲む40個のセグメントで進行を表示する。"""
         segments: list[tuple[int, int, int, int]] = []
         for index in range(16):
@@ -714,11 +765,12 @@ class NumberRush:
         for index in range(4):
             segments.append((86, 187 - index * 43, 8, 40))
 
+        filled_segments = completed * GRID_CELL_COUNT // max_number
         for index, (x, y, width, height) in enumerate(segments):
-            if index < completed:
+            if index < filled_segments:
                 fill = GREEN
                 border = CARD
-            elif index == completed and completed < MAX_NUMBER:
+            elif index == filled_segments and completed < max_number:
                 fill = YELLOW
                 border = CARD
             else:
@@ -728,7 +780,7 @@ class NumberRush:
             pyxel.rectb(x, y, width, height, border)
 
     def draw_placeholder_grid(self) -> None:
-        for index in range(MAX_NUMBER):
+        for index in range(GRID_CELL_COUNT):
             row, column = divmod(index, GRID_COLUMNS)
             x = GRID_X + column * (CELL_WIDTH + CELL_GAP)
             y = GRID_Y + row * (CELL_HEIGHT + CELL_GAP)
@@ -740,10 +792,14 @@ class NumberRush:
                 pyxel.rect(x + dot_x, y + 18, 4, 4, MUTED)
 
     def draw_game_board(self) -> None:
-        for index, number in enumerate(self.round.numbers):
+        for index, number in enumerate(self.round.board_cells):
             row, column = divmod(index, GRID_COLUMNS)
             x = GRID_X + column * (CELL_WIDTH + CELL_GAP)
             y = GRID_Y + row * (CELL_HEIGHT + CELL_GAP)
+            if number is None:
+                self.draw_empty_panel(x, y)
+                continue
+
             already_found = number in self.round.found_numbers
             is_wrong = index == self.wrong_cell
             is_correct = index == self.correct_cell
@@ -781,6 +837,24 @@ class NumberRush:
                 )
             if is_correct:
                 self.draw_burst(x, y)
+
+    @staticmethod
+    def draw_empty_panel(x: int, y: int) -> None:
+        """選択範囲で使わない、押せないマスを描く。"""
+        pyxel.rect(x + 3, y + 3, CELL_WIDTH, CELL_HEIGHT, BACKGROUND)
+        pyxel.rect(x, y, CELL_WIDTH, CELL_HEIGHT, DEEP_BLUE)
+        pyxel.rectb(x, y, CELL_WIDTH, CELL_HEIGHT, MUTED)
+        pyxel.rectb(x + 2, y + 2, CELL_WIDTH - 4, CELL_HEIGHT - 4, PANEL)
+        for offset_x in range(8, CELL_WIDTH - 5, 9):
+            pyxel.line(x + offset_x, y + 6, x + offset_x - 5, y + 11, PANEL)
+            pyxel.line(
+                x + offset_x,
+                y + CELL_HEIGHT - 7,
+                x + offset_x + 5,
+                y + CELL_HEIGHT - 12,
+                PANEL,
+            )
+        pyxel.text(x + 21, y + 14, "--", MUTED)
 
     @staticmethod
     def draw_locked_pattern(x: int, y: int) -> None:
@@ -928,7 +1002,11 @@ class NumberRush:
         gauge_y = 88
         gauge_height = 108
         pyxel.rect(gauge_x, gauge_y, 12, gauge_height, DEEP_BLUE)
-        progress_height = int((gauge_height - 4) * self.round.completed_count / MAX_NUMBER)
+        progress_height = int(
+            (gauge_height - 4)
+            * self.round.completed_count
+            / self.round.max_number
+        )
         pyxel.rect(
             gauge_x + 2,
             gauge_y + gauge_height - 2 - progress_height,
@@ -942,13 +1020,20 @@ class NumberRush:
         pyxel.tri(57, cursor_y - 5, 62, cursor_y, 57, cursor_y + 5, PINK)
         pyxel.circ(57, cursor_y, 2, CARD)
         pyxel.line(63, cursor_y, 84, cursor_y, CARD)
-        pyxel.text(44, 207, f"{self.round.completed_count:02d}/40", CARD)
+        pyxel.text(
+            42,
+            207,
+            f"{self.round.completed_count:02d}/{self.round.max_number:02d}",
+            CARD,
+        )
         pyxel.text(46, 220, "FOUND", MUTED)
 
         self.draw_box(570, 58, 62, 174, GREEN)
         pyxel.text(589, 68, "ENERGY", YELLOW)
         pyxel.rect(581, 88, 40, 112, DEEP_BLUE)
-        energy_height = int(108 * self.round.completed_count / MAX_NUMBER)
+        energy_height = int(
+            108 * self.round.completed_count / self.round.max_number
+        )
         pyxel.rect(583, 198 - energy_height, 36, energy_height, GREEN)
         for line_y in range(94, 198, 12):
             pyxel.line(583, line_y, 618, line_y, PANEL)
@@ -959,7 +1044,7 @@ class NumberRush:
     def draw_message_panel(self) -> None:
         border = ERROR if self.wrong_cell is not None else BLUE
         self.draw_box(170, 250, 300, 94, border)
-        target = self.round.current_target or MAX_NUMBER
+        target = self.round.current_target or self.round.max_number
 
         pyxel.text(198, 269, "FIND THE", MUTED)
         draw_number(320, 260, target, CARD, scale=5)
@@ -968,15 +1053,23 @@ class NumberRush:
         if self.wrong_cell is not None:
             centered_text(308, "MISS!  TRY THE SAME TARGET", ERROR)
         elif pyxel.frame_count < self.milestone_until_frame:
-            centered_text(308, f"CHECKPOINT {self.milestone_value}/40 - DRIVE UP!", GREEN)
+            centered_text(
+                308,
+                f"CHECKPOINT {self.milestone_value}/{self.round.max_number} - DRIVE UP!",
+                GREEN,
+            )
         elif pyxel.frame_count < self.go_until_frame:
             centered_text(308, "GO!  SCAN THE BOARD", GREEN)
         elif self.selected_mode == "ordered":
-            centered_text(308, "NEXT IN ORDER  /  HIT 1 TO 40", YELLOW)
+            centered_text(
+                308,
+                f"NEXT IN ORDER  /  HIT 1 TO {self.round.max_number}",
+                YELLOW,
+            )
         else:
             centered_text(308, "SHUFFLED TARGET  /  FOLLOW THE SIGNAL", YELLOW)
 
-        progress = self.round.completed_count / MAX_NUMBER
+        progress = self.round.completed_count / self.round.max_number
         pyxel.rect(194, 328, 252, 7, DEEP_BLUE)
         pyxel.rect(196, 330, int(248 * progress), 3, GREEN)
 
@@ -985,14 +1078,25 @@ class NumberRush:
         pyxel.rect(112, 83, 416, 194, DEEP_BLUE)
         pyxel.dither(1.0)
         self.draw_box(118, 78, 404, 194, BLUE)
-        centered_text(100, "SELECT SCAN MODE", CARD)
-        centered_text(125, "ORDER: FIND 1, 2, 3 ... 40", MUTED)
-        centered_text(144, "RANDOM: FOLLOW 40 SHUFFLED TARGETS", MUTED)
-        centered_text(174, "3 - 2 - 1, THEN THE BOARD OPENS!", YELLOW)
-        self.draw_button(ORDER_BUTTON, "ORDER MODE", GREEN)
-        self.draw_button(RANDOM_BUTTON, "RANDOM MODE", BLUE)
-        pyxel.text(212, 282, "KEY 1", MUTED)
-        pyxel.text(421, 282, "KEY 2", MUTED)
+        centered_text(96, "CHOOSE RANGE, THEN RULE", CARD)
+        centered_text(110, "NUMBERS ARE SHUFFLED ACROSS ALL 40 CELLS", MUTED)
+        for max_number, button in RANGE_BUTTONS.items():
+            self.draw_button(
+                button,
+                f"1-{max_number}",
+                BLUE,
+                selected=max_number == self.selected_max_number,
+            )
+        locked_count = GRID_CELL_COUNT - self.selected_max_number
+        centered_text(
+            169,
+            f"{self.selected_max_number} TARGETS / {locked_count} LOCKED PANELS",
+            YELLOW,
+        )
+        centered_text(186, "SELECT PLAY RULE", MUTED)
+        self.draw_button(ORDER_BUTTON, "START ORDER", GREEN)
+        self.draw_button(RANDOM_BUTTON, "START RANDOM", BLUE)
+        centered_text(260, "KEY 1-4: RANGE   O: ORDER   R: RANDOM", MUTED)
 
     def draw_countdown_panel(self) -> None:
         remaining = max(0, self.countdown_end_frame - pyxel.frame_count)
@@ -1001,8 +1105,10 @@ class NumberRush:
         pyxel.rect(190, 82, 260, 190, DEEP_BLUE)
         pyxel.dither(1.0)
         self.draw_box(196, 76, 248, 190, PINK)
-        centered_text(101, "GET READY", YELLOW)
-        draw_number(WIDTH // 2, 128, count, CARD, scale=10)
+        centered_text(94, "GET READY", YELLOW)
+        mode = "ORDER" if self.selected_mode == "ordered" else "RANDOM"
+        centered_text(112, f"1-{self.selected_max_number} / {mode}", MUTED)
+        draw_number(WIDTH // 2, 132, count, CARD, scale=10)
         centered_text(218, "NUMBERS APPEAR AT GO", MUTED)
         centered_text(238, "TITLE CAN CANCEL", BLUE)
 
@@ -1027,12 +1133,13 @@ class NumberRush:
         pyxel.rect(112, 67, 416, 214, DEEP_BLUE)
         pyxel.dither(1.0)
         self.draw_box(118, 62, 404, 214, GREEN)
-        mode_label = "ORDER MODE" if self.selected_mode == "ordered" else "RANDOM MODE"
+        mode = "ORDER MODE" if self.selected_mode == "ordered" else "RANDOM MODE"
+        mode_label = f"1-{self.round.max_number} / {mode}"
         centered_text(92, "SCAN COMPLETE", GREEN)
         centered_text(112, mode_label, YELLOW)
         centered_text(137, f"TIME {self.round.elapsed():.2f}s    SCORE {self.score}", CARD)
         centered_text(157, f"MISSES {self.round.mistakes}    MAX STREAK {self.max_streak}", CARD)
-        best = self.best_times[self.selected_mode]
+        best = self.best_times.get((self.round.max_number, self.selected_mode))
         if self.is_new_best:
             centered_text(181, f"NEW BEST!  {best:.2f}s", PINK)
         elif best is not None:
@@ -1054,13 +1161,16 @@ class NumberRush:
         rect: tuple[int, int, int, int],
         label: str,
         base_color: int,
+        *,
+        selected: bool = False,
     ) -> None:
         x, y, width, height = rect
         hovered = point_in_rect(pyxel.mouse_x, pyxel.mouse_y, rect)
-        fill = YELLOW if hovered else base_color
+        fill = YELLOW if hovered or selected else base_color
+        outer_border = GREEN if selected else CARD
         pyxel.rect(x + 4, y + 4, width, height, DEEP_BLUE)
         pyxel.rect(x, y, width, height, fill)
-        pyxel.rectb(x, y, width, height, CARD)
+        pyxel.rectb(x, y, width, height, outer_border)
         pyxel.rectb(x + 2, y + 2, width - 4, height - 4, PANEL)
         pyxel.text(
             x + (width - len(label) * 4) // 2,
