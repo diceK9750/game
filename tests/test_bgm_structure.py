@@ -141,6 +141,45 @@ class BgmStructureTests(unittest.TestCase):
                 )
 
 
+class DuelMusicTests(unittest.TestCase):
+    def test_battle_score_uses_distinct_melody_and_equal_length_parts(self):
+        from music import configure_bgm, sequences, BATTLE_SCORE, SCORE
+        sounds = [MagicMock() for _ in range(64)]
+        configure_bgm(sounds, battle=True)
+        self.assertNotEqual(BATTLE_SCORE, SCORE)
+        for stage in range(3):
+            for part in sequences(stage, battle=True):
+                self.assertEqual(len(part), 32)
+                for index in part:
+                    notes, tone, volume, effect, speed = sounds[index].set.call_args.args
+                    self.assertEqual(len(notes.split()), 32)
+                    self.assertEqual(speed, 9)
+                    self.assertLessEqual(max(map(int, volume)), 3)
+        for index in list(range(8)) + list(range(54, 64)):
+            sounds[index].set.assert_not_called()
+
+    def test_switch_to_practice_restores_original_score(self):
+        from music import configure_bgm
+        sounds = [MagicMock() for _ in range(64)]
+        configure_bgm(sounds)
+        original = {i: sounds[i].set.call_args for i in range(8, 54)}
+        configure_bgm(sounds, battle=True)
+        self.assertNotEqual(sounds[8].set.call_args, original[8])
+        configure_bgm(sounds)
+        self.assertEqual({i: sounds[i].set.call_args for i in range(8, 54)}, original)
+
+    def test_battle_arrangements_share_harmony_and_have_a_quiet_seam(self):
+        from music import configure_bgm, sequences
+        sounds = [MagicMock() for _ in range(64)]
+        configure_bgm(sounds, battle=True)
+        for stage in range(3):
+            parts = sequences(stage, battle=True)
+            self.assertEqual(parts[:2], sequences(0, battle=True)[:2])
+            for part in parts:
+                notes = sounds[part[-1]].set.call_args.args[0].split()
+                self.assertEqual(notes[-3:], ['r'] * 3)
+
+
 class BattleUiTests(unittest.TestCase):
     def setUp(self):
         self.runtime = MagicMock()
@@ -161,6 +200,13 @@ class BattleUiTests(unittest.TestCase):
             for screen in ("ready", "playing", "confirm", "resuming", "countdown"):
                 self.app.screen = screen
                 self.app.draw()
+
+    def test_new_round_selects_the_matching_score(self):
+        with patch.object(game, "configure_bgm") as configure:
+            for kind in ("battle", "practice", "battle"):
+                self.app.play_kind = kind
+                self.app.start_round("random")
+                configure.assert_called_with(self.runtime.sounds, battle=kind == "battle")
 
     def test_scene_selection_and_no_restart_per_frame(self):
         for screen, track in (("ready", "menu"), ("countdown", "countdown"),

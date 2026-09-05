@@ -368,6 +368,9 @@ class NumberRush:
 
     def start_round(self, mode: str) -> None:
         self.selected_mode = mode
+        # Gameplay banks are shared; scene tracks occupy separate slots 54-63.
+        # Rebuild only at a new round, never on pause/resume or stage changes.
+        configure_bgm(pyxel.sounds, battle=self.play_kind == "battle")
         self.round = (BattleRound(max_number=self.selected_max_number, difficulty=self.difficulty)
                       if self.play_kind == "battle" else NumberTapRound(max_number=self.selected_max_number))
         self.round.start(mode)
@@ -539,12 +542,12 @@ class NumberRush:
             self.sfx_priority_until_frame = 0
 
     @staticmethod
-    def bgm_sequences(stage: int) -> tuple[list[int], list[int], list[int]]:
+    def bgm_sequences(stage: int, *, battle=False) -> tuple[list[int], list[int], list[int]]:
         """全段階で和声・旋律を保ち、軽いリズムだけを加える。"""
-        return music_sequences(stage)
+        return music_sequences(stage, battle=battle)
 
     def play_bgm_channels(self, stage: int, position_frames: int) -> None:
-        melody, bass, drums = self.bgm_sequences(stage)
+        melody, bass, drums = self.bgm_sequences(stage, battle=isinstance(self.round, BattleRound))
         position_seconds = position_frames / FPS
         pyxel.play(0, melody, sec=position_seconds, loop=True)
         pyxel.play(1, bass, sec=position_seconds, loop=True)

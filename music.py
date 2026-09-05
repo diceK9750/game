@@ -76,13 +76,45 @@ def expand_bar(score, peak=4):
     return " ".join(notes), "".join(map(str, volumes))
 
 
-def configure_bgm(sounds):
-    for index, bar in enumerate(SCORE, 8):
-        notes, volume = expand_bar(bar)
-        sounds[index].set(notes, "t", volume, "n", SPEED)
-    for index, (root, fifth, third) in enumerate(BASS.values(), 40):
+BATTLE_SCORE = (
+    "d3 r a3 d4 f4 e4 d4 r", "f3 a3 d4 r c4 a3 f3 r",
+    "f3 r a3 c4 d4 c4 a3 r", "e3 g3 c4 r b3 g3 e3 r",
+    "d3 a3 d4 r f4 e4 d4 r", "g3 r a3 b-3 d4 c4 b-3 r",
+    "a3 r c#4 e4 d4 c#4 b3 r", "a3 e3 a3 r c#4:2 r:2",
+    "d4 r a3 d4 f4:2 e4 r", "d4 c4 b-3 r a3 f3 d3 r",
+    "a3 c4 f4 r e4 d4 c4 r", "g3 c4 e4 r d4 c4 g3 r",
+    "f4 e4 d4 r a3 d4 f4 r", "d4 b-3 g3 r a3 b-3 d4 r",
+    "c#4 e4 a3 r b3 c#4 e4 r", "e4 d4 c#4 b3 a3:2 r:2",
+    "f3:2 b-3 d4 c4 b-3 a3 r", "a3:2 c4 f4 e4 c4 a3 r",
+    "g3:2 b-3 d4 c4 b-3 g3 r", "a3:2 c#4 e4 d4 c#4 a3 r",
+    "d4 r f4 e4 d4 a3 d4 r", "d4 r b-3 a3 g3 b-3 d4 r",
+    "c#4 r e4 d4 c#4 b3 a3 r", "e3 a3 c#4 r e4:2 r:2",
+    "d3 r a3 d4 f4 e4 d4 r", "f3 a3 d4 r c4 a3 f3 r",
+    "a3 c4 f4 r d4 c4 a3 r", "g3 r c4 e4 d4 c4 g3 r",
+    "f4 d4 a3 r d4 f4 e4 r", "d4 b-3 g3 r b-3 a3 g3 r",
+    "a3 r c#4 e4 d4 c#4 b3 r", "a3:2 e3 a3 c#4:2 r:2",
+)
+BATTLE_CHORDS = ("Dm", "Bb", "F", "C", "Dm", "Gm", "A", "A") * 2 + (
+    "Bb", "F", "Gm", "A", "Dm", "Gm", "A", "A",
+    "Dm", "Bb", "F", "C", "Dm", "Gm", "A", "A",
+)
+BATTLE_BASS = {
+    "Dm": ("d2", "a2", "f2"), "Bb": ("b-1", "f2", "d2"),
+    "F": ("f1", "c2", "a1"), "C": ("c2", "g2", "e2"),
+    "Gm": ("g1", "d2", "b-1"), "A": ("a1", "e2", "c#2"),
+}
+
+
+def configure_bgm(sounds, *, battle=False):
+    score, harmony = (BATTLE_SCORE, BATTLE_BASS) if battle else (SCORE, BASS)
+    for index, bar in enumerate(score, 8):
+        notes, volume = expand_bar(bar, peak=3 if battle else 4)
+        sounds[index].set(notes, "p" if battle else "t", volume, "n", SPEED)
+    for index, (root, fifth, third) in enumerate(harmony.values(), 40):
         # Root and fifth establish a clear pulse; a quiet third colors the chord.
-        notes, volume = expand_bar(f"{root}:2 r {fifth} {root}:2 {third} r", peak=3)
+        pattern = (f"{root} {root} r {fifth} {root} {third} {fifth} r" if battle
+                   else f"{root}:2 r {fifth} {root}:2 {third} r")
+        notes, volume = expand_bar(pattern, peak=3)
         sounds[index].set(notes, "t", volume, "n", SPEED)
     for stage in range(3):
         for ending in (False, True):
@@ -93,19 +125,30 @@ def configure_bgm(sounds):
                 hits.update({4: ("c2", "n", "1"), 20: ("c2", "n", "1")})
             if stage == 2:
                 hits.update({12: ("c2", "n", "1"), 28: ("c2", "n", "1")})
+            if battle:
+                # Firm kick/backbeat, quiet offbeats: drive rather than loudness.
+                hits.update({0: ("c1", "t", "3"), 8: ("c1", "n", "2"),
+                             16: ("c1", "t", "3"), 24: ("c1", "n", "2"),
+                             4: ("c2", "n", "1"), 20: ("c2", "n", "1")})
+                if stage >= 1:
+                    hits[14] = ("c1", "t", "2")
+                if stage == 2:
+                    hits[30] = ("c2", "n", "1")
             if ending:
                 hits.pop(28, None)  # Never end with a noisy fill at the loop seam.
+                hits.pop(30, None)
             for tick, (note, tone, volume) in hits.items():
                 notes[tick], tones[tick], volumes[tick], effects[tick] = note, tone, volume, "f"
             sounds[48 + stage + 3 * ending].set(
                 " ".join(notes), "".join(tones), "".join(volumes), "".join(effects), SPEED)
 
 
-def sequences(stage):
+def sequences(stage, *, battle=False):
     if stage not in (0, 1, 2):
         raise KeyError(stage)
-    bass_ids = {chord: index for index, chord in enumerate(BASS, 40)}
-    return list(range(8, 40)), [bass_ids[chord] for chord in CHORDS], [48 + stage] * 31 + [51 + stage]
+    harmony, chords = (BATTLE_BASS, BATTLE_CHORDS) if battle else (BASS, CHORDS)
+    bass_ids = {chord: index for index, chord in enumerate(harmony, 40)}
+    return list(range(8, 40)), [bass_ids[chord] for chord in chords], [48 + stage] * 31 + [51 + stage]
 
 
 # Each scene gets two dedicated slots; gameplay and SFX are never overwritten.
