@@ -1,138 +1,45 @@
 <!doctype html>
 <html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta
-      name="description"
-      content="1～10・1～20・1～30・1～40の範囲と、順番・ランダムお題モードを選べるPython・Pyxel製ブラウザゲーム。"
-    />
-    <meta name="theme-color" content="#0d1021" />
-    <title>NUMBER RUSH | 数字タップゲーム</title>
-    <style>
-      :root {
-        color-scheme: dark;
-        font-family:
-          Inter, "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
-        background: #090b18;
-        color: #f4f4f4;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        min-height: 100vh;
-        min-height: 100dvh;
-        margin: 0;
-        padding: max(20px, env(safe-area-inset-top)) 16px
-          max(20px, env(safe-area-inset-bottom));
-        display: grid;
-        place-items: center;
-        background:
-          radial-gradient(circle at 50% 12%, rgba(41, 173, 255, 0.2), transparent 34rem),
-          linear-gradient(160deg, #121731 0%, #090b18 55%, #181024 100%);
-        overscroll-behavior: none;
-      }
-
-      main {
-        width: min(100%, 760px);
-        text-align: center;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: clamp(1.5rem, 8vw, 2.4rem);
-        letter-spacing: 0.16em;
-        line-height: 1;
-      }
-
-      .subtitle {
-        margin: 0.75rem 0 1rem;
-        color: #a9b1d6;
-        font-size: 0.9rem;
-      }
-
-      .game-shell {
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 18px;
-        background: #0d1021;
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
-        touch-action: none;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      canvas {
-        touch-action: none !important;
-        image-rendering: pixelated;
-      }
-
-      pyxel-run {
-        display: block;
-        width: 100%;
-        min-height: 360px;
-      }
-
-      .rotate-notice {
-        display: none;
-        margin: 0 0 0.8rem;
-        padding: 0.65rem 0.8rem;
-        border: 1px solid rgba(255, 204, 0, 0.55);
-        border-radius: 10px;
-        color: #ffd866;
-        background: rgba(20, 22, 40, 0.9);
-        font-size: 0.82rem;
-      }
-
-      .help {
-        margin: 0.9rem 0 0;
-        color: #9aa4c8;
-        font-size: 0.78rem;
-        line-height: 1.7;
-      }
-
-      noscript {
-        display: block;
-        padding: 1rem;
-        color: #ff7777;
-      }
-
-      @media (max-height: 720px) and (orientation: landscape) {
-        body {
-          display: block;
-        }
-
-        main {
-          margin-inline: auto;
-        }
-      }
-
-      @media (orientation: portrait) and (max-width: 900px) {
-        .rotate-notice {
-          display: block;
-        }
-      }
-    </style>
-    <script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@v2.9.8/wasm/pyxel.js"></script>
-  </head>
-  <body>
-    <main>
-      <h1>NUMBER RUSH</h1>
-      <p class="subtitle">森のすうじ対決。CPUより早く探して、目標ラインを目指そう！</p>
-      <p class="rotate-notice">スマートフォンは横向きにしてプレイしてください。</p>
-      <section class="game-shell" aria-label="数字タップゲーム">
-        <pyxel-run root="." name="game.py"></pyxel-run>
-        <noscript>このゲームを遊ぶにはJavaScriptを有効にしてください。</noscript>
-      </section>
-      <p class="help">
-        PCはクリック、スマートフォンは横持ちでタップ操作できます。<br />
-        CPU DUEL＝対戦／SOLO PRACTICE＝練習。範囲・難易度を選び、START ORDER（順番）かSTART RANDOM（ランダム）で開始。<br />
-        対戦は先に正解した側が1点。全問の60％獲得で勝利！ ミスしたマスも再選択できます。<br />
-        ゲーム中はRETRY・TITLE・BGM ON/OFF・SFX ON/OFFをいつでも操作できます。
-      </p>
-    </main>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#090e19">
+  <title>NUMBER RUSH | 数字さがし対戦</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #090e19; color: #f1f6ed; }
+    body { font-family: system-ui, sans-serif; }
+    main {
+      position: fixed;
+      left: var(--view-left, 0px); top: var(--view-top, 0px);
+      width: var(--view-width, 100%); height: var(--view-height, 100dvh);
+      padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right))
+               max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    header { flex: none; text-align: center; min-height: 26px; }
+    h1 { margin: 0; font-size: 14px; letter-spacing: 2px; }
+    .hint { margin: 0; font-size: 11px; text-align: center; color: #91a8bd; }
+    #stage { flex: 1; min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+    #game-box { position: relative; width: 640px; height: 360px; }
+    #game-frame { position: absolute; left: 0; top: 0; display: block; width: 640px; height: 360px; transform-origin: top left; border: 0; background: #090e19; }
+    footer { flex: none; }
+    @media (orientation: landscape) and (max-height: 500px) {
+      header, footer, #orientation-hint { display: none; }
+      main { gap: 0; }
+    }
+  </style>
+  <script src="viewport.js?v=2" defer></script>
+</head>
+<body>
+  <main>
+    <header><h1>NUMBER RUSH</h1></header>
+    <p class="hint" id="orientation-hint">縦向きでも遊べます。横向きにすると数字とボタンが大きくなります。</p>
+    <section id="stage" aria-label="数字さがしゲーム">
+      <div id="game-box"><iframe id="game-frame" title="NUMBER RUSH ゲーム画面" src="player.html" width="640" height="360" allow="autoplay; fullscreen" allowfullscreen></iframe></div>
+    </section>
+    <footer class="hint">CPU DUEL＝対戦／SOLO PRACTICE＝練習<br>範囲と難易度を選び、START ORDER（順番）か START RANDOM（ランダム）で開始。</footer>
+  </main>
+  <noscript>JavaScriptを有効にして遊んでください。</noscript>
+</body>
 </html>

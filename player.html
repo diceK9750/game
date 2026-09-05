@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NUMBER RUSH Player</title>
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #090e19; }
+      canvas { touch-action: none; image-rendering: pixelated; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@v2.9.8/wasm/pyxel.js"></script>
+  </head>
+  <body>
+    <!-- Pyxel owns only this frame, never the parent Safari viewport. -->
+    <pyxel-run root="." name="game.py" gamepad="disabled"></pyxel-run>
+  </body>
+</html>

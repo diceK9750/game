@@ -26,6 +26,8 @@ jobs:
           python-version: "3.12"
       - name: Test game logic
         run: python -m unittest discover -s tests -v
+      - name: Test viewport sizing
+        run: node --test tests/test_viewport.cjs
 
   deploy:
     needs: test
@@ -41,7 +43,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir _site
-          cp index.html game.py game_logic.py music.py _site/
+          cp index.html player.html viewport.js game.py game_logic.py music.py _site/
           touch _site/.nojekyll
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
