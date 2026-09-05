@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pyxel
 import math
-from music import configure_bgm, sequences as music_sequences
+from music import configure_bgm, configure_scene_bgm, SCENE_TRACKS, sequences as music_sequences
 
 from game_logic import (
     BOARD_CELL_COUNT,
@@ -170,6 +170,8 @@ class NumberRush:
         self.streak = 0
         self.max_streak = 0
         self.bgm_on = True
+        self.scene_music = None
+        self.result_music_after = 0
         self.bgm_stage = 0
         self.pending_bgm_stage: int | None = None
         self.bgm_paused = False
@@ -195,8 +197,13 @@ class NumberRush:
         pyxel.sounds[6].set("d3c3a2f2d2", "t", "55443", "nnnnf", 9)
 
         configure_bgm(pyxel.sounds)
+        configure_scene_bgm(pyxel.sounds)
 
     def update(self) -> None:
+        self.update_frame()
+        self.sync_scene_music()
+
+    def update_frame(self) -> None:
         clicked = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)
         mouse = (pyxel.mouse_x, pyxel.mouse_y)
         self.update_visual_feedback()
@@ -448,6 +455,7 @@ class NumberRush:
             self.stop_bgm()
             self.play_sfx(3, protect_frames=15)
             self.screen = "finished"
+            self.result_music_after = pyxel.frame_count + (45 if self.sfx_on else 0)
 
     def update_battle_progress(self):
         self.pending_bgm_stage = music_stage_for_progress(
@@ -461,6 +469,7 @@ class NumberRush:
         self.stop_bgm()
         self.play_sfx(3 if self.round.won else 6, protect_frames=15)
         self.screen = "finished"
+        self.result_music_after = pyxel.frame_count + (45 if self.sfx_on else 0)
 
     def open_confirmation(self, action: str) -> None:
         self.round.pause()
@@ -487,6 +496,7 @@ class NumberRush:
         self.bgm_on = not self.bgm_on
         if not self.bgm_on:
             self.pause_bgm()
+            self.stop_scene_music()
         elif self.screen == "playing":
             if self.bgm_has_started:
                 self.resume_bgm()
@@ -497,6 +507,30 @@ class NumberRush:
                         max_number=self.round.max_number,
                     )
                 )
+
+    def stop_scene_music(self):
+        if self.scene_music is not None:
+            for channel in range(3):
+                pyxel.stop(channel)
+            self.scene_music = None
+
+    def sync_scene_music(self):
+        """Select once per transition, never restart a loop on every frame."""
+        if not self.bgm_on or self.screen == "playing":
+            self.stop_scene_music()
+            return
+        desired = {"ready": "menu", "confirm": "wait",
+                   "resuming": "countdown", "countdown": "countdown"}.get(self.screen)
+        if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
+            desired = ("loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")
+        if desired == self.scene_music:
+            return
+        self.stop_scene_music()
+        if desired is not None:
+            for channel, sound in enumerate(SCENE_TRACKS[desired]):
+                pyxel.play(channel, sound, loop=True)
+            pyxel.stop(2)
+            self.scene_music = desired
 
     def toggle_sfx(self) -> None:
         self.sfx_on = not self.sfx_on
@@ -524,6 +558,7 @@ class NumberRush:
         clear_pending: bool = True,
     ) -> None:
         """指定した曲位置から3パートを同期して開始する。"""
+        self.stop_scene_music()
         position_frames %= BGM_LOOP_FRAMES
         self.bgm_stage = stage
         if clear_pending:
@@ -586,6 +621,7 @@ class NumberRush:
             )
 
     def stop_bgm(self) -> None:
+        self.scene_music = None
         pyxel.stop(0)
         pyxel.stop(1)
         pyxel.stop(2)

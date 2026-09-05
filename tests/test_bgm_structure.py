@@ -55,6 +55,23 @@ class BgmStructureTests(unittest.TestCase):
         with self.assertRaises(KeyError):
             game.NumberRush.bgm_sequences(3)
 
+    def test_scene_tracks_are_defined_synchronized_and_separate(self):
+        from music import SCENE_TRACKS, SCENE_SCORES
+        ids = []
+        for name, pair in SCENE_TRACKS.items():
+            speed, bars, roots = SCENE_SCORES[name]
+            self.assertEqual(len(bars), len(roots))
+            for index in pair:
+                ids.append(index)
+                notes, tone, volume, effect, actual_speed = fake_pyxel.sounds[index].spec
+                self.assertEqual(len(notes.split()), len(bars) * 32)
+                self.assertEqual(len(volume), len(bars) * 32)
+                self.assertEqual(actual_speed, speed)
+                self.assertLessEqual(max(map(int, volume)), 3)
+                self.assertEqual(tone, "t")
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertTrue(all(54 <= index < 64 for index in ids))
+
     def test_arrangement_changes_keep_melody_and_harmony(self):
         base = game.NumberRush.bgm_sequences(0)
         for stage in (1, 2):
@@ -144,6 +161,50 @@ class BattleUiTests(unittest.TestCase):
             for screen in ("ready", "playing", "confirm", "resuming", "countdown"):
                 self.app.screen = screen
                 self.app.draw()
+
+    def test_scene_selection_and_no_restart_per_frame(self):
+        for screen, track in (("ready", "menu"), ("countdown", "countdown"),
+                              ("confirm", "wait"), ("resuming", "countdown")):
+            self.app.screen = screen
+            self.app.sync_scene_music()
+            self.assertEqual(self.app.scene_music, track)
+            self.runtime.play.reset_mock()
+            self.app.sync_scene_music()
+            self.runtime.play.assert_not_called()
+
+    def test_scene_mute_and_unmute(self):
+        self.app.sync_scene_music()
+        self.app.toggle_bgm()
+        self.app.sync_scene_music()
+        self.assertIsNone(self.app.scene_music)
+        self.app.toggle_bgm()
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "menu")
+
+    def test_resume_preserves_game_song_position(self):
+        self.app.start_round("ordered")
+        self.runtime.frame_count += 123
+        position = self.app.current_bgm_position_frames()
+        self.app.open_confirmation("retry")
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "wait")
+        self.app.cancel_confirmation()
+        self.app.sync_scene_music()
+        self.runtime.frame_count = self.app.resume_end_frame
+        self.app.update()
+        self.assertEqual(self.app.current_bgm_position_frames(), position)
+        self.assertIsNone(self.app.scene_music)
+
+    def test_result_tracks_follow_jingle_and_outcome(self):
+        for win in (False, True):
+            self.app.start_round("random")
+            self.app.round.player_points = 40 if win else 0
+            self.app.finish_battle()
+            self.app.sync_scene_music()
+            self.assertIsNone(self.app.scene_music)
+            self.runtime.frame_count = self.app.result_music_after
+            self.app.sync_scene_music()
+            self.assertEqual(self.app.scene_music, "win" if win else "loss")
 
     def test_win_and_loss_results_and_reactions(self):
         for win in (True, False):

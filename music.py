@@ -106,3 +106,46 @@ def sequences(stage):
         raise KeyError(stage)
     bass_ids = {chord: index for index, chord in enumerate(BASS, 40)}
     return list(range(8, 40)), [bass_ids[chord] for chord in CHORDS], [48 + stage] * 31 + [51 + stage]
+
+
+# Each scene gets two dedicated slots; gameplay and SFX are never overwritten.
+# (tempo speed, melody bars, chord roots). All tunes are original.
+SCENE_SCORES = {
+    "menu": (12, (
+        "e3:2 g3:2 c4:2 r:2", "b3 a3 g3:2 e3:2 r:2",
+        "a3:2 c4:2 a3 g3 f3 r", "g3:3 b3 d4:2 r:2",
+        "g3:2 e3 g3 c4:2 r:2", "c4:2 a3:2 e3 g3 a3 r",
+        "a3 g3 f3:2 a3:2 r:2", "g3:2 d3:2 b3:2 r:2",
+    ), ("c2", "e2", "f2", "g2", "c2", "a1", "f2", "g2")),
+    "wait": (15, (
+        "e3:3 r g3:2 r:2", "d3:3 r g3:2 r:2",
+    ), ("c2", "g1")),
+    "countdown": (6, (
+        "c3 r e3 r g3 r c4 r", "d3 r g3 r b3 r d4 r",
+    ), ("c2", "g1")),
+    "win": (9, (
+        "c4:2 e4 g4 e4:2 r:2", "c4:2 a3 c4 f4:2 r:2",
+        "d4:2 b3 g3 b3 d4 r:2", "e4:2 c4:3 g3 r:2",
+    ), ("c2", "f2", "g2", "c2")),
+    "loss": (12, (
+        "e3:2 c3:2 a2:2 r:2", "f3:2 e3 d3 c3:2 r:2",
+        "d3:2 g3:2 b3 a3 g3 r", "e3:2 g3:2 c4:2 r:2",
+    ), ("a1", "f1", "g1", "c2")),
+}
+SCENE_TRACKS = {name: (54 + i * 2, 55 + i * 2)
+                for i, name in enumerate(SCENE_SCORES)}
+
+
+def configure_scene_bgm(sounds):
+    for name, (speed, bars, roots) in SCENE_SCORES.items():
+        melody, melody_volume, bass, bass_volume = [], [], [], []
+        for bar, root in zip(bars, roots):
+            notes, volume = expand_bar(bar, peak=2 if name == "wait" else 3)
+            melody.append(notes)
+            melody_volume.append(volume)
+            notes, volume = expand_bar(f"{root}:3 r {root}:2 r:2", peak=2)
+            bass.append(notes)
+            bass_volume.append(volume)
+        lead_id, bass_id = SCENE_TRACKS[name]
+        sounds[lead_id].set(" ".join(melody), "t", "".join(melody_volume), "n", speed)
+        sounds[bass_id].set(" ".join(bass), "t", "".join(bass_volume), "n", speed)
