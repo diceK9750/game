@@ -67,6 +67,7 @@
 
       canvas {
         touch-action: none !important;
+        image-rendering: pixelated;
       }
 
       pyxel-run {
@@ -120,7 +121,7 @@
   <body>
     <main>
       <h1>NUMBER RUSH</h1>
-      <p class="subtitle">2匹と挑む高速ナンバースキャン。範囲とルールを選んで遊ぼう。</p>
+      <p class="subtitle">森のすうじ対決。CPUより早く探して、目標ラインを目指そう！</p>
       <p class="rotate-notice">スマートフォンは横向きにしてプレイしてください。</p>
       <section class="game-shell" aria-label="数字タップゲーム">
         <pyxel-run root="." name="game.py"></pyxel-run>
@@ -128,6 +129,8 @@
       </section>
       <p class="help">
         PCはクリック、スマートフォンは横持ちでタップ操作できます。<br />
+        CPU DUEL＝対戦／SOLO PRACTICE＝練習。範囲・難易度を選び、START ORDER（順番）かSTART RANDOM（ランダム）で開始。<br />
+        対戦は先に正解した側が1点。全問の60％獲得で勝利！ ミスしたマスも再選択できます。<br />
         ゲーム中はRETRY・TITLE・BGM ON/OFF・SFX ON/OFFをいつでも操作できます。
       </p>
     </main>

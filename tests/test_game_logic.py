@@ -43,6 +43,21 @@ class NumberTapRoundTests(unittest.TestCase):
         self.assertEqual(self.round.mistakes, 1)
         self.assertEqual(self.round.completed_count, 0)
 
+    def test_wrong_cell_can_be_selected_correctly_later(self) -> None:
+        short_round = NumberTapRound(
+            max_number=3,
+            rng=random.Random(8),
+            clock=self.clock,
+        )
+        short_round.start()
+
+        self.assertEqual(short_round.tap(2), "wrong")
+        self.assertEqual(short_round.tap(1), "correct")
+        self.assertEqual(short_round.tap(2), "correct")
+        self.assertEqual(short_round.current_target, 3)
+        self.assertEqual(short_round.mistakes, 1)
+        self.assertEqual(short_round.found_numbers, {1, 2})
+
     def test_correct_sequence_finishes_and_freezes_elapsed_time(self) -> None:
         self.round.start()
         for number in range(1, 40):

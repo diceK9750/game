@@ -157,3 +157,81 @@ class NumberTapRound:
         else:
             end = self._clock()
         return max(0.0, end - self.started_at - self.total_paused)
+
+
+class BattleRound(NumberTapRound):
+    """同じお題を取り合う対戦。CPUの期限は入力と独立して抽選する。"""
+
+    SPEEDS = {"easy": (4.0, 6.0), "normal": (2.4, 4.2), "hard": (1.3, 2.6)}
+    RESULT_SECONDS = 0.65
+
+    def __init__(self, *, difficulty="normal", **kwargs):
+        super().__init__(**kwargs)
+        if difficulty not in self.SPEEDS:
+            raise ValueError("unknown difficulty")
+        self.difficulty = difficulty
+        self.owners = {}
+        self.player_points = self.cpu_points = 0
+        self.response_times = []
+        self.ready_at = self.cpu_at = 0.0
+        self.last_owner = None
+        self.last_number = None
+
+    @property
+    def goal(self):
+        return (self.max_number * 3 + 4) // 5
+
+    @property
+    def won(self):
+        return self.player_points >= self.goal
+
+    @property
+    def in_transition(self):
+        return self.elapsed() < self.ready_at
+
+    def start(self, mode="random"):
+        super().start(mode)
+        self.owners = {}
+        self.player_points = self.cpu_points = 0
+        self.response_times = []
+        self.last_owner = self.last_number = None
+        self._schedule(0.0)
+
+    def _schedule(self, delay):
+        self.ready_at = self.elapsed() + delay
+        low, high = self.SPEEDS[self.difficulty]
+        self.cpu_at = self.ready_at + self._rng.uniform(low, high)
+
+    def _claim(self, owner):
+        number = self.current_target
+        self.owners[number] = owner
+        self.last_owner, self.last_number = owner, number
+        if owner == "you":
+            self.player_points += 1
+            self.response_times.append(max(0.0, self.elapsed() - self.ready_at))
+        else:
+            self.cpu_points += 1
+        result = super().tap(number)
+        if not self.is_finished:
+            self._schedule(self.RESULT_SECONDS)
+        return result
+
+    def tap(self, number):
+        if not self.is_playing or self.is_paused or self.in_transition:
+            return "inactive"
+        if number is None or number in self.found_numbers:
+            return "empty"
+        if number != self.current_target:
+            self.mistakes += 1
+            # ミスはCPUを少し加速するが、期限を延長せず入力も封じない。
+            now = self.elapsed()
+            self.cpu_at = min(self.cpu_at, max(now + 0.25, self.cpu_at - 0.3))
+            return "wrong"
+        return self._claim("you")
+
+    def update_cpu(self):
+        if (self.is_playing and not self.is_paused
+                and not self.in_transition and self.elapsed() >= self.cpu_at):
+            self._claim("cpu")
+            return self.last_number
+        return None
