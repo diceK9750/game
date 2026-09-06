@@ -208,6 +208,64 @@ class BattleUiTests(unittest.TestCase):
                 self.app.start_round("random")
                 configure.assert_called_with(self.runtime.sounds, battle=kind == "battle")
 
+    def test_keyboard_moves_cursor_and_confirms_target(self):
+        self.app.start_round("ordered")
+        self.app.cursor_cell = 7
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_RIGHT
+        self.app.update()
+        self.assertEqual(self.app.cursor_cell, 0)
+        self.assertTrue(self.app.keyboard_cursor)
+        self.app.cursor_cell = self.app.round.board_cells.index(1)
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_RETURN
+        self.app.update()
+        self.assertEqual(self.app.round.player_points, 1)
+
+    def test_escape_pauses_instead_of_quitting_runtime(self):
+        self.assertEqual(self.runtime.init.call_args.kwargs["quit_key"], self.runtime.KEY_NONE)
+        self.app.start_round("ordered")
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_ESCAPE
+        self.app.update()
+        self.assertEqual(self.app.screen, "confirm")
+        self.assertEqual(self.app.confirm_action, "pause")
+        self.assertTrue(self.app.round.is_paused)
+
+    def test_pause_can_request_title_without_resuming_cpu(self):
+        self.app.start_round("ordered")
+        self.app.open_confirmation("pause")
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_T
+        self.app.update()
+        self.assertEqual(self.app.screen, "confirm")
+        self.assertEqual(self.app.confirm_action, "title")
+        self.assertTrue(self.app.round.is_paused)
+
+    def test_help_opens_and_returns_without_starting_round(self):
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_H
+        self.app.update()
+        self.assertEqual(self.app.screen, "help")
+        self.app.draw()
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_RETURN
+        self.app.update()
+        self.assertEqual(self.app.screen, "ready")
+        self.assertFalse(self.app.round.is_playing)
+
+    def test_hidden_page_pauses_and_requires_explicit_resume(self):
+        self.app.start_round("ordered")
+        document = types.SimpleNamespace(hidden=True)
+        with patch.object(game, "browser_document", document):
+            self.assertTrue(self.app.update_visibility())
+            self.assertTrue(self.app.round.is_paused)
+            self.assertEqual(self.app.confirm_action, "pause")
+            document.hidden = False
+            self.app.update()
+            self.assertEqual(self.app.screen, "confirm")
+            self.assertTrue(self.app.round.is_paused)
+            self.app.draw()
+
+    def test_pixel_labels_include_all_used_characters(self):
+        for word in ("CPU +1", "YOU +1", "MISS", "FIND"):
+            for char in word.replace(" ", ""):
+                self.assertTrue(char in game.LETTERS or char in game.DIGITS)
+
     def test_scene_selection_and_no_restart_per_frame(self):
         for screen, track in (("ready", "menu"), ("countdown", "countdown"),
                               ("confirm", "wait"), ("resuming", "countdown")):

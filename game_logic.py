@@ -201,6 +201,29 @@ class BattleRound(NumberTapRound):
         self.ready_at = self.elapsed() + delay
         low, high = self.SPEEDS[self.difficulty]
         self.cpu_at = self.ready_at + self._rng.uniform(low, high)
+        self.search_cells = [i for i, n in enumerate(self.board_cells)
+                             if n is not None and n not in self.found_numbers]
+        self._rng.shuffle(self.search_cells)
+
+    @property
+    def cpu_cursor(self):
+        """A cosmetic search path; it never changes deadlines or reveals the answer."""
+        if not self.is_playing or self.in_transition:
+            return None
+        step = int(max(0, self.elapsed() - self.ready_at) / 0.28)
+        return self.search_cells[step % len(self.search_cells)]
+
+    @property
+    def points_needed(self):
+        return max(0, self.goal - self.player_points)
+
+    @property
+    def can_still_win(self):
+        return self.points_needed <= self.max_number - self.completed_count
+
+    @property
+    def last_response(self):
+        return self.response_times[-1] if self.last_owner == "you" and self.response_times else None
 
     def _claim(self, owner):
         number = self.current_target

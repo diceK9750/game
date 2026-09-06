@@ -107,6 +107,46 @@ class BattleTests(unittest.TestCase):
         self.assertEqual(battle.player_points, 0)
         self.assertEqual(battle.cpu_points, 0)
 
+    def test_search_cursor_is_cosmetic_and_visits_only_live_cells(self):
+        battle = self.make_round()
+        deadline = battle.cpu_at
+        for t in (0, 0.3, 0.7, 1):
+            self.now = t
+            index = battle.cpu_cursor
+            self.assertIsNotNone(battle.board_cells[index])
+            self.assertEqual(battle.cpu_at, deadline)
+            self.assertEqual(battle.completed_count, 0)
+        battle.tap(battle.current_target)
+        self.assertIsNone(battle.cpu_cursor)
+        self.now = battle.ready_at
+        self.assertNotIn(battle.board_cells[battle.cpu_cursor], battle.found_numbers)
+
+    def test_search_cursor_freezes_during_pause(self):
+        battle = self.make_round()
+        battle.pause()
+        index = battle.cpu_cursor
+        self.now += 100
+        self.assertEqual(battle.cpu_cursor, index)
+
+    def test_victory_line_and_remaining_chances(self):
+        battle = self.make_round()
+        self.assertEqual(battle.points_needed, 6)
+        self.assertTrue(battle.can_still_win)
+        for _ in range(5):
+            self.now = battle.cpu_at
+            battle.update_cpu()
+        self.assertFalse(battle.can_still_win)
+        self.assertEqual(battle.points_needed, 6)
+
+    def test_response_feedback_excludes_result_hold(self):
+        battle = self.make_round(mode="ordered")
+        self.now = 0.5
+        battle.tap(1)
+        self.assertEqual(battle.last_response, 0.5)
+        self.now = battle.ready_at + 0.4
+        battle.tap(2)
+        self.assertAlmostEqual(battle.last_response, 0.4)
+
 
 if __name__ == "__main__":
     unittest.main()

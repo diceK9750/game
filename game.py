@@ -2,7 +2,7 @@
 # author: diceK9750 / Codex
 # desc: Find 1 to 10, 20, 30, or 40 in order or in a shuffled sequence.
 # site: https://dicek9750.github.io/game/
-# version: 7.1
+# version: 8.0
 
 """横持ちブラウザ向けの数字タップゲーム NUMBER RUSH。"""
 
@@ -10,6 +10,11 @@ from __future__ import annotations
 
 import pyxel
 import math
+try:
+    from js import document as browser_document
+    from pyodide.ffi import create_proxy
+except ImportError:
+    browser_document = None
 from music import configure_bgm, configure_scene_bgm, SCENE_TRACKS, sequences as music_sequences
 
 from game_logic import (
@@ -104,6 +109,36 @@ DIGITS = {
     "9": ("01110", "10001", "10001", "01111", "00001", "00001", "01110"),
 }
 
+LETTERS = {
+    "A": ("01110", "10001", "10001", "11111", "10001", "10001", "10001"),
+    "C": ("01111", "10000", "10000", "10000", "10000", "10000", "01111"),
+    "+": ("00000", "00100", "00100", "11111", "00100", "00100", "00000"),
+    "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
+    "E": ("11111", "10000", "10000", "11110", "10000", "10000", "11111"),
+    "F": ("11111", "10000", "10000", "11110", "10000", "10000", "10000"),
+    "I": ("11111", "00100", "00100", "00100", "00100", "00100", "11111"),
+    "L": ("10000", "10000", "10000", "10000", "10000", "10000", "11111"),
+    "M": ("10001", "11011", "10101", "10101", "10001", "10001", "10001"),
+    "N": ("10001", "11001", "10101", "10011", "10001", "10001", "10001"),
+    "O": ("01110", "10001", "10001", "10001", "10001", "10001", "01110"),
+    "P": ("11110", "10001", "10001", "11110", "10000", "10000", "10000"),
+    "R": ("11110", "10001", "10001", "11110", "10100", "10010", "10001"),
+    "S": ("01111", "10000", "10000", "01110", "00001", "00001", "11110"),
+    "U": ("10001", "10001", "10001", "10001", "10001", "10001", "01110"),
+    "W": ("10001", "10001", "10001", "10101", "10101", "11011", "10001"),
+    "Y": ("10001", "10001", "01010", "00100", "00100", "00100", "00100"),
+}
+
+
+def pixel_label(x, y, label, color, scale=2):
+    """Large, crisp labels for the central prompt and results."""
+    for index, letter in enumerate(label):
+        rows = LETTERS.get(letter, DIGITS.get(letter, ()))
+        for row, bits in enumerate(rows):
+            for col, bit in enumerate(bits):
+                if bit == "1":
+                    pyxel.rect(x + (index * 6 + col) * scale, y + row * scale, scale, scale, color)
+
 
 def centered_text(y: int, label: str, color: int) -> None:
     """Pyxel標準フォントの文字列を画面中央に描く。"""
@@ -141,7 +176,8 @@ class NumberRush:
     """描画と入力を受け持つPyxelアプリケーション。"""
 
     def __init__(self) -> None:
-        pyxel.init(WIDTH, HEIGHT, title="NUMBER RUSH", fps=FPS)
+        # Escape belongs to our pause/help UI, not Pyxel's default quit shortcut.
+        pyxel.init(WIDTH, HEIGHT, title="NUMBER RUSH", fps=FPS, quit_key=pyxel.KEY_NONE)
         pyxel.colors.from_list(PALETTE)
         pyxel.mouse(True)
         self.configure_sounds()
@@ -171,6 +207,9 @@ class NumberRush:
         self.max_streak = 0
         self.bgm_on = True
         self.scene_music = None
+        self.cursor_cell = 0
+        self.keyboard_cursor = False
+        self.auto_suspended = False
         self.result_music_after = 0
         self.bgm_stage = 0
         self.pending_bgm_stage: int | None = None
@@ -183,6 +222,10 @@ class NumberRush:
         self.sfx_priority_until_frame = 0
         self.is_new_best = False
         self.best_times: dict[tuple[int, str], float] = {}
+        # RAF may stop entirely in a hidden Safari tab. Pause at the event itself.
+        if browser_document is not None:
+            self._visibility_listener = create_proxy(lambda *_: self.update_visibility())
+            browser_document.addEventListener("visibilitychange", self._visibility_listener)
         pyxel.run(self.update, self.draw)
 
     @staticmethod
@@ -200,8 +243,31 @@ class NumberRush:
         configure_scene_bgm(pyxel.sounds)
 
     def update(self) -> None:
+        if self.update_visibility():
+            return
         self.update_frame()
         self.sync_scene_music()
+
+    def update_visibility(self) -> bool:
+        hidden = browser_document is not None and bool(browser_document.hidden)
+        if hidden:
+            if not self.auto_suspended:
+                if self.screen == "playing":
+                    self.open_confirmation("pause")
+                elif self.screen in {"countdown", "resuming"}:
+                    self.suspended_at_frame = pyxel.frame_count
+                self.pause_bgm()
+                self.stop_scene_music()
+                pyxel.stop(3)
+                self.auto_suspended = True
+            return True
+        if self.auto_suspended:
+            if self.screen == "countdown":
+                self.countdown_end_frame += pyxel.frame_count - self.suspended_at_frame
+            elif self.screen == "resuming":
+                self.resume_end_frame += pyxel.frame_count - self.suspended_at_frame
+            self.auto_suspended = False
+        return False
 
     def update_frame(self) -> None:
         clicked = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)
@@ -224,6 +290,9 @@ class NumberRush:
             self.update_bgm_transition()
 
         if self.screen == "ready":
+            if pyxel.btnp(pyxel.KEY_H) or (clicked and point_in_rect(*mouse, RETRY_BUTTON)):
+                self.screen = "help"
+                return
             for kind, button in PLAY_BUTTONS.items():
                 if clicked and point_in_rect(*mouse, button):
                     self.play_kind = kind
@@ -251,6 +320,12 @@ class NumberRush:
                 self.begin_countdown("random")
             return
 
+        if self.screen == "help":
+            if (pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_RETURN)
+                    or clicked and point_in_rect(*mouse, YES_BUTTON)):
+                self.screen = "ready"
+            return
+
         if self.screen == "resuming":
             if pyxel.frame_count >= self.resume_end_frame:
                 self.round.resume()
@@ -269,6 +344,12 @@ class NumberRush:
             return
 
         if self.screen == "confirm":
+            if self.confirm_action == "pause":
+                if pyxel.btnp(pyxel.KEY_RETURN) or clicked and point_in_rect(*mouse, YES_BUTTON):
+                    self.cancel_confirmation()
+                elif pyxel.btnp(pyxel.KEY_T) or clicked and point_in_rect(*mouse, NO_BUTTON):
+                    self.confirm_action = "title"
+                return
             if pyxel.btnp(pyxel.KEY_Y) or (
                 clicked and point_in_rect(*mouse, YES_BUTTON)
             ):
@@ -302,9 +383,25 @@ class NumberRush:
             self.open_confirmation("title")
             return
 
+        if pyxel.btnp(pyxel.KEY_ESCAPE):
+            self.open_confirmation("pause")
+            return
+
+        for key, dx, dy in ((pyxel.KEY_LEFT, -1, 0), (pyxel.KEY_RIGHT, 1, 0),
+                            (pyxel.KEY_UP, 0, -1), (pyxel.KEY_DOWN, 0, 1)):
+            if pyxel.btnp(key, 15, 5):
+                row, col = divmod(self.cursor_cell, GRID_COLUMNS)
+                self.cursor_cell = ((row + dy) % GRID_ROWS) * GRID_COLUMNS + (col + dx) % GRID_COLUMNS
+                self.keyboard_cursor = True
+        if pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.KEY_SPACE):
+            self.keyboard_cursor = True
+            self.handle_tap(self.cursor_cell)
+
         if clicked:
             cell_index = self.cell_at(*mouse)
             if cell_index is not None:
+                self.keyboard_cursor = False
+                self.cursor_cell = cell_index
                 self.handle_tap(cell_index)
         # 入力を先に判定し、同一フレームの競合はプレイヤー優先にする。
         if self.screen == "playing" and isinstance(self.round, BattleRound):
@@ -374,6 +471,8 @@ class NumberRush:
         self.round = (BattleRound(max_number=self.selected_max_number, difficulty=self.difficulty)
                       if self.play_kind == "battle" else NumberTapRound(max_number=self.selected_max_number))
         self.round.start(mode)
+        self.cursor_cell = next(i for i, n in enumerate(self.round.board_cells) if n is not None)
+        self.keyboard_cursor = False
         self.screen = "playing"
         self.score = 0
         self.streak = 0
@@ -523,6 +622,7 @@ class NumberRush:
             self.stop_scene_music()
             return
         desired = {"ready": "menu", "confirm": "wait",
+                   "help": "menu",
                    "resuming": "countdown", "countdown": "countdown"}.get(self.screen)
         if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
             desired = ("loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")
@@ -658,6 +758,18 @@ class NumberRush:
         pyxel.cls(BACKGROUND)
         self.draw_background()
         self.draw_header()
+        if self.screen == "help":
+            self.draw_box(96, 62, 448, 232, BLUE)
+            centered_text(82, "HOW TO PLAY - FOREST DUEL", YELLOW)
+            for y, label in ((107, "FIND THE LARGE TARGET BEFORE THE FOX."),
+                             (125, "FIRST CORRECT ANSWER WINS 1 POINT."),
+                             (143, "REACH THE GOLD LINE: 6 / 12 / 18 / 24 POINTS."),
+                             (161, "MISS? A BOMB APPEARS. YOU CAN STILL TAP THAT CELL."),
+                             (179, "BLUE = YOU    PINK = CPU    EMPTY CELLS ARE IGNORED."),
+                             (197, "CLICK / TAP, OR ARROW KEYS + ENTER.  ESC = PAUSE.")):
+                centered_text(y, label, CARD)
+            self.draw_button(YES_BUTTON, "BACK", BLUE)
+            return
 
         if self.screen == "ready":
             self.draw_placeholder_grid()
@@ -718,6 +830,7 @@ class NumberRush:
         pyxel.text(18, 18, "N U M B E R  R U S H", YELLOW)
         if self.screen == "ready":
             pyxel.text(116, 18, f"RANGE 1-{self.selected_max_number}", MUTED)
+            self.draw_small_button(RETRY_BUTTON, "HELP", BLUE, True)
         else:
             mode = "ORDER" if self.selected_mode == "ordered" else "RANDOM"
             pyxel.text(116, 18, f"{self.selected_max_number} {mode}", MUTED)
@@ -732,8 +845,7 @@ class NumberRush:
         self.draw_small_button(BGM_BUTTON, "BGM ON" if self.bgm_on else "BGM OFF", GREEN, True)
         self.draw_small_button(SFX_BUTTON, "SFX ON" if self.sfx_on else "SFX OFF", PINK, True)
 
-    @staticmethod
-    def draw_progress_frame(completed: int, max_number: int) -> None:
+    def draw_progress_frame(self, completed: int, max_number: int) -> None:
         """盤面を囲む40個のセグメントで進行を表示する。"""
         segments: list[tuple[int, int, int, int]] = []
         for index in range(16):
@@ -749,6 +861,9 @@ class NumberRush:
         for index, (x, y, width, height) in enumerate(segments):
             if index < filled_segments:
                 fill = GREEN
+                if isinstance(self.round, BattleRound) and self.screen in {"playing", "finished"}:
+                    target = self.round.targets[index * max_number // GRID_CELL_COUNT]
+                    fill = BLUE if self.round.owners.get(target) == "you" else PINK
                 border = CARD
             elif index == filled_segments and completed < max_number:
                 fill = YELLOW
@@ -808,7 +923,7 @@ class NumberRush:
             if already_found:
                 self.draw_locked_pattern(x, y)
                 owner = self.round.owners.get(number, "you") if isinstance(self.round, BattleRound) else "you"
-                owner_color = GREEN if owner == "you" else PINK
+                owner_color = BLUE if owner == "you" else PINK
                 pyxel.rectb(x, y, CELL_WIDTH, CELL_HEIGHT, owner_color)
                 pyxel.text(x + 4, y + 4, owner.upper(), owner_color)
             else:
@@ -820,7 +935,27 @@ class NumberRush:
                     number,
                     CARD if is_wrong else BACKGROUND,
                 )
+        # Thin corner brackets leave the digits readable, even when cursors overlap.
+        if self.screen == "playing":
+            player_index = self.cursor_cell if self.keyboard_cursor else self.cell_at(pyxel.mouse_x, pyxel.mouse_y)
+            if player_index is not None:
+                self.draw_cursor(player_index, BLUE, 0)
+            if isinstance(self.round, BattleRound):
+                cpu_index = self.round.cpu_cursor
+                if cpu_index is not None:
+                    self.draw_cursor(cpu_index, PINK, 2)
         self.draw_cell_effects()
+
+    @staticmethod
+    def draw_cursor(index, color, inset):
+        row, col = divmod(index, GRID_COLUMNS)
+        x = GRID_X + col * (CELL_WIDTH + CELL_GAP) + inset
+        y = GRID_Y + row * (CELL_HEIGHT + CELL_GAP) + inset
+        w, h = CELL_WIDTH - inset * 2, CELL_HEIGHT - inset * 2
+        for xx, dx in ((x, 1), (x + w - 1, -1)):
+            for yy, dy in ((y, 1), (y + h - 1, -1)):
+                pyxel.line(xx, yy, xx + dx * 8, yy, color)
+                pyxel.line(xx, yy, xx, yy + dy * 7, color)
 
     @staticmethod
     def draw_empty_panel(x: int, y: int) -> None:
@@ -1166,7 +1301,7 @@ class NumberRush:
 
     def draw_side_console(self) -> None:
         if isinstance(self.round, BattleRound):
-            for x, points, label, color in ((24, self.round.player_points, "YOU", GREEN),
+            for x, points, label, color in ((24, self.round.player_points, "YOU", BLUE),
                                            (579, self.round.cpu_points, "CPU", PINK)):
                 self.draw_box(x, 58, 38, 172, color)
                 pyxel.text(x + 12, 69, label, color)
@@ -1229,10 +1364,15 @@ class NumberRush:
             self.draw_box(158, 250, 324, 94, YELLOW)
             if self.round.in_transition:
                 owner = self.round.last_owner.upper()
-                centered_text(266, f"{owner} TAKES {self.round.last_number}!", GREEN if owner == "YOU" else PINK)
-                centered_text(290, "NEXT TARGET...", CARD)
+                pixel_label(272, 263, "YOU +1" if owner == "YOU" else "CPU +1", BLUE if owner == "YOU" else PINK)
+                response = self.round.last_response
+                detail = f"CPU TAKES {self.round.last_number}. NEXT TARGET..."
+                if response is not None:
+                    grade = "LIGHTNING!" if response < 0.8 else "QUICK!" if response < 1.6 else "NICE FIND!"
+                    detail = f"{grade} {response:.2f}s   STREAK {self.streak}"
+                centered_text(291, detail, CARD)
             else:
-                pyxel.text(185, 270, "MISS!" if self.wrong_cell is not None else "FIND", ERROR if self.wrong_cell is not None else YELLOW)
+                pixel_label(177, 270, "MISS" if self.wrong_cell is not None else "FIND", ERROR if self.wrong_cell is not None else YELLOW)
                 draw_number(320, 260, self.round.current_target, CARD, 5)
                 pyxel.text(391, 270, "FIRST!", YELLOW)
                 # 探索状況だけを示し、正解位置は漏らさない。
@@ -1241,8 +1381,13 @@ class NumberRush:
                 pyxel.text(186, 306, "CPU SEARCH", PINK)
                 pyxel.rect(238, 306, 210, 5, DEEP_BLUE)
                 pyxel.rect(238, 306, int(210 * progress), 5, PINK)
-            needed = max(0, self.round.goal - self.round.player_points)
-            centered_text(326, f"NEED {needed} MORE TO WIN  /  {self.round.completed_count}/{self.round.max_number} FOUND", YELLOW)
+            if self.round.won:
+                status = "GOAL REACHED! KEEP GOING FOR YOUR BEST"
+            elif not self.round.can_still_win:
+                status = f"KEEP TRYING! FINISH WITH YOUR BEST / {self.round.player_points} PT"
+            else:
+                status = f"NEED {self.round.points_needed} MORE TO WIN / {self.round.max_number - self.round.completed_count} LEFT"
+            centered_text(326, status, YELLOW)
             return
         if self.wrong_cell is not None:
             border = ERROR
@@ -1323,6 +1468,13 @@ class NumberRush:
         pyxel.rect(138, 92, 376, 186, DEEP_BLUE)
         pyxel.dither(1.0)
         self.draw_box(144, 86, 352, 186, PINK)
+        if self.confirm_action == "pause":
+            centered_text(116, "PAUSED - TAKE YOUR TIME", YELLOW)
+            centered_text(151, "CPU AND TIMER ARE STOPPED", CARD)
+            centered_text(177, "RESUME WHEN YOU ARE READY", MUTED)
+            self.draw_button(YES_BUTTON, "RESUME", BLUE)
+            self.draw_button(NO_BUTTON, "TITLE", PINK)
+            return
         question = "RESTART THIS RUN?" if self.confirm_action == "retry" else "RETURN TO TITLE?"
         centered_text(116, "CONFIRM", YELLOW)
         centered_text(149, question, CARD)
