@@ -74,7 +74,10 @@ class BattleTests(unittest.TestCase):
         self.assertEqual(battle.tap(target), "correct")
         self.assertIsNone(battle.update_cpu())
         self.assertEqual(battle.owners[target], "you")
-        self.assertEqual(battle.tap(battle.current_target), "inactive")
+        self.assertEqual(battle.tap(target), "empty")
+        self.assertEqual(battle.player_points, 1)
+        self.assertEqual(battle.tap(battle.current_target), "correct")
+        self.assertEqual(battle.player_points, 2)
 
     def test_pause_preserves_cpu_deadline(self):
         battle = self.make_round()
@@ -172,7 +175,7 @@ class BattleTests(unittest.TestCase):
             self.assertEqual(battle.cpu_at, deadline)
             self.assertEqual(battle.completed_count, 0)
         battle.tap(battle.current_target)
-        self.assertIsNone(battle.cpu_cursor)
+        self.assertIsNotNone(battle.cpu_cursor)
         self.now = battle.ready_at
         self.assertNotIn(battle.board_cells[battle.cpu_cursor], battle.found_numbers)
 
@@ -201,6 +204,28 @@ class BattleTests(unittest.TestCase):
         self.now = battle.ready_at + 0.4
         battle.tap(2)
         self.assertAlmostEqual(battle.last_response, 0.4)
+
+    def test_rapid_inputs_in_all_ranges_and_modes(self):
+        for count in (10, 20, 30, 40):
+            for mode in ("ordered", "random"):
+                battle = self.make_round(count=count, mode=mode)
+                for i in range(count):
+                    self.now += 0.03  # Much shorter than the former 0.65s lock.
+                    self.assertEqual(battle.tap(battle.current_target),
+                                     "finished" if i == count - 1 else "correct")
+                    self.assertIsNone(battle.update_cpu())
+                self.assertTrue(battle.is_perfect)
+                self.assertAlmostEqual(battle.elapsed(), count * 0.03)
+                for response in battle.response_times:
+                    self.assertAlmostEqual(response, 0.03)
+
+    def test_immediate_input_after_cpu_claim(self):
+        battle = self.make_round()
+        self.now = battle.cpu_at
+        battle.update_cpu()
+        self.now += 0.01
+        self.assertEqual(battle.tap(battle.current_target), "correct")
+        self.assertEqual((battle.player_points, battle.cpu_points), (1, 1))
 
 
 if __name__ == "__main__":

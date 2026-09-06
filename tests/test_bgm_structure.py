@@ -206,6 +206,22 @@ class DuelMusicTests(unittest.TestCase):
 
 
 class BattleUiTests(unittest.TestCase):
+    def test_success_animation_keeps_next_target_visible_and_playable(self):
+        self.app.start_round("ordered")
+        now = [0.0]
+        self.app.round = BattleRound(max_number=10, clock=lambda: now[0])
+        self.app.round.start("ordered")
+        self.app.handle_tap(self.app.round.board_cells.index(1))
+        self.assertIsNotNone(self.app.correct_cell)
+        with patch.object(game, "draw_number") as draw_number:
+            self.app.draw_message_panel()
+            draw_number.assert_called_with(320, 260, 2, game.CARD, 5)
+        now[0] += 0.03
+        self.app.handle_tap(self.app.round.board_cells.index(2))
+        self.assertEqual(self.app.round.player_points, 2)
+        self.assertEqual(self.app.round.current_target, 3)
+        self.assertEqual(len(self.app.cell_effects), 2)
+
     def test_hint_completion_is_not_a_record(self):
         self.app.play_kind = "practice"
         self.app.selected_max_number = 10

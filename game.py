@@ -1334,26 +1334,23 @@ class NumberRush:
     def draw_message_panel(self) -> None:
         if isinstance(self.round, BattleRound):
             self.draw_box(158, 250, 324, 94, YELLOW)
-            if self.round.in_transition:
-                owner = self.round.last_owner.upper()
-                pixel_label(272, 263, "YOU +1" if owner == "YOU" else "CPU +1", BLUE if owner == "YOU" else PINK)
+            ui_text(pyxel, 183, 270, "ちがうよ" if self.wrong_cell is not None else "さがすのは", ERROR if self.wrong_cell is not None else YELLOW)
+            draw_number(320, 260, self.round.current_target, CARD, 5)
+            ui_text(pyxel, 383, 270, "を先に!", YELLOW)
+            # Show the last claim beside, never instead of, the live target.
+            if self.correct_cell is not None or pyxel.frame_count < self.cpu_reaction_until:
+                owner = self.round.last_owner
                 response = self.round.last_response
-                detail = f"CPU TAKES {self.round.last_number}. NEXT TARGET..."
+                detail = f"{'YOU' if owner == 'you' else 'CPU'} +1"
                 if response is not None:
-                    grade = "LIGHTNING!" if response < 0.8 else "QUICK!" if response < 1.6 else "NICE FIND!"
-                    detail = f"{grade} {response:.2f}s   STREAK {self.streak}"
-                centered_text(291, detail, CARD)
-            else:
-                ui_text(pyxel, 183, 270, "ちがうよ" if self.wrong_cell is not None else "さがすのは", ERROR if self.wrong_cell is not None else YELLOW)
-                draw_number(320, 260, self.round.current_target, CARD, 5)
-                ui_text(pyxel, 383, 270, "を先に!", YELLOW)
-                # 探索状況だけを示し、正解位置は漏らさない。
-                duration = max(0.01, self.round.cpu_at - self.round.ready_at)
-                progress = min(1, max(0, (self.round.elapsed() - self.round.ready_at) / duration))
-                ui_text(pyxel, 170, 306, "CPU接近", PINK)
-                ui_text(pyxel, 390, 292, f"あと{max(0, self.round.cpu_at - self.round.elapsed()):.1f}秒", PINK)
-                pyxel.rect(238, 306, 210, 5, DEEP_BLUE)
-                pyxel.rect(238, 306, int(210 * progress), 5, PINK)
+                    detail += f" / {response:.2f}s"
+                ui_text(pyxel, 175, 291, detail, BLUE if owner == "you" else PINK)
+            duration = max(0.01, self.round.cpu_at - self.round.ready_at)
+            progress = min(1, max(0, (self.round.elapsed() - self.round.ready_at) / duration))
+            ui_text(pyxel, 170, 306, "CPU接近", PINK)
+            ui_text(pyxel, 390, 292, f"あと{max(0, self.round.cpu_at - self.round.elapsed()):.1f}秒", PINK)
+            pyxel.rect(238, 306, 210, 5, DEEP_BLUE)
+            pyxel.rect(238, 306, int(210 * progress), 5, PINK)
             if self.round.won:
                 status = "勝利ライン到達! 最後まで記録を伸ばそう"
             elif not self.round.can_still_win:

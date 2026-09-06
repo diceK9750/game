@@ -163,7 +163,6 @@ class BattleRound(NumberTapRound):
     """同じお題を取り合う対戦。CPUの期限は入力と独立して抽選する。"""
 
     SPEEDS = {"easy": (4.0, 6.0), "normal": (2.4, 4.2), "hard": (1.3, 2.6)}
-    RESULT_SECONDS = 0.65
 
     def __init__(self, *, difficulty="normal", **kwargs):
         super().__init__(**kwargs)
@@ -198,10 +197,6 @@ class BattleRound(NumberTapRound):
         # Separate from duel points: never changes the winner or victory line.
         return self.max_number * 100 if self.is_perfect else 0
 
-    @property
-    def in_transition(self):
-        return self.elapsed() < self.ready_at
-
     def start(self, mode="random"):
         super().start(mode)
         self.owners = {}
@@ -209,11 +204,12 @@ class BattleRound(NumberTapRound):
         self.response_times = []
         self.last_owner = self.last_number = None
         self.history = []
-        self._schedule(0.0)
+        self._schedule()
 
-    def _schedule(self, delay):
+    def _schedule(self):
         self.target_mistakes = 0
-        self.ready_at = self.elapsed() + delay
+        # Feedback is visual only: the next target is playable immediately.
+        self.ready_at = self.elapsed()
         low, high = self.SPEEDS[self.difficulty]
         self.cpu_at = self.ready_at + self._rng.uniform(low, high)
         self.search_cells = [i for i, n in enumerate(self.board_cells)
@@ -223,7 +219,7 @@ class BattleRound(NumberTapRound):
     @property
     def cpu_cursor(self):
         """A cosmetic search path; it never changes deadlines or reveals the answer."""
-        if not self.is_playing or self.in_transition:
+        if not self.is_playing:
             return None
         step = int(max(0, self.elapsed() - self.ready_at) / 0.28)
         return self.search_cells[step % len(self.search_cells)]
@@ -254,11 +250,11 @@ class BattleRound(NumberTapRound):
             self.cpu_points += 1
         result = super().tap(number)
         if not self.is_finished:
-            self._schedule(self.RESULT_SECONDS)
+            self._schedule()
         return result
 
     def tap(self, number):
-        if not self.is_playing or self.is_paused or self.in_transition:
+        if not self.is_playing or self.is_paused:
             return "inactive"
         if number is None or number in self.found_numbers:
             return "empty"
@@ -274,7 +270,7 @@ class BattleRound(NumberTapRound):
 
     def update_cpu(self):
         if (self.is_playing and not self.is_paused
-                and not self.in_transition and self.elapsed() >= self.cpu_at):
+                and self.elapsed() >= self.cpu_at):
             self._claim("cpu")
             return self.last_number
         return None
