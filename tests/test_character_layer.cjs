@@ -1,7 +1,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const {portraitPosition, parseCharacterState, CHARACTER_RECTS} = require('../character-layer.js');
+const {portraitPosition, parseCharacterState, CHARACTER_RECTS, SCENERY_HOLES, sceneryClip} = require('../character-layer.js');
 
 test('all six expressions map to distinct atlas cells', () => {
   assert.deepEqual(['idle', 'celebrate', 'victory', 'hurt', 'frustrated', 'defeat'].map(portraitPosition),
@@ -43,4 +43,26 @@ test('both production atlases are local 1536x1024 PNGs', () => {
     assert.equal(bytes.readUInt32BE(20), 1024);
     assert.ok(bytes.length < 4 * 1024 * 1024);
   }
+});
+
+test('forest cutouts preserve lower UI including its shadows on every visible screen', () => {
+  const controls = {
+    ready: [[112,244,420,36], [222,282,200,34]],
+    playing: [[158,250,328,98], [182,301,110,32]],
+    countdown: [[190,244,260,28]],
+    finished: [[118,244,408,36], [222,282,200,34], [196,282,20,8], [430,282,20,8]],
+  };
+  for (const [screen, rects] of Object.entries(controls)) {
+    assert.match(sceneryClip(screen), /^path\(evenodd, 'M0 244H640V360H0Z /);
+    for (const [x,y,w,h] of rects) {
+      assert.ok(SCENERY_HOLES[screen].some(([hx,hy,hw,hh]) =>
+        x >= hx && y >= hy && x+w <= hx+hw && y+h <= hy+hh), `${screen}: UI must stay clear`);
+    }
+  }
+  assert.equal(sceneryClip('confirm'), 'inset(100%)');
+  assert.match(sceneryClip('playing', 'practice'), /M170 250H474V348H170Z/);
+  const bytes = fs.readFileSync(require.resolve('../assets/backgrounds/lantern-forest.png'));
+  assert.equal(bytes.subarray(1,4).toString(), 'PNG');
+  assert.ok(Math.abs(bytes.readUInt32BE(16) / bytes.readUInt32BE(20) - 16/9) < 0.01);
+  assert.ok(bytes.length < 5 * 1024 * 1024);
 });

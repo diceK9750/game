@@ -16,11 +16,12 @@ class CharacterLayer:
         except Exception:
             return False
 
-    def sync(self, screen, left, right, reduced_motion, perfect=False):
+    def sync(self, screen, left, right, reduced_motion, perfect=False, kind="battle"):
         if self.root is None:
             return
         state = json.dumps({"screen": screen, "left": left, "right": right,
-                            "reduced": bool(reduced_motion), "perfect": bool(perfect)})
+                            "reduced": bool(reduced_motion), "perfect": bool(perfect),
+                            "kind": kind})
         if state != self.last_state:
             try:
                 self.root.setAttribute("data-character-state", state)

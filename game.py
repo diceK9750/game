@@ -810,7 +810,8 @@ class NumberRush:
     def draw(self) -> None:
         left, right = self.character_actions()
         self.character_layer.sync(self.screen, left, right, self.reduced_motion,
-                                  isinstance(self.round, BattleRound) and self.round.is_perfect)
+                                  isinstance(self.round, BattleRound) and self.round.is_perfect,
+                                  self.play_kind)
         pyxel.cls(BACKGROUND)
         self.draw_background()
         self.draw_header()
@@ -879,8 +880,10 @@ class NumberRush:
             pyxel.pset(x, 241 + x % 29, PANEL)
         for x in (19, 136, 494, 613):
             pyxel.rect(x, 275, 4, 42, 4)
-            pyxel.tri(x - 16, 294, x + 2, 251, x + 19, 294, 3)
-            pyxel.tri(x - 13, 279, x + 2, 244, x + 16, 279, DEEP_BLUE)
+            # Rounded foliage echoes the soft storybook character silhouettes.
+            pyxel.elli(x - 17, 266, 37, 34, DEEP_BLUE)
+            pyxel.elli(x - 13, 255, 29, 28, DEEP_BLUE)
+            pyxel.elli(x - 14, 275, 23, 17, 3)
         # Two warm lamps frame the stage without flashing behind the numbers.
         for x in (24, 610):
             pyxel.rect(x - 1, 253, 2, 62, 4)

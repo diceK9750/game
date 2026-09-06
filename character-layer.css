@@ -2,18 +2,34 @@
 #character-layer { position: fixed; inset: 0; width: 640px; height: 360px; z-index: 10;
   pointer-events: none; user-select: none; overflow: hidden; }
 #character-layer[hidden] { display: none; }
+#forest-stage { position: absolute; inset: 0; pointer-events: none;
+  background: url('assets/backgrounds/lantern-forest.png') center / 640px 360px no-repeat;
+  clip-path: polygon(0 244px, 112px 244px, 112px 348px, 528px 348px,
+    528px 244px, 640px 244px, 640px 360px, 0 360px);
+  /* Blend the environment into the quiet navy board surround. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 244px, #000 252px);
+  mask-image: linear-gradient(to bottom, transparent 244px, #000 252px); }
+#forest-stage[hidden] { display: none; }
 .rival-card { position: absolute; top: 246px; width: 92px; height: 108px;
   border-radius: 8px; background: #111a29; overflow: hidden;
   box-shadow: 0 0 0 1px #70c7db, 0 4px 10px #0008; }
 .rival-card.rin { left: 18px; }
 .rival-card.koh { left: 530px; box-shadow: 0 0 0 1px #e8a2c9, 0 4px 10px #0008; }
+#character-layer[data-scenery='true'] .rival-card {
+  background: transparent; box-shadow: none; border-radius: 0; }
+#character-layer[data-scenery='true'] .rival-card::before {
+  content: ''; position: absolute; left: 17px; top: 78px; width: 58px; height: 10px;
+  border-radius: 50%; background: #100e1b66; filter: blur(2px); }
 .rival-portrait { width: 86px; height: 86px; margin: 3px; background-size: 300% 200%;
-  background-repeat: no-repeat; image-rendering: auto; transform-origin: 50% 95%; }
+  position: relative; background-repeat: no-repeat; image-rendering: auto; transform-origin: 50% 95%; }
 #rin-portrait { background-image: url('assets/characters/rin-atlas.png'); }
 #koh-portrait { background-image: url('assets/characters/koh-atlas.png'); }
 .rival-name { height: 16px; line-height: 16px; text-align: center; color: #b6eff9;
   font: 600 8px/16px system-ui, sans-serif; letter-spacing: 1px; }
 .koh .rival-name { color: #ffcae5; }
+#character-layer[data-scenery='true'] .rival-name { position: relative; margin: 0 9px;
+  border-radius: 7px; background: #111a29e8; box-shadow: inset 0 0 0 1px #70c7db66; }
+#character-layer[data-scenery='true'] .koh .rival-name { box-shadow: inset 0 0 0 1px #e8a2c966; }
 .rival-portrait[data-pose='celebrate'], .rival-portrait[data-pose='victory'] {
   animation: rival-joy 650ms ease-out both; }
 .rival-portrait[data-pose='hurt'] { animation: rival-surprise 350ms ease-out both; }
