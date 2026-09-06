@@ -11,12 +11,12 @@ RED, ORANGE, GOLD, MINT, BLUE, MUTED, PINK, CREAM = range(8, 16)
 ACTIONS = ("idle", "celebrate", "victory", "hurt", "frustrated", "defeat")
 
 
-def draw_rival(g, x, y, species, action):
+def draw_rival(g, x, y, species, action, *, motion=True):
     """Draw within a 72 x 70 envelope, including expressive accessories."""
     fox = species == "fox"
     happy = action in {"celebrate", "victory"}
     sad = action in {"hurt", "frustrated", "defeat"}
-    tick = g.frame_count
+    tick = g.frame_count if motion else 0
     sway = round(2 * math.sin(tick / (7 if happy else 20)))
     breathe = int(tick // 24 % 2)
     head_y = y + (2 if action == "defeat" else -1 if happy else breathe)
@@ -48,6 +48,12 @@ def draw_rival(g, x, y, species, action):
     g.rect(x + 22, y + 40, 5, 3, accent)
     g.pset(x + 39, y + 36, GOLD)
     g.rect(x + 30, y + 44, 4, 3, GOLD)
+    # League medallions and stitched shoulder bands distinguish the rivals.
+    g.line(x + 21, y + 30, x + 26, y + 34, accent)
+    g.line(x + 43, y + 30, x + 38, y + 34, accent)
+    g.circ(x + 40, y + 38, 3, INK)
+    g.circ(x + 40, y + 38, 2, GOLD)
+    g.pset(x + 40, y + 37, WHITE)
 
     # Raised arms, folded arms or a ready-to-pounce stance.
     if happy:

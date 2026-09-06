@@ -42,22 +42,38 @@ BASS = {
 # Lantern Rivals / E minor. A compact call, a descending answer, then a lift.
 # B major supplies D# only at cadences; the middle eight opens into G major.
 BATTLE_SCORE = (
-    "e3 b3 e4:2 g4 f#4 e4 r", "g3:2 e4 d4 c4 g3 e3 r",
-    "a3 d4 f#4 e4 d4 a3 c4 r", "b3 r d#4 f#4 e4 d#4 b3 r",
-    "e4:2 b3 e4 g4:2 f#4 r", "e4 d4 c4:2 g3 c4 e4 r",
-    "c4 e4 a3 r b3 c4 e4 r", "f#4 e4 d#4 b3 f#3:2 r:2",
-    "b3 e4 g4:2 f#4 e4 d4 r", "e4 g4 c4:2 d4 e4 g4 r",
-    "f#4 a4 f#4:2 e4 d4 a3 r", "d#4 f#4 b3 r d#4:2 b3 r",
-    "g4 f#4 e4 b3 e4:2 g4 r", "e4:2 c4 g3 c4 d4 e4 r",
-    "a3 c4 e4:2 d4 c4 a3 r", "b3 d#4 f#4:2 e4 d#4 b3 r",
-    "d4:2 b3 d4 g4:2 r:2", "g4 e4 c4:2 e4:2 d4 r",
-    "a3:2 c4 e4 d4:2 c4 r", "f#4 e4 d4:2 a3:2 r:2",
-    "b3 d4 g4:2 f#4 d4 b3 r", "c4:2 e4 g4 e4 d4 c4 r",
-    "a3 c4 e4:2 g4 e4 c4 r", "f#4:2 d#4 b3 f#3:2 r:2",
-    "e4 b3 e4 g4 f#4:2 e4 r", "g4 e4 c4:2 d4 e4 g4 r",
-    "a4 f#4 d4:2 e4 f#4 a4 r", "f#4 d#4 b3 r d#4 f#4 b3 r",
-    "g4:2 f#4 e4 b3 e4 g4 r", "e4 d4 c4 g3 c4:2 e4 r",
-    "e4 c4 a3:2 c4 e4 d4 r", "d#4:2 b3:2 f#3:2 r:2",
+    "e4:2 g4 b3 e4:2 f#4 r",
+    "g3 c4 e4:2 d4 c4 g3 r",
+    "a3:2 d4 f#4 a4:2 f#4 r",
+    "f#4 d#4 b3:2 d#4:2 r:2",
+    "b3 e4 g4 b4 a4 g4 e4 r",
+    "g4:2 e4 c4 g3 c4 e4 r",
+    "a3 c4 e4 g4 e4 c4 b3 r",
+    "f#4:2 d#4 b3 f#3 b3 d#4 r",
+    "e4 g4 b4:2 a4 g4 f#4 r",
+    "g4 e4 c4:2 e4 g4 e4 r",
+    "f#4:2 e4 d4 a3 d4 f#4 r",
+    "d#4 f#4 b4:2 a4 f#4 d#4 r",
+    "b4 g4 e4 b3 g3 b3 e4 r",
+    "c4 e4 g4:2 e4 d4 c4 r",
+    "a3:2 e4 g4 e4 c4 a3 r",
+    "b3 d#4 f#4:2 d#4 b3 f#3 r",
+    "g3:2 b3 d4 g4:2 r:2",
+    "e4:2 g4:2 e4 d4 c4 r",
+    "c4:2 e4 a4 g4 e4 c4 r",
+    "a3 d4 f#4:2 e4 d4 a3 r",
+    "b3 d4 g4 b4 a4 g4 d4 r",
+    "g4:2 e4 c4 e4:2 d4 r",
+    "e4 g4 a4:2 g4 e4 c4 r",
+    "f#4:2 d#4 b3:2 f#3 r:2",
+    "e4 g4 b4 a4 g4:2 e4 r",
+    "g4 e4 c4 e4 g4:2 e4 r",
+    "f#4 a4 d4:2 f#4 a4 f#4 r",
+    "b3 d#4 f#4 b4 a4 f#4 d#4 r",
+    "b4:2 g4 e4 b3 e4 g4 r",
+    "g4 e4 c4 g3 c4 e4 g4 r",
+    "a4 g4 e4 c4 a3 c4 e4 r",
+    "f#4 d#4 b3:2 f#3:2 r:2",
 )
 BATTLE_CHORDS = ("Em", "C", "D", "B", "Em", "C", "Am", "B") * 2 + (
     "G", "C", "Am", "D", "G", "C", "Am", "B",
@@ -94,7 +110,7 @@ def configure_bgm(sounds, *, battle=False):
     score, harmony = (BATTLE_SCORE, BATTLE_BASS) if battle else (SCORE, BASS)
     for index, bar in enumerate(score, 8):
         notes, volume = expand_bar(bar, peak=3)
-        sounds[index].set(notes, "p" if battle else "t", volume, "n", SPEED)
+        sounds[index].set(notes, "p" if battle and (index - 8) % 8 < 4 else "t", volume, "n", SPEED)
     for index, (root, fifth, third) in enumerate(harmony.values(), 40):
         # Syncopation comes from placement, not extra loudness or a faster clock.
         pattern = (f"{root} r {root} {fifth} {root} {third} {fifth} r" if battle

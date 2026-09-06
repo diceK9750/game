@@ -99,6 +99,32 @@ class BattleTests(unittest.TestCase):
         self.assertEqual(battle.tap(2), "correct")
         self.assertEqual(battle.player_points, 2)
 
+    def test_repeated_miss_penalty_is_capped_per_target(self):
+        battle = self.make_round(mode="ordered")
+        deadline = battle.cpu_at
+        for _ in range(8):
+            battle.tap(2)
+        self.assertAlmostEqual(battle.cpu_at, deadline - 0.3)
+        battle.tap(1)
+        self.assertEqual(battle.history[0]["mistakes"], 8)
+        self.assertEqual(battle.history[0]["owner"], "you")
+        self.now = battle.ready_at
+        deadline = battle.cpu_at
+        battle.tap(3)
+        self.assertAlmostEqual(battle.cpu_at, deadline - 0.3)
+
+    def test_history_accounts_for_cpu_and_excludes_transition_time(self):
+        battle = self.make_round(mode="ordered")
+        self.now = 0.5
+        battle.tap(1)
+        self.now = battle.cpu_at
+        battle.update_cpu()
+        self.assertEqual([x["owner"] for x in battle.history], ["you", "cpu"])
+        self.assertEqual(battle.history[0]["seconds"], 0.5)
+        self.assertGreater(battle.history[1]["seconds"], 0)
+        battle.start()
+        self.assertEqual(battle.history, [])
+
     def test_miss_does_not_extend_an_imminent_deadline(self):
         battle = self.make_round(mode="ordered")
         deadline = battle.cpu_at

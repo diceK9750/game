@@ -2,7 +2,7 @@
 # author: diceK9750 / Codex
 # desc: Find 1 to 10, 20, 30, or 40 in order or in a shuffled sequence.
 # site: https://dicek9750.github.io/game/
-# version: 9.1
+# version: 10.0
 
 """横持ちブラウザ向けの数字タップゲーム NUMBER RUSH。"""
 
@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import pyxel
 import math
+import progress
+from ui_text import text as ui_text, text_width, translate
 from characters import draw_rival
 try:
     from js import document as browser_document
@@ -61,6 +63,9 @@ PLAY_BUTTONS = {"battle": (124, 76, 188, 28), "practice": (328, 76, 188, 28)}
 DIFFICULTY_BUTTONS = {"easy": (124, 169, 120, 26), "normal": (260, 169, 120, 26), "hard": (396, 169, 120, 26)}
 YES_BUTTON = (200, 220, 110, 42)
 NO_BUTTON = (330, 220, 110, 42)
+EXTRA_BUTTON = (222, 282, 196, 30)
+PAUSE_BUTTON = (308, 9, 56, 32)
+HINT_BUTTON = (182, 301, 110, 32)
 
 COUNTDOWN_FRAMES = 180
 WRONG_EFFECT_FRAMES = 48
@@ -145,7 +150,7 @@ def pixel_label(x, y, label, color, scale=2):
 
 def centered_text(y: int, label: str, color: int) -> None:
     """Pyxel標準フォントの文字列を画面中央に描く。"""
-    pyxel.text((WIDTH - len(label) * 4) // 2, y, label, color)
+    ui_text(pyxel, (WIDTH - text_width(label)) // 2, y, label, color)
 
 
 def point_in_rect(x: int, y: int, rect: tuple[int, int, int, int]) -> bool:
@@ -228,6 +233,12 @@ class NumberRush:
         self.sfx_priority_until_frame = 0
         self.is_new_best = False
         self.best_times: dict[tuple[int, str], float] = {}
+        self.reduced_motion = False
+        self.hint_until = 0
+        self.hint_used = False
+        self.storage_saved = False
+        for field, value in progress.load().items():
+            setattr(self, field, value)
         # RAF may stop entirely in a hidden Safari tab. Pause at the event itself.
         if browser_document is not None:
             self._visibility_listener = create_proxy(lambda *_: self.update_visibility())
@@ -295,8 +306,20 @@ class NumberRush:
 
         if self.screen == "playing":
             self.update_bgm_transition()
+            if clicked and point_in_rect(*mouse, PAUSE_BUTTON):
+                self.open_confirmation("pause")
+                return
+            if (pyxel.btnp(pyxel.KEY_H) or clicked and point_in_rect(*mouse, HINT_BUTTON)):
+                if not isinstance(self.round, BattleRound):
+                    self.hint_used = True
+                    self.hint_until = pyxel.frame_count + 120
+                    clicked = False
 
         if self.screen == "ready":
+            if clicked and point_in_rect(*mouse, EXTRA_BUTTON):
+                self.reduced_motion = not self.reduced_motion
+                self.storage_saved = progress.save(self)
+                return
             if pyxel.btnp(pyxel.KEY_H) or (clicked and point_in_rect(*mouse, RETRY_BUTTON)):
                 self.screen = "help"
                 return
@@ -367,7 +390,15 @@ class NumberRush:
                 self.cancel_confirmation()
             return
 
+        if self.screen == "review":
+            if pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_RETURN) or clicked and point_in_rect(*mouse, EXTRA_BUTTON):
+                self.screen = "finished"
+            return
+
         if self.screen == "finished":
+            if isinstance(self.round, BattleRound) and (pyxel.btnp(pyxel.KEY_H) or clicked and point_in_rect(*mouse, EXTRA_BUTTON)):
+                self.screen = "review"
+                return
             if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_RETURN) or (
                 clicked and point_in_rect(*mouse, REPLAY_BUTTON)
             ):
@@ -465,6 +496,7 @@ class NumberRush:
         """盤面を伏せたまま3秒カウントし、同時スタートを準備する。"""
         self.stop_bgm()
         self.selected_mode = mode
+        self.storage_saved = progress.save(self)
         self.screen = "countdown"
         self.countdown_end_frame = pyxel.frame_count + COUNTDOWN_FRAMES
         self.confirm_action = None
@@ -482,6 +514,8 @@ class NumberRush:
         self.keyboard_cursor = False
         self.screen = "playing"
         self.score = 0
+        self.hint_used = False
+        self.hint_until = 0
         self.streak = 0
         self.max_streak = 0
         self.is_new_best = False
@@ -558,9 +592,10 @@ class NumberRush:
             elapsed = self.round.elapsed()
             result_key = (self.round.max_number, self.selected_mode)
             best = self.best_times.get(result_key)
-            self.is_new_best = best is None or elapsed < best
+            self.is_new_best = not self.hint_used and (best is None or elapsed < best)
             if self.is_new_best:
                 self.best_times[result_key] = elapsed
+            self.storage_saved = progress.save(self)
             self.stop_bgm()
             self.play_sfx(3, protect_frames=15)
             self.screen = "finished"
@@ -580,6 +615,7 @@ class NumberRush:
         previous = self.battle_records.get(key, -1)
         self.is_new_best = self.round.player_points > previous
         self.battle_records[key] = max(previous, self.round.player_points)
+        self.storage_saved = progress.save(self)
         self.stop_bgm()
         self.play_sfx(7 if self.round.is_perfect else 3 if self.round.won else 6, protect_frames=15)
         self.screen = "finished"
@@ -608,6 +644,7 @@ class NumberRush:
 
     def toggle_bgm(self) -> None:
         self.bgm_on = not self.bgm_on
+        self.storage_saved = progress.save(self)
         if not self.bgm_on:
             self.pause_bgm()
             self.stop_scene_music()
@@ -634,7 +671,7 @@ class NumberRush:
             self.stop_scene_music()
             return
         desired = {"ready": "menu", "confirm": "wait",
-                   "help": "menu",
+                   "help": "menu", "review": "wait",
                    "resuming": "countdown", "countdown": "countdown"}.get(self.screen)
         if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
             desired = ("perfect" if isinstance(self.round, BattleRound) and self.round.is_perfect
@@ -650,6 +687,7 @@ class NumberRush:
 
     def toggle_sfx(self) -> None:
         self.sfx_on = not self.sfx_on
+        self.storage_saved = progress.save(self)
         if not self.sfx_on:
             pyxel.stop(3)
             self.sfx_priority_until_frame = 0
@@ -771,6 +809,9 @@ class NumberRush:
         pyxel.cls(BACKGROUND)
         self.draw_background()
         self.draw_header()
+        if self.screen == "review":
+            self.draw_review_panel()
+            return
         if self.screen == "help":
             self.draw_box(96, 62, 448, 232, BLUE)
             centered_text(82, "HOW TO PLAY - LANTERN LEAGUE", YELLOW)
@@ -811,9 +852,18 @@ class NumberRush:
         )
         self.draw_side_console()
         self.draw_game_board()
+        if (self.screen == "playing" and not isinstance(self.round, BattleRound)
+                and pyxel.frame_count < self.hint_until):
+            index = self.round.board_cells.index(self.round.current_target)
+            row, col = divmod(index, GRID_COLUMNS)
+            x, y = GRID_X + col * (CELL_WIDTH + CELL_GAP), GRID_Y + row * (CELL_HEIGHT + CELL_GAP)
+            pyxel.rectb(x, y, CELL_WIDTH, CELL_HEIGHT, GREEN)
+            pyxel.rectb(x + 1, y + 1, CELL_WIDTH - 2, CELL_HEIGHT - 2, GREEN)
         self.draw_characters()
         if self.screen == "finished":
             self.draw_finished_panel()
+            if isinstance(self.round, BattleRound):
+                self.draw_button(EXTRA_BUTTON, "対戦をふりかえる  [H]", BLUE)
         else:
             self.draw_message_panel()
 
@@ -852,18 +902,19 @@ class NumberRush:
             pyxel.rect(x + 3, y + 3, 3, 3, DEEP_BLUE)
 
     def draw_header(self) -> None:
-        pyxel.text(18, 18, "N U M B E R  R U S H", YELLOW)
+        ui_text(pyxel, 18, 18, "N U M B E R  R U S H", YELLOW)
         if self.screen == "ready":
-            pyxel.text(116, 18, f"RANGE 1-{self.selected_max_number}", MUTED)
+            ui_text(pyxel, 116, 18, f"RANGE 1-{self.selected_max_number}", MUTED)
             self.draw_small_button(RETRY_BUTTON, "HELP", BLUE, True)
         else:
             mode = "ORDER" if self.selected_mode == "ordered" else "RANDOM"
-            pyxel.text(116, 18, f"{self.selected_max_number} {mode}", MUTED)
+            ui_text(pyxel, 116, 18, f"{self.selected_max_number} {mode}", MUTED)
         if self.screen in {"playing", "finished"}:
-            pyxel.text(188, 18, f"T {self.round.elapsed():05.1f}", CARD)
+            ui_text(pyxel, 188, 18, f"T {self.round.elapsed():05.1f}", CARD)
             score_label = (f"YOU {self.round.player_points}:{self.round.cpu_points}" if isinstance(self.round, BattleRound) else f"S {self.score:05d}")
-            pyxel.text(242, 18, score_label, YELLOW)
-            pyxel.text(306, 18, f"M {self.round.mistakes}", ERROR if self.round.mistakes else MUTED)
+            ui_text(pyxel, 242, 18, score_label, YELLOW)
+            if self.screen == "playing":
+                self.draw_small_button(PAUSE_BUTTON, "休憩", BLUE, True)
         if self.screen in {"playing", "countdown"}:
             self.draw_small_button(RETRY_BUTTON, "RETRY", GREEN, self.screen == "playing")
             self.draw_small_button(TITLE_BUTTON, "TITLE", BLUE, True)
@@ -950,7 +1001,7 @@ class NumberRush:
                 owner = self.round.owners.get(number, "you") if isinstance(self.round, BattleRound) else "you"
                 owner_color = BLUE if owner == "you" else PINK
                 pyxel.rectb(x, y, CELL_WIDTH, CELL_HEIGHT, owner_color)
-                pyxel.text(x + 4, y + 4, owner.upper(), owner_color)
+                ui_text(pyxel, x + 4, y + 4, owner.upper(), owner_color)
             else:
                 pyxel.line(x + 4, y + 3, x + CELL_WIDTH - 5, y + 3, CARD)
                 pyxel.line(x + 4, y + CELL_HEIGHT - 4, x + CELL_WIDTH - 5, y + CELL_HEIGHT - 4, PRESSED)
@@ -998,7 +1049,7 @@ class NumberRush:
                 y + CELL_HEIGHT - 12,
                 PANEL,
             )
-        pyxel.text(x + 21, y + 14, "--", MUTED)
+        ui_text(pyxel, x + 21, y + 14, "--", MUTED)
 
     @staticmethod
     def draw_locked_pattern(x: int, y: int) -> None:
@@ -1008,6 +1059,16 @@ class NumberRush:
                 pyxel.rect(x + offset_x, y + offset_y, 3, 3, color)
 
     def draw_cell_effects(self) -> None:
+        if self.reduced_motion:
+            for kind, index, _ in self.cell_effects:
+                row, col = divmod(index, GRID_COLUMNS)
+                x = GRID_X + col * (CELL_WIDTH + CELL_GAP)
+                y = GRID_Y + row * (CELL_HEIGHT + CELL_GAP)
+                if kind == "wrong":
+                    self.draw_bomb_explosion(x, y, 16)
+                else:
+                    self.draw_success_effect(x, y, 8)
+            return
         """全セルの上に正解光と爆弾・爆発を重ねて描く。"""
         for kind, cell_index, started_frame in self.cell_effects:
             row, column = divmod(cell_index, GRID_COLUMNS)
@@ -1018,7 +1079,7 @@ class NumberRush:
                 self.draw_bomb_explosion(x, y, age)
             elif kind == "cpu":
                 pyxel.rectb(x - 1, y - 1, CELL_WIDTH + 2, CELL_HEIGHT + 2, PINK)
-                pyxel.text(x + 15, y + 14, "CPU +1", CARD)
+                ui_text(pyxel, x + 15, y + 14, "CPU +1", CARD)
             else:
                 self.draw_success_effect(x, y, age)
                 t = min(1.0, age / CORRECT_EFFECT_FRAMES)
@@ -1049,7 +1110,7 @@ class NumberRush:
             pyxel.line(center_x + 7, center_y - 13, center_x + 11, center_y - 13, spark_color)
             pyxel.line(center_x + 9, center_y - 15, center_x + 9, center_y - 11, spark_color)
             pyxel.pset(center_x + 12, center_y - 16, ERROR)
-            pyxel.text(x + 3, y + 3, "BOMB", CARD)
+            ui_text(pyxel, x + 3, y + 3, "BOMB", CARD)
             return
 
         if age < EXPLOSION_END_FRAME:
@@ -1154,12 +1215,14 @@ class NumberRush:
         player_shake = (2 if reaction_tick else -2) if player_action in {"hurt", "frustrated"} else 0
         cpu_shake = (2 if reaction_tick else -2) if cpu_action == "frustrated" else 0
         cpu_slump = 3 if cpu_action == "defeat" else 0
+        if self.reduced_motion:
+            bob = player_jump = cpu_jump = player_shake = cpu_shake = 0
         if (self.screen == "finished" and isinstance(getattr(self, "round", None), BattleRound)
                 and self.round.is_perfect):
             # A personal gold halo makes this distinct from the ordinary crown.
             pyxel.circb(89, 307, 27, YELLOW)
             for i in range(8):
-                angle = i * math.pi / 4 + pyxel.frame_count / 90
+                angle = i * math.pi / 4 + (0 if self.reduced_motion else pyxel.frame_count / 90)
                 sx = round(89 + 26 * math.cos(angle))
                 sy = round(307 + 26 * math.sin(angle))
                 pyxel.line(sx - 2, sy, sx + 2, sy, YELLOW)
@@ -1169,27 +1232,27 @@ class NumberRush:
 
         pyxel.rect(61, 252, 56, 14, PANEL)
         pyxel.rectb(61, 252, 56, 14, BLUE)
-        pyxel.text(69, 257, "MILO / YOU", BLUE)
+        ui_text(pyxel, 69, 257, "MILO / YOU", BLUE)
         pyxel.rect(523, 252, 56, 14, PANEL)
         pyxel.rectb(523, 252, 56, 14, PINK)
-        pyxel.text(531, 257, "RUBY / CPU", PINK)
+        ui_text(pyxel, 531, 257, "RUBY / CPU", PINK)
 
         if player_action == "celebrate":
-            pyxel.text(78, 270, "NICE!", BLUE)
+            ui_text(pyxel, 78, 270, "NICE!", BLUE)
         elif player_action == "hurt":
-            pyxel.text(78, 270, "OUCH!", BLUE)
+            ui_text(pyxel, 78, 270, "OUCH!", BLUE)
         elif player_action == "victory":
-            pyxel.text(78, 270, "WIN!", YELLOW)
+            ui_text(pyxel, 78, 270, "WIN!", YELLOW)
         elif player_action == "frustrated":
-            pyxel.text(72, 270, "TOO SLOW!", BLUE)
+            ui_text(pyxel, 72, 270, "TOO SLOW!", BLUE)
         if cpu_action == "celebrate":
-            pyxel.text(545, 270, "HA!", PINK)
+            ui_text(pyxel, 545, 270, "HA!", PINK)
         elif cpu_action == "frustrated":
-            pyxel.text(537, 270, "GRR...", ERROR)
+            ui_text(pyxel, 537, 270, "GRR...", ERROR)
         elif cpu_action == "defeat":
-            pyxel.text(539, 270, "OH NO", MUTED)
+            ui_text(pyxel, 539, 270, "OH NO", MUTED)
         elif self.screen == "playing" and isinstance(self.round, BattleRound):
-            pyxel.text(534, 270, "SEARCH" + "." * (1 + pyxel.frame_count // 20 % 3), PINK)
+            ui_text(pyxel, 534, 270, "SEARCH" + "." * (1 + pyxel.frame_count // 20 % 3), PINK)
 
         self.draw_otter(
             58 + player_shake,
@@ -1202,20 +1265,18 @@ class NumberRush:
             cpu_action,
         )
 
-    @staticmethod
-    def draw_otter(x: int, y: int, action: str) -> None:
-        draw_rival(pyxel, x, y, "otter", action)
+    def draw_otter(self, x: int, y: int, action: str) -> None:
+        draw_rival(pyxel, x, y, "otter", action, motion=not self.reduced_motion)
 
-    @staticmethod
-    def draw_fox(x: int, y: int, action: str) -> None:
-        draw_rival(pyxel, x, y, "fox", action)
+    def draw_fox(self, x: int, y: int, action: str) -> None:
+        draw_rival(pyxel, x, y, "fox", action, motion=not self.reduced_motion)
 
     def draw_side_console(self) -> None:
         if isinstance(self.round, BattleRound):
             for x, points, label, color in ((24, self.round.player_points, "YOU", BLUE),
                                            (579, self.round.cpu_points, "CPU", PINK)):
                 self.draw_box(x, 58, 38, 172, color)
-                pyxel.text(x + 12, 69, label, color)
+                ui_text(pyxel, x + 12, 69, label, color)
                 pyxel.rect(x + 12, 91, 14, 104, DEEP_BLUE)
                 height = int(104 * points / self.round.max_number)
                 pyxel.rect(x + 12, 195 - height, 14, height, color)
@@ -1226,7 +1287,7 @@ class NumberRush:
                     pyxel.tri(x + 36, goal_y, x + 42, goal_y - 3, x + 42, goal_y + 3, YELLOW)
             return
         self.draw_box(38, 58, 40, 174, BLUE)
-        pyxel.text(48, 68, "SCAN", YELLOW)
+        ui_text(pyxel, 48, 68, "SCAN", YELLOW)
         gauge_x = 51
         gauge_y = 88
         gauge_height = 108
@@ -1249,16 +1310,16 @@ class NumberRush:
         pyxel.tri(57, cursor_y - 5, 62, cursor_y, 57, cursor_y + 5, PINK)
         pyxel.circ(57, cursor_y, 2, CARD)
         pyxel.line(63, cursor_y, 84, cursor_y, CARD)
-        pyxel.text(
+        ui_text(pyxel,
             42,
             207,
             f"{self.round.completed_count:02d}/{self.round.max_number:02d}",
             CARD,
         )
-        pyxel.text(46, 220, "FOUND", MUTED)
+        ui_text(pyxel, 46, 220, "FOUND", MUTED)
 
         self.draw_box(570, 58, 62, 174, GREEN)
-        pyxel.text(589, 68, "ENERGY", YELLOW)
+        ui_text(pyxel, 589, 68, "ENERGY", YELLOW)
         pyxel.rect(581, 88, 40, 112, DEEP_BLUE)
         energy_height = int(
             108 * self.round.completed_count / self.round.max_number
@@ -1267,8 +1328,8 @@ class NumberRush:
         for line_y in range(94, 198, 12):
             pyxel.line(583, line_y, 618, line_y, PANEL)
         pyxel.rectb(581, 88, 40, 112, CARD)
-        pyxel.text(584, 208, f"LEVEL {self.bgm_stage + 1}", CARD)
-        pyxel.text(585, 220, "DRIVE", MUTED)
+        ui_text(pyxel, 584, 208, f"LEVEL {self.bgm_stage + 1}", CARD)
+        ui_text(pyxel, 585, 220, "DRIVE", MUTED)
 
     def draw_message_panel(self) -> None:
         if isinstance(self.round, BattleRound):
@@ -1283,21 +1344,22 @@ class NumberRush:
                     detail = f"{grade} {response:.2f}s   STREAK {self.streak}"
                 centered_text(291, detail, CARD)
             else:
-                pixel_label(177, 270, "MISS" if self.wrong_cell is not None else "FIND", ERROR if self.wrong_cell is not None else YELLOW)
+                ui_text(pyxel, 183, 270, "ちがうよ" if self.wrong_cell is not None else "さがすのは", ERROR if self.wrong_cell is not None else YELLOW)
                 draw_number(320, 260, self.round.current_target, CARD, 5)
-                pyxel.text(391, 270, "FIRST!", YELLOW)
+                ui_text(pyxel, 383, 270, "を先に!", YELLOW)
                 # 探索状況だけを示し、正解位置は漏らさない。
                 duration = max(0.01, self.round.cpu_at - self.round.ready_at)
                 progress = min(1, max(0, (self.round.elapsed() - self.round.ready_at) / duration))
-                pyxel.text(186, 306, "CPU SEARCH", PINK)
+                ui_text(pyxel, 170, 306, "CPU接近", PINK)
+                ui_text(pyxel, 390, 292, f"あと{max(0, self.round.cpu_at - self.round.elapsed()):.1f}秒", PINK)
                 pyxel.rect(238, 306, 210, 5, DEEP_BLUE)
                 pyxel.rect(238, 306, int(210 * progress), 5, PINK)
             if self.round.won:
-                status = "GOAL REACHED! KEEP GOING FOR YOUR BEST"
+                status = "勝利ライン到達! 最後まで記録を伸ばそう"
             elif not self.round.can_still_win:
-                status = f"KEEP TRYING! FINISH WITH YOUR BEST / {self.round.player_points} PT"
+                status = f"ここからは自己ベストに挑戦 / 現在{self.round.player_points}点"
             else:
-                status = f"NEED {self.round.points_needed} MORE TO WIN / {self.round.max_number - self.round.completed_count} LEFT"
+                status = f"勝利まで あと{self.round.points_needed}点 / 残り{self.round.max_number - self.round.completed_count}問"
             centered_text(326, status, YELLOW)
             return
         if self.wrong_cell is not None:
@@ -1309,34 +1371,13 @@ class NumberRush:
         self.draw_box(170, 250, 300, 94, border)
         target = self.round.current_target or self.round.max_number
 
-        pyxel.text(198, 269, "FIND THE", MUTED)
+        ui_text(pyxel, 190, 269, "さがすのは", MUTED)
         draw_number(320, 260, target, CARD, scale=5)
-        pyxel.text(381, 274, "!", YELLOW)
+        ui_text(pyxel, 381, 274, "!", YELLOW)
 
-        if self.wrong_cell is not None:
-            centered_text(308, "MISS!  CPU CHEERS - TARGET STAYS", ERROR)
-        elif pyxel.frame_count < self.milestone_until_frame:
-            centered_text(
-                308,
-                f"CHECKPOINT {self.milestone_value}/{self.round.max_number} - DRIVE UP!",
-                GREEN,
-            )
-        elif self.correct_cell is not None:
-            centered_text(308, f"PLAYER HIT!  STREAK {self.streak}", GREEN)
-        elif pyxel.frame_count < self.go_until_frame:
-            centered_text(308, "GO!  SCAN THE BOARD", GREEN)
-        elif self.selected_mode == "ordered":
-            centered_text(
-                308,
-                f"NEXT IN ORDER  /  HIT 1 TO {self.round.max_number}",
-                YELLOW,
-            )
-        else:
-            centered_text(308, "SHUFFLED TARGET  /  FOLLOW THE SIGNAL", YELLOW)
-
-        progress = self.round.completed_count / self.round.max_number
-        pyxel.rect(194, 328, 252, 7, DEEP_BLUE)
-        pyxel.rect(196, 330, int(248 * progress), 3, GREEN)
+        self.draw_small_button(HINT_BUTTON, "ヒント [H]", BLUE, True)
+        ui_text(pyxel, 310, 305, "ヒント利用は記録対象外", MUTED)
+        ui_text(pyxel, 310, 320, f"発見 {self.round.completed_count}/{self.round.max_number} / ミス {self.round.mistakes}", GREEN)
 
     def draw_ready_panel(self) -> None:
         self.draw_box(112, 54, 416, 222, BLUE)
@@ -1352,8 +1393,9 @@ class NumberRush:
                 selected=max_number == self.selected_max_number,
             )
         for difficulty, button in DIFFICULTY_BUTTONS.items():
-            self.draw_button(button, difficulty.upper(), PINK if self.play_kind == "battle" else MUTED,
+            self.draw_button(button, {"easy": "ゆっくり", "normal": "ふつう", "hard": "てごわい"}[difficulty], PINK if self.play_kind == "battle" else MUTED,
                              selected=self.play_kind == "battle" and difficulty == self.difficulty)
+        self.draw_button(EXTRA_BUTTON, "演出ひかえめ: ON" if self.reduced_motion else "演出ひかえめ: OFF", MUTED)
         self.draw_button(ORDER_BUTTON, "START ORDER", GREEN)
         self.draw_button(RANDOM_BUTTON, "START RANDOM", BLUE)
         centered_text(260, "FIRST TO FIND = 1 POINT. REACH 60% TO WIN." if self.play_kind == "battle" else "NO CPU. FIND EVERY NUMBER AT YOUR OWN PACE.", MUTED)
@@ -1392,8 +1434,8 @@ class NumberRush:
         centered_text(177, "TIMER PAUSED / BOARD HIDDEN", MUTED)
         self.draw_button(YES_BUTTON, "YES", GREEN)
         self.draw_button(NO_BUTTON, "NO", ERROR)
-        pyxel.text(238, 282, "KEY Y", MUTED)
-        pyxel.text(369, 282, "KEY N", MUTED)
+        ui_text(pyxel, 238, 282, "KEY Y", MUTED)
+        ui_text(pyxel, 369, 282, "KEY N", MUTED)
 
     def draw_finished_panel(self) -> None:
         if isinstance(self.round, BattleRound):
@@ -1405,12 +1447,12 @@ class NumberRush:
             label = "YOU WIN" if self.round.won else "CPU WINS"
             pixel_label((WIDTH - len(label) * 12) // 2, 80, label, color)
             centered_text(110, f"1-{self.round.max_number} / {self.selected_mode.upper()} / {self.difficulty.upper()}", MUTED)
-            centered_text(133, f"YOU {self.round.player_points}  :  {self.round.cpu_points} CPU    GOAL {self.round.goal}", YELLOW)
+            centered_text(133, f"あなた {self.round.player_points} : {self.round.cpu_points} CPU / 勝利ライン {self.round.goal}点", YELLOW)
             avg = (f"{sum(self.round.response_times) / len(self.round.response_times):.2f}s" if self.round.response_times else "--")
-            centered_text(154, f"TIME {self.round.elapsed():.2f}s   AVG RESPONSE {avg}", CARD)
-            centered_text(176, f"MISSES {self.round.mistakes}   BEST STREAK {self.max_streak}", CARD)
+            centered_text(154, f"時間 {self.round.elapsed():.2f}秒 / 平均発見 {avg}", CARD)
+            centered_text(176, f"ミス {self.round.mistakes}回 / 最高連続 {self.max_streak}回", CARD)
             key = (self.round.max_number, self.selected_mode, self.difficulty)
-            centered_text(197, f"SESSION BEST {self.battle_records.get(key, 0)} POINTS", color)
+            centered_text(197, f"最高記録 {self.battle_records.get(key, 0)} 点", color)
             self.draw_button(REPLAY_BUTTON, "PLAY AGAIN", GREEN)
             self.draw_button(MODE_BUTTON, "MODE SELECT", BLUE)
             return
@@ -1422,31 +1464,59 @@ class NumberRush:
         mode_label = f"1-{self.round.max_number} / {mode}"
         centered_text(92, "SCAN COMPLETE", GREEN)
         centered_text(112, mode_label, YELLOW)
-        centered_text(137, f"TIME {self.round.elapsed():.2f}s    SCORE {self.score}", CARD)
-        centered_text(157, f"MISSES {self.round.mistakes}    MAX STREAK {self.max_streak}", CARD)
+        centered_text(137, f"時間 {self.round.elapsed():.2f}秒 / スコア {self.score}", CARD)
+        centered_text(157, f"ミス {self.round.mistakes}回 / 最高連続 {self.max_streak}回", CARD)
         best = self.best_times.get((self.round.max_number, self.selected_mode))
-        if self.is_new_best:
-            centered_text(181, f"NEW BEST!  {best:.2f}s", PINK)
+        if self.hint_used:
+            centered_text(181, "ヒント使用のため記録対象外 / 練習おつかれさま!", YELLOW)
+        elif self.is_new_best:
+            centered_text(181, f"新記録!  {best:.2f}秒", PINK)
         elif best is not None:
-            centered_text(181, f"SESSION BEST  {best:.2f}s", MUTED)
+            centered_text(181, f"最高記録  {best:.2f}s", MUTED)
         self.draw_button(REPLAY_BUTTON, "PLAY AGAIN", GREEN)
         self.draw_button(MODE_BUTTON, "MODE SELECT", BLUE)
-        pyxel.text(196, 282, "SPACE", MUTED)
-        pyxel.text(430, 282, "KEY M", MUTED)
+        ui_text(pyxel, 196, 282, "SPACE", MUTED)
+        ui_text(pyxel, 430, 282, "KEY M", MUTED)
+
+    def draw_review_panel(self):
+        self.draw_box(96, 62, 448, 256, BLUE)
+        centered_text(76, "対戦レポート / 次の一戦につなげよう", YELLOW)
+        history = self.round.history
+        centered_text(98, "青=あなた  桃=CPU / 棒は発見までの秒数", CARD)
+        maximum = max((item["seconds"] for item in history), default=1) or 1
+        width = 400 / max(1, len(history))
+        for i, item in enumerate(history):
+            x = 120 + int(i * width)
+            height = int(62 * item["seconds"] / maximum)
+            pyxel.rect(x, 185 - height, max(2, int(width) - 2), height,
+                       BLUE if item["owner"] == "you" else PINK)
+            ui_text(pyxel, x, 188, str(item["number"]), CARD)
+            ui_text(pyxel, x, 198, "Y" if item["owner"] == "you" else "C", MUTED)
+        owned = [item for item in history if item["owner"] == "you"]
+        if owned:
+            fastest = min(owned, key=lambda item: item["seconds"])
+            centered_text(218, f'最速発見 {fastest["number"]} / {fastest["seconds"]:.2f}秒', GREEN)
+        else:
+            centered_text(218, "まずは練習か「ゆっくり」でリズムをつかもう", GREEN)
+        advice = ("ミスを減らすには、お題を確認してから押そう" if self.round.mistakes
+                  else "行ごとに探すと、見落としを減らせるよ")
+        centered_text(239, advice, CARD)
+        centered_text(257, "記録はこのブラウザに保存済み" if self.storage_saved else "保存不可: この起動中のみ記録を保持", MUTED)
+        self.draw_button(EXTRA_BUTTON, "結果に戻る", BLUE)
 
     def draw_perfect_panel(self) -> None:
         """A skippable celebration: awards settle once, drawing only animates."""
         age = max(0, pyxel.frame_count - self.result_started_frame)
         self.draw_box(118, 62, 404, 214, YELLOW)
         # Confetti stays in side gutters, outside all text and action buttons.
-        if age < 300:
+        if age < 300 and not self.reduced_motion:
             for i in range(30):
                 side = i % 2
                 x = (121 if side == 0 else 491) + (i * 7 % 24)
                 y = 68 + (i * 29 + age * (1 + i % 3)) % 144
                 pyxel.rect(x, y, 2 + i % 2, 2, (YELLOW, BLUE, PINK, CARD)[i % 4])
         pixel_label(278, 78, "PERFECT", YELLOW)
-        centered_text(101, f"ALL {self.round.max_number} FOUND / NO MISSES", CARD)
+        centered_text(101, f"全{self.round.max_number}問を獲得 / ノーミス!", CARD)
         centered_text(117, f"YOU {self.round.player_points} : 0 CPU / {self.difficulty.upper()}", BLUE)
         # A gold trophy on either side of the title, plus Milo's victory crown.
         for x in (170, 458):
@@ -1459,10 +1529,10 @@ class NumberRush:
         pyxel.rectb(182, 131, 276, 41, YELLOW)
         centered_text(136, "SPECIAL BONUS", YELLOW)
         amount = self.round.special_bonus
-        shown = min(amount, amount * age // 90)
+        shown = amount if self.reduced_motion else min(amount, amount * age // 90)
         pixel_label(290, 149, f"+{shown:04d}", YELLOW)
-        centered_text(181, f"SESSION BONUS {self.bonus_bank} / DUEL POINTS UNCHANGED", CARD)
-        centered_text(196, f"TIME {self.round.elapsed():.2f}s / BEST STREAK {self.max_streak}", MUTED)
+        centered_text(181, f"累計ボーナス {self.bonus_bank}  /  勝敗の点数とは別", CARD)
+        centered_text(196, f"時間 {self.round.elapsed():.2f}秒 / 最高連続 {self.max_streak}回", MUTED)
         centered_text(211, f"1-{self.round.max_number} / {self.selected_mode.upper()} / PERFECT AWARD", BLUE)
         self.draw_button(REPLAY_BUTTON, "PLAY AGAIN", GREEN)
         self.draw_button(MODE_BUTTON, "MODE SELECT", BLUE)
@@ -1490,8 +1560,8 @@ class NumberRush:
         pyxel.rect(x, y, width, height, fill)
         pyxel.rectb(x, y, width, height, outer_border)
         pyxel.rectb(x + 2, y + 2, width - 4, height - 4, PANEL)
-        pyxel.text(
-            x + (width - len(label) * 4) // 2,
+        ui_text(pyxel,
+            x + (width - text_width(label)) // 2,
             y + (height - 6) // 2,
             label,
             BACKGROUND,
@@ -1511,7 +1581,7 @@ class NumberRush:
         pyxel.rect(x + 2, y + 2, width, height, DEEP_BLUE)
         pyxel.rect(x, y, width, height, fill)
         pyxel.rectb(x, y, width, height, CARD if enabled else MUTED)
-        pyxel.text(x + (width - len(label) * 4) // 2, y + 13, label, color)
+        ui_text(pyxel, x + (width - text_width(label)) // 2, y + 13, label, color)
 
 
 if __name__ == "__main__":

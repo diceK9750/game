@@ -176,6 +176,8 @@ class BattleRound(NumberTapRound):
         self.ready_at = self.cpu_at = 0.0
         self.last_owner = None
         self.last_number = None
+        self.history = []
+        self.target_mistakes = 0
 
     @property
     def goal(self):
@@ -206,9 +208,11 @@ class BattleRound(NumberTapRound):
         self.player_points = self.cpu_points = 0
         self.response_times = []
         self.last_owner = self.last_number = None
+        self.history = []
         self._schedule(0.0)
 
     def _schedule(self, delay):
+        self.target_mistakes = 0
         self.ready_at = self.elapsed() + delay
         low, high = self.SPEEDS[self.difficulty]
         self.cpu_at = self.ready_at + self._rng.uniform(low, high)
@@ -238,6 +242,9 @@ class BattleRound(NumberTapRound):
 
     def _claim(self, owner):
         number = self.current_target
+        self.history.append({"number": number, "owner": owner,
+                             "seconds": max(0.0, self.elapsed() - self.ready_at),
+                             "mistakes": self.target_mistakes})
         self.owners[number] = owner
         self.last_owner, self.last_number = owner, number
         if owner == "you":
@@ -257,9 +264,11 @@ class BattleRound(NumberTapRound):
             return "empty"
         if number != self.current_target:
             self.mistakes += 1
-            # ミスはCPUを少し加速するが、期限を延長せず入力も封じない。
+            self.target_mistakes += 1
+            # One small penalty per target. Repeated misses cannot snowball.
             now = self.elapsed()
-            self.cpu_at = min(self.cpu_at, max(now + 0.25, self.cpu_at - 0.3))
+            if self.target_mistakes == 1:
+                self.cpu_at = min(self.cpu_at, max(now + 0.25, self.cpu_at - 0.3))
             return "wrong"
         return self._claim("you")
 

@@ -1,0 +1,36 @@
+import json
+import unittest
+from types import SimpleNamespace
+from progress import decode, encode
+from ui_text import text_width, translate
+
+
+class ProgressTests(unittest.TestCase):
+    def test_round_trip_and_separate_modes(self):
+        app = SimpleNamespace(best_times={(10, "ordered"): 3.5, (40, "random"): 42.0},
+                              battle_records={(20, "random", "hard"): 12},
+                              bonus_bank=3000, bgm_on=False, sfx_on=True,
+                              reduced_motion=True)
+        restored = decode(encode(app))
+        self.assertEqual(restored, vars(app))
+
+    def test_corrupt_save_is_not_fatal(self):
+        for raw in (None, "bad json", "[]", "null", '{"version":2}'):
+            self.assertEqual(decode(raw)["bonus_bank"], 0)
+
+    def test_invalid_records_rejected_individually(self):
+        raw = json.dumps({"version": 1, "bonus_bank": -10, "bgm_on": "false",
+                          "best_times": [[10, "ordered", float("nan")], [20, "random", 4.5]],
+                          "battle_records": [[40, "random", "hard", 41],
+                                             [10, "ordered", "easy", True],
+                                             [30, "random", "normal", 18]]})
+        state = decode(raw)
+        self.assertEqual(state["best_times"], {(20, "random"): 4.5})
+        self.assertEqual(state["battle_records"], {(30, "random", "normal"): 18})
+        self.assertTrue(state["bgm_on"])
+        self.assertEqual(state["bonus_bank"], 0)
+
+    def test_japanese_button_width_is_not_ascii_width(self):
+        self.assertEqual(text_width("CPU DUEL"), text_width(translate("CPU DUEL")))
+        self.assertLess(text_width("ランダムで開始"), 188)
+

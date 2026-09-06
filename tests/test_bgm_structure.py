@@ -206,6 +206,42 @@ class DuelMusicTests(unittest.TestCase):
 
 
 class BattleUiTests(unittest.TestCase):
+    def test_hint_completion_is_not_a_record(self):
+        self.app.play_kind = "practice"
+        self.app.selected_max_number = 10
+        self.app.start_round("ordered")
+        self.app.hint_used = True
+        for n in range(1, 11):
+            self.app.handle_tap(self.app.round.board_cells.index(n))
+        self.assertEqual(self.app.screen, "finished")
+        self.assertEqual(self.app.best_times, {})
+        self.assertFalse(self.app.is_new_best)
+
+    def test_touch_pause_and_hint_are_separate_controls(self):
+        self.app.start_round("ordered")
+        self.runtime.mouse_x, self.runtime.mouse_y = game.PAUSE_BUTTON[:2]
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.MOUSE_BUTTON_LEFT
+        self.app.update_frame()
+        self.assertEqual(self.app.screen, "confirm")
+        self.assertTrue(self.app.round.is_paused)
+        self.app.play_kind = "practice"
+        self.app.start_round("random")
+        self.runtime.mouse_x, self.runtime.mouse_y = game.HINT_BUTTON[:2]
+        self.app.update_frame()
+        self.assertTrue(self.app.hint_used)
+        self.assertGreater(self.app.hint_until, self.runtime.frame_count)
+
+    def test_review_does_not_change_awards(self):
+        self.complete_perfect()
+        bank = self.app.bonus_bank
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_H
+        self.app.update_frame()
+        self.assertEqual(self.app.screen, "review")
+        self.app.draw()
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "wait")
+        self.assertEqual(self.app.bonus_bank, bank)
+
     def complete_perfect(self, count=10):
         self.app.selected_max_number = count
         self.app.start_round("ordered")

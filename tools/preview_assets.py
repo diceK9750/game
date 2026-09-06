@@ -50,6 +50,18 @@ def main():
         with patch.object(pyxel, "frame_count", app.result_started_frame + age):
             app.draw()
             pyxel.screenshot(str(out / f"perfect-{age:03d}.png"), scale=2)
+    app.screen = "review"
+    app.draw()
+    pyxel.screenshot(str(out / "review.png"), scale=2)
+    app.screen = "help"
+    app.draw()
+    pyxel.screenshot(str(out / "help.png"), scale=2)
+    app.play_kind = "practice"
+    app.start_round("random")
+    app.hint_used = True
+    app.hint_until = pyxel.frame_count + 120
+    app.draw()
+    pyxel.screenshot(str(out / "practice-hint.png"), scale=2)
     pyxel.stop()
 
     pyxel.cls(game.BACKGROUND)

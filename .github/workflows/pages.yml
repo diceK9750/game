@@ -43,7 +43,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir _site
-          cp index.html player.html viewport.js game.py game_logic.py music.py characters.py _site/
+          cp index.html player.html viewport.js game.py game_logic.py music.py characters.py progress.py ui_text.py ui_glyphs.py THIRD_PARTY.md _site/
           touch _site/.nojekyll
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4
