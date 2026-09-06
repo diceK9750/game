@@ -30,20 +30,20 @@ class BgmStructureTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         game.NumberRush.configure_sounds()
 
-    def test_loop_is_32_phrases_and_about_eighty_seconds(self) -> None:
+    def test_loop_is_36_phrases_and_about_eighty_seconds(self) -> None:
         numerator = (
             game.BGM_NOTES_PER_PHRASE * game.BGM_SOUND_SPEED * game.FPS
         )
         self.assertEqual(numerator % game.PYXEL_AUDIO_TICKS_PER_SECOND, 0)
-        self.assertEqual(game.BGM_PHRASE_COUNT, 32)
-        self.assertEqual(game.BGM_PHRASE_FRAMES, 144)
+        self.assertEqual(game.BGM_PHRASE_COUNT, 36)
+        self.assertEqual(game.BGM_PHRASE_FRAMES, 128)
         self.assertEqual(game.BGM_LOOP_FRAMES, 4608)
         self.assertEqual(
             Fraction(game.BGM_LOOP_FRAMES, game.FPS),
             Fraction(384, 5),
         )
 
-    def test_all_stage_channel_sequences_have_32_phrases(self) -> None:
+    def test_all_stage_channel_sequences_have_the_same_form(self) -> None:
         for stage in range(3):
             parts = game.NumberRush.bgm_sequences(stage)
             self.assertEqual(len(parts), 3)
@@ -142,6 +142,27 @@ class BgmStructureTests(unittest.TestCase):
 
 
 class DuelMusicTests(unittest.TestCase):
+    def test_score_form_reprise_and_articulation(self):
+        from music import FORM, BATTLE_SCORE, SCORE, expand_bar
+        self.assertEqual(len(FORM), 36)
+        self.assertEqual(FORM[-4:], (24, 25, 30, 31))
+        for score in (SCORE, BATTLE_SCORE):
+            self.assertEqual(len(score), 32)
+            for bar in score:
+                notes, volumes = expand_bar(bar)
+                self.assertEqual(len(notes.split()), len(volumes))
+                for note, volume in zip(notes.split(), volumes):
+                    self.assertEqual(note == "r", volume == "0")
+
+    def test_bridge_relaxes_drums_without_changing_parts(self):
+        from music import sequences
+        for battle in (False, True):
+            melody, bass, drums = sequences(2, battle=battle)
+            self.assertEqual(drums[16], 49)
+            self.assertEqual(drums[24], 50)
+            self.assertEqual(drums[-1], 53)
+            self.assertEqual(len(melody), len(bass))
+
     def test_battle_score_uses_distinct_melody_and_equal_length_parts(self):
         from music import configure_bgm, sequences, BATTLE_SCORE, SCORE
         sounds = [MagicMock() for _ in range(64)]
@@ -149,11 +170,11 @@ class DuelMusicTests(unittest.TestCase):
         self.assertNotEqual(BATTLE_SCORE, SCORE)
         for stage in range(3):
             for part in sequences(stage, battle=True):
-                self.assertEqual(len(part), 32)
+                self.assertEqual(len(part), game.BGM_PHRASE_COUNT)
                 for index in part:
                     notes, tone, volume, effect, speed = sounds[index].set.call_args.args
                     self.assertEqual(len(notes.split()), 32)
-                    self.assertEqual(speed, 9)
+                    self.assertEqual(speed, game.BGM_SOUND_SPEED)
                     self.assertLessEqual(max(map(int, volume)), 3)
         for index in list(range(8)) + list(range(54, 64)):
             sounds[index].set.assert_not_called()

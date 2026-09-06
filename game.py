@@ -2,7 +2,7 @@
 # author: diceK9750 / Codex
 # desc: Find 1 to 10, 20, 30, or 40 in order or in a shuffled sequence.
 # site: https://dicek9750.github.io/game/
-# version: 8.0
+# version: 9.0
 
 """横持ちブラウザ向けの数字タップゲーム NUMBER RUSH。"""
 
@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import pyxel
 import math
+from characters import draw_rival
 try:
     from js import document as browser_document
     from pyodide.ffi import create_proxy
 except ImportError:
     browser_document = None
 from music import configure_bgm, configure_scene_bgm, SCENE_TRACKS, sequences as music_sequences
+from music import SPEED, TICKS, PHRASE_COUNT
 
 from game_logic import (
     BOARD_CELL_COUNT,
@@ -65,10 +67,10 @@ WRONG_EFFECT_FRAMES = 48
 BOMB_FUSE_FRAMES = 10
 EXPLOSION_END_FRAME = 30
 CORRECT_EFFECT_FRAMES = 34
-BGM_NOTES_PER_PHRASE = 32
-BGM_SOUND_SPEED = 9
+BGM_NOTES_PER_PHRASE = TICKS
+BGM_SOUND_SPEED = SPEED
 PYXEL_AUDIO_TICKS_PER_SECOND = 120
-BGM_PHRASE_COUNT = 32
+BGM_PHRASE_COUNT = PHRASE_COUNT
 BGM_PHRASE_FRAMES = (
     BGM_NOTES_PER_PHRASE * BGM_SOUND_SPEED * FPS // PYXEL_AUDIO_TICKS_PER_SECOND
 )
@@ -90,10 +92,10 @@ PEACH = 15
 
 # 暗い筐体と明るい数字を分離した専用パレット。
 PALETTE = [
-    0x090E19, 0x142339, 0x714260, 0x327568,
-    0xB37649, 0x283B52, 0x70869A, 0xF1F6ED,
-    0xF15D65, 0xF29D52, 0xFFD166, 0x62DFB3,
-    0x66BEF3, 0x91A8BD, 0xEB91BC, 0xFFE4B7,
+    0x101321, 0x202840, 0x73456A, 0x356B65,
+    0xA87958, 0x35435F, 0x71849A, 0xFAF6E8,
+    0xE56569, 0xDB8A4D, 0xF8CC70, 0x91D9BA,
+    0x78C6EE, 0xA1B4C3, 0xEE9CB5, 0xF5DEB0,
 ]
 
 DIGITS = {
@@ -231,13 +233,13 @@ class NumberRush:
     @staticmethod
     def configure_sounds() -> None:
         """効果音と柔らかなオリジナルBGMを登録する。"""
-        pyxel.sounds[0].set("d3f3a3", "p", "677", "nnf", 4)
-        pyxel.sounds[1].set("c2c1", "n", "76", "ff", 5)
-        pyxel.sounds[2].set("d3a3d4f4", "p", "6677", "nnnv", 5)
-        pyxel.sounds[3].set("d3f3a3d4f4a4", "ps", "667777", "nnnnvf", 5)
-        pyxel.sounds[4].set("a2d3f3a3", "p", "4567", "nssn", 5)
-        pyxel.sounds[5].set("a3f3d3a2", "t", "5543", "nnnf", 6)
-        pyxel.sounds[6].set("d3c3a2f2d2", "t", "55443", "nnnnf", 9)
+        pyxel.sounds[0].set("b3e4g4", "t", "454", "nnf", 4)
+        pyxel.sounds[1].set("c2g1c1", "n", "432", "fff", 4)
+        pyxel.sounds[2].set("g3b3d4g4", "t", "4454", "nnnf", 5)
+        pyxel.sounds[3].set("g3b3d4g4b4g4", "t", "445554", "nnnnnf", 5)
+        pyxel.sounds[4].set("e3g3b3e4", "t", "3443", "nnnf", 5)
+        pyxel.sounds[5].set("b3g3e3", "p", "443", "nnf", 5)
+        pyxel.sounds[6].set("e4b3g3e3b2", "t", "44332", "nnnnf", 9)
 
         configure_bgm(pyxel.sounds)
         configure_scene_bgm(pyxel.sounds)
@@ -690,7 +692,7 @@ class NumberRush:
             return
         position_frames = self.current_bgm_position_frames()
         if self.pending_bgm_stage is not None:
-            # 32句形式の現在位置を保ったまま編曲だけを切り替える。
+            # 曲中の現在位置を保ったまま編曲だけを切り替える。
             self.start_bgm(self.pending_bgm_stage, position_frames)
             return
         phrase_offset = position_frames % BGM_PHRASE_FRAMES
@@ -760,7 +762,7 @@ class NumberRush:
         self.draw_header()
         if self.screen == "help":
             self.draw_box(96, 62, 448, 232, BLUE)
-            centered_text(82, "HOW TO PLAY - FOREST DUEL", YELLOW)
+            centered_text(82, "HOW TO PLAY - LANTERN LEAGUE", YELLOW)
             for y, label in ((107, "FIND THE LARGE TARGET BEFORE THE FOX."),
                              (125, "FIRST CORRECT ANSWER WINS 1 POINT."),
                              (143, "REACH THE GOLD LINE: 6 / 12 / 18 / 24 POINTS."),
@@ -806,22 +808,34 @@ class NumberRush:
 
     @staticmethod
     def draw_background() -> None:
-        # オリジナルの夜の森。盤面領域には模様を置かない。
-        for x in range(8, WIDTH, 43):
-            pyxel.pset(x, 247 + x % 31, MUTED)
-        for x in (20, 130, 493, 610):
-            pyxel.rect(x, 280, 5, 32, 4)
-            pyxel.tri(x - 17, 294, x + 2, 260, x + 22, 294, 3)
-            pyxel.tri(x - 13, 281, x + 2, 252, x + 18, 281, DEEP_BLUE)
+        # Lantern League: all decoration stays outside the searchable grid.
+        for x in range(12, WIDTH, 41):
+            pyxel.pset(x, 241 + x % 29, PANEL)
+        for x in (19, 136, 494, 613):
+            pyxel.rect(x, 275, 4, 42, 4)
+            pyxel.tri(x - 16, 294, x + 2, 251, x + 19, 294, 3)
+            pyxel.tri(x - 13, 279, x + 2, 244, x + 16, 279, DEEP_BLUE)
+        # Two warm lamps frame the stage without flashing behind the numbers.
+        for x in (24, 610):
+            pyxel.rect(x - 1, 253, 2, 62, 4)
+            pyxel.line(x - 8, 256, x + 8, 256, YELLOW)
+            pyxel.rect(x - 6, 259, 13, 19, DEEP_BLUE)
+            pyxel.rect(x - 4, 260, 9, 15, YELLOW)
+            pyxel.rect(x - 2, 261, 5, 11, PEACH)
+            pyxel.rect(x - 6, 276, 13, 2, 4)
         pyxel.line(18, 48, WIDTH - 19, 48, DEEP_BLUE)
         pyxel.line(18, 50, 100, 50, BLUE)
         pyxel.line(WIDTH - 101, 50, WIDTH - 19, 50, PINK)
-        pyxel.rect(0, 302, WIDTH, 58, PANEL)
-        pyxel.line(0, 302, WIDTH, 302, CARD)
-        pyxel.line(0, 306, WIDTH, 306, MUTED)
-        for x in range(0, WIDTH, 32):
-            pyxel.rect(x, 350, 20, 3, DEEP_BLUE)
-            pyxel.rect(x + 12, 310, 3, 3, PRESSED)
+        pyxel.rect(0, 312, WIDTH, 48, DEEP_BLUE)
+        pyxel.line(0, 312, WIDTH, 312, 4)
+        pyxel.line(0, 314, WIDTH, 314, PEACH)
+        for y in (321, 340, 359):
+            pyxel.line(0, y, WIDTH, y, PANEL)
+            for x in range((y % 2) * 16, WIDTH, 48):
+                pyxel.line(x, y - 6, x + 5, y - 6, PANEL)
+        for x in (90, 550):
+            pyxel.elli(x - 35, 332, 70, 14, PANEL)
+            pyxel.ellib(x - 35, 332, 70, 14, 4)
         for x, y in ((9, 64), (626, 63), (8, 340), (628, 337)):
             pyxel.rect(x, y, 3, 3, BLUE)
             pyxel.rect(x + 3, y + 3, 3, 3, DEEP_BLUE)
@@ -904,16 +918,16 @@ class NumberRush:
                 (x, y, CELL_WIDTH, CELL_HEIGHT),
             )
 
-            fill = PRESSED if already_found else CARD
-            border = PANEL if already_found else BLUE
+            fill = DEEP_BLUE if already_found else CARD
+            border = PANEL if already_found else YELLOW
             if is_hovered and not already_found:
                 fill = PEACH
-                border = YELLOW
+                border = BLUE
             if is_wrong:
                 fill = ERROR
                 border = CARD
             elif is_correct:
-                border = GREEN
+                border = BLUE
 
             pyxel.rect(x + 3, y + 3, CELL_WIDTH, CELL_HEIGHT, DEEP_BLUE)
             pyxel.rect(x, y, CELL_WIDTH, CELL_HEIGHT, fill)
@@ -1079,9 +1093,9 @@ class NumberRush:
         center_x = x + CELL_WIDTH // 2
         center_y = y + CELL_HEIGHT // 2
         ring_radius = min(15, 5 + age // 2)
-        pyxel.circb(center_x, center_y, ring_radius, GREEN)
+        pyxel.circb(center_x, center_y, ring_radius, BLUE)
         if age < 8:
-            flash_color = CARD if (age // 2) % 2 else GREEN
+            flash_color = CARD if age < 3 else BLUE
             pyxel.rectb(x - 2, y - 2, CELL_WIDTH + 4, CELL_HEIGHT + 4, flash_color)
             pyxel.rectb(x + 1, y + 1, CELL_WIDTH - 2, CELL_HEIGHT - 2, YELLOW)
 
@@ -1133,14 +1147,14 @@ class NumberRush:
         pyxel.ellib(526, 334, 48, 5, DEEP_BLUE)
 
         pyxel.rect(61, 252, 56, 14, PANEL)
-        pyxel.rectb(61, 252, 56, 14, GREEN)
-        pyxel.text(83, 257, "YOU", GREEN)
+        pyxel.rectb(61, 252, 56, 14, BLUE)
+        pyxel.text(69, 257, "MILO / YOU", BLUE)
         pyxel.rect(523, 252, 56, 14, PANEL)
-        pyxel.rectb(523, 252, 56, 14, ERROR)
-        pyxel.text(545, 257, "CPU", ERROR)
+        pyxel.rectb(523, 252, 56, 14, PINK)
+        pyxel.text(531, 257, "RUBY / CPU", PINK)
 
         if player_action == "celebrate":
-            pyxel.text(78, 270, "NICE!", GREEN)
+            pyxel.text(78, 270, "NICE!", BLUE)
         elif player_action == "hurt":
             pyxel.text(78, 270, "OUCH!", BLUE)
         elif player_action == "victory":
@@ -1169,135 +1183,11 @@ class NumberRush:
 
     @staticmethod
     def draw_otter(x: int, y: int, action: str) -> None:
-        """青緑の2頭身カワウソ探検家を図形だけで描く。"""
-        blink = pyxel.frame_count % 180 < 7
-        # 太い尾、脚、胴体。
-        pyxel.circ(x + 7, y + 39, 10, DEEP_BLUE)
-        pyxel.circ(x + 8, y + 38, 7, GREEN)
-        pyxel.rect(x + 19, y + 29, 25, 24, DEEP_BLUE)
-        pyxel.rect(x + 21, y + 29, 21, 22, GREEN)
-        pyxel.circ(x + 31, y + 43, 10, GREEN)
-        pyxel.circ(x + 31, y + 44, 6, CARD)
-        pyxel.rect(x + 19, y + 49, 9, 6, DEEP_BLUE)
-        pyxel.rect(x + 36, y + 49, 9, 6, DEEP_BLUE)
-
-        # 頭と耳。頭と胴体をほぼ1:1にして2頭身にする。
-        pyxel.circ(x + 18, y + 9, 7, DEEP_BLUE)
-        pyxel.circ(x + 44, y + 9, 7, DEEP_BLUE)
-        pyxel.circ(x + 18, y + 9, 4, GREEN)
-        pyxel.circ(x + 44, y + 9, 4, GREEN)
-        pyxel.circ(x + 31, y + 17, 16, DEEP_BLUE)
-        pyxel.circ(x + 31, y + 17, 14, GREEN)
-        pyxel.circ(x + 27, y + 12, 7, BLUE)
-        pyxel.circ(x + 29, y + 14, 7, GREEN)
-        pyxel.circ(x + 31, y + 23, 8, PEACH)
-        pyxel.rect(x + 29, y + 19, 5, 4, PANEL)
-
-        if blink or action in {"hurt", "frustrated"}:
-            pyxel.line(x + 22, y + 15, x + 26, y + 15, PANEL)
-            pyxel.line(x + 37, y + 15, x + 41, y + 15, PANEL)
-        else:
-            pyxel.rect(x + 23, y + 13, 3, 5, PANEL)
-            pyxel.rect(x + 37, y + 13, 3, 5, PANEL)
-            pyxel.pset(x + 24, y + 13, CARD)
-            pyxel.pset(x + 38, y + 13, CARD)
-        pyxel.pset(x + 31, y + 22, CARD)
-
-        # ピンクのスカーフでオリジナルの探検家らしさを出す。
-        pyxel.rect(x + 20, y + 28, 23, 4, PINK)
-        pyxel.tri(x + 39, y + 31, x + 48, y + 36, x + 40, y + 39, PINK)
-
-        if action in {"celebrate", "victory"}:
-            pyxel.line(x + 20, y + 34, x + 10, y + 25, GREEN)
-            pyxel.line(x + 42, y + 34, x + 52, y + 24, GREEN)
-            pyxel.circ(x + 9, y + 24, 3, GREEN)
-            pyxel.circ(x + 53, y + 23, 3, GREEN)
-            pyxel.pset(x + 5, y + 17, YELLOW)
-            pyxel.pset(x + 57, y + 16, YELLOW)
-            pyxel.line(x + 27, y + 25, x + 31, y + 27, PANEL)
-            pyxel.line(x + 31, y + 27, x + 35, y + 25, PANEL)
-        else:
-            pyxel.line(x + 21, y + 35, x + 13, y + 42, GREEN)
-            pyxel.line(x + 41, y + 35, x + 49, y + 42, GREEN)
-        if action in {"hurt", "frustrated"}:
-            pyxel.tri(x + 47, y + 9, x + 51, y + 15, x + 43, y + 15, BLUE)
-            pyxel.line(x + 28, y + 27, x + 31, y + 25, PANEL)
-            pyxel.line(x + 31, y + 25, x + 34, y + 27, PANEL)
-        elif action == "victory":
-            pyxel.line(x + 3, y + 6, x + 8, y + 6, YELLOW)
-            pyxel.line(x + 5, y + 4, x + 5, y + 9, YELLOW)
-            pyxel.line(x + 55, y + 4, x + 60, y + 4, CARD)
-            pyxel.line(x + 57, y + 2, x + 57, y + 7, CARD)
+        draw_rival(pyxel, x, y, "otter", action)
 
     @staticmethod
     def draw_fox(x: int, y: int, action: str) -> None:
-        """橙色の2頭身キツネライバルを図形だけで描く。"""
-        blink = (pyxel.frame_count + 70) % 170 < 7
-        # 大きな尾を背面に描く。
-        pyxel.circ(x + 51, y + 40, 15, DEEP_BLUE)
-        pyxel.circ(x + 50, y + 39, 12, YELLOW)
-        pyxel.circ(x + 57, y + 34, 7, CARD)
-
-        pyxel.rect(x + 18, y + 29, 25, 24, DEEP_BLUE)
-        pyxel.rect(x + 20, y + 29, 21, 22, YELLOW)
-        pyxel.circ(x + 30, y + 43, 10, YELLOW)
-        pyxel.circ(x + 30, y + 44, 6, PEACH)
-        pyxel.rect(x + 17, y + 49, 10, 6, DEEP_BLUE)
-        pyxel.rect(x + 36, y + 49, 10, 6, DEEP_BLUE)
-
-        # 三角耳と大きな頭。
-        pyxel.tri(x + 15, y + 9, x + 20, y - 5, x + 28, y + 7, DEEP_BLUE)
-        pyxel.tri(x + 34, y + 7, x + 43, y - 5, x + 48, y + 10, DEEP_BLUE)
-        pyxel.tri(x + 18, y + 7, x + 21, y, x + 25, y + 8, ERROR)
-        pyxel.tri(x + 37, y + 7, x + 42, y, x + 45, y + 9, ERROR)
-        pyxel.circ(x + 31, y + 17, 16, DEEP_BLUE)
-        pyxel.circ(x + 31, y + 17, 14, YELLOW)
-        pyxel.circ(x + 27, y + 12, 7, PEACH)
-        pyxel.circ(x + 30, y + 14, 7, YELLOW)
-        pyxel.circ(x + 31, y + 24, 8, CARD)
-        pyxel.rect(x + 29, y + 20, 5, 4, PANEL)
-
-        # 青いゴーグルがライバルの識別記号。
-        pyxel.rectb(x + 18, y + 11, 11, 8, BLUE)
-        pyxel.rectb(x + 34, y + 11, 11, 8, BLUE)
-        pyxel.line(x + 29, y + 14, x + 34, y + 14, BLUE)
-        if blink or action in {"celebrate", "defeat"}:
-            pyxel.line(x + 21, y + 15, x + 26, y + 15, PANEL)
-            pyxel.line(x + 37, y + 15, x + 42, y + 15, PANEL)
-        else:
-            eye_y = y + 15 if action == "frustrated" else y + 13
-            pyxel.rect(x + 23, eye_y, 2, 4, PANEL)
-            pyxel.rect(x + 38, eye_y, 2, 4, PANEL)
-        pyxel.pset(x + 31, y + 23, PANEL)
-
-        if action == "celebrate":
-            pyxel.line(x + 20, y + 34, x + 10, y + 24, YELLOW)
-            pyxel.line(x + 42, y + 34, x + 51, y + 23, YELLOW)
-            pyxel.circ(x + 9, y + 23, 3, YELLOW)
-            pyxel.circ(x + 52, y + 22, 3, YELLOW)
-            pyxel.line(x + 27, y + 26, x + 31, y + 29, PANEL)
-            pyxel.line(x + 31, y + 29, x + 35, y + 26, PANEL)
-            pyxel.line(x + 5, y + 15, x + 10, y + 15, PINK)
-            pyxel.line(x + 7, y + 13, x + 7, y + 18, PINK)
-            pyxel.line(x + 54, y + 10, x + 59, y + 10, YELLOW)
-            pyxel.line(x + 56, y + 8, x + 56, y + 13, YELLOW)
-        elif action == "frustrated":
-            pyxel.line(x + 20, y + 35, x + 39, y + 43, YELLOW)
-            pyxel.line(x + 41, y + 35, x + 22, y + 43, YELLOW)
-            pyxel.line(x + 27, y + 28, x + 31, y + 25, ERROR)
-            pyxel.line(x + 31, y + 25, x + 35, y + 28, ERROR)
-            pyxel.line(x + 48, y + 4, x + 55, y + 4, ERROR)
-            pyxel.line(x + 51, y + 1, x + 51, y + 8, ERROR)
-            pyxel.line(x + 47, y, x + 55, y + 8, ERROR)
-        elif action == "defeat":
-            pyxel.line(x + 20, y + 35, x + 12, y + 46, YELLOW)
-            pyxel.line(x + 41, y + 35, x + 49, y + 46, YELLOW)
-            pyxel.line(x + 28, y + 28, x + 31, y + 26, PANEL)
-            pyxel.line(x + 31, y + 26, x + 34, y + 28, PANEL)
-            pyxel.tri(x + 45, y + 17, x + 49, y + 24, x + 41, y + 24, BLUE)
-        else:
-            pyxel.line(x + 20, y + 35, x + 12, y + 42, YELLOW)
-            pyxel.line(x + 41, y + 35, x + 48, y + 42, YELLOW)
+        draw_rival(pyxel, x, y, "fox", action)
 
     def draw_side_console(self) -> None:
         if isinstance(self.round, BattleRound):
@@ -1429,7 +1319,7 @@ class NumberRush:
 
     def draw_ready_panel(self) -> None:
         self.draw_box(112, 54, 416, 222, BLUE)
-        centered_text(63, "NUMBER RUSH - FOREST DUEL", YELLOW)
+        centered_text(63, "NUMBER RUSH - LANTERN LEAGUE", YELLOW)
         for kind, button in PLAY_BUTTONS.items():
             self.draw_button(button, "CPU DUEL" if kind == "battle" else "SOLO PRACTICE", BLUE, selected=self.play_kind == kind)
         centered_text(114, "CHOOSE NUMBER RANGE", CARD)
@@ -1488,7 +1378,8 @@ class NumberRush:
         if isinstance(self.round, BattleRound):
             color = GREEN if self.round.won else PINK
             self.draw_box(118, 62, 404, 214, color)
-            centered_text(85, "YOU WIN!" if self.round.won else "CPU WINS - TRY AGAIN!", color)
+            label = "YOU WIN" if self.round.won else "CPU WINS"
+            pixel_label((WIDTH - len(label) * 12) // 2, 80, label, color)
             centered_text(110, f"1-{self.round.max_number} / {self.selected_mode.upper()} / {self.difficulty.upper()}", MUTED)
             centered_text(133, f"YOU {self.round.player_points}  :  {self.round.cpu_points} CPU    GOAL {self.round.goal}", YELLOW)
             avg = (f"{sum(self.round.response_times) / len(self.round.response_times):.2f}s" if self.round.response_times else "--")
