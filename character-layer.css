@@ -1,0 +1,24 @@
+/* In the fixed 640x360 Pyxel iframe: the parent scales everything together. */
+#character-layer { position: fixed; inset: 0; width: 640px; height: 360px; z-index: 10;
+  pointer-events: none; user-select: none; overflow: hidden; }
+#character-layer[hidden] { display: none; }
+.rival-card { position: absolute; top: 246px; width: 92px; height: 108px;
+  border-radius: 8px; background: #111a29; overflow: hidden;
+  box-shadow: 0 0 0 1px #70c7db, 0 4px 10px #0008; }
+.rival-card.rin { left: 18px; }
+.rival-card.koh { left: 530px; box-shadow: 0 0 0 1px #e8a2c9, 0 4px 10px #0008; }
+.rival-portrait { width: 86px; height: 86px; margin: 3px; background-size: 300% 200%;
+  background-repeat: no-repeat; image-rendering: auto; transform-origin: 50% 95%; }
+#rin-portrait { background-image: url('assets/characters/rin-atlas.png'); }
+#koh-portrait { background-image: url('assets/characters/koh-atlas.png'); }
+.rival-name { height: 16px; line-height: 16px; text-align: center; color: #b6eff9;
+  font: 600 8px/16px system-ui, sans-serif; letter-spacing: 1px; }
+.koh .rival-name { color: #ffcae5; }
+.rival-portrait[data-pose='celebrate'], .rival-portrait[data-pose='victory'] {
+  animation: rival-joy 650ms ease-out both; }
+.rival-portrait[data-pose='hurt'] { animation: rival-surprise 350ms ease-out both; }
+#character-layer[data-perfect='true'] .rin { box-shadow: 0 0 0 2px #ffd475, 0 0 16px #ffc54d70; }
+#character-layer[data-reduced='true'] .rival-portrait { animation: none; }
+@keyframes rival-joy { 0%, 100% { transform: translateY(0); } 35% { transform: translateY(-3px); } }
+@keyframes rival-surprise { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(-2px); } 60% { transform: translateX(2px); } }
+@media (prefers-reduced-motion: reduce) { .rival-portrait { animation: none !important; } }

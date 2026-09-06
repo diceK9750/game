@@ -442,7 +442,7 @@ class BattleUiTests(unittest.TestCase):
             self.app.draw()
             self.assertEqual(self.app.screen, "finished")
             self.assertEqual(self.app.character_actions(),
-                             ("victory", "defeat") if win else ("hurt", "celebrate"))
+                             ("victory", "defeat") if win else ("defeat", "victory"))
 
     def test_confirmation_cancel_keeps_clock_paused_until_countdown(self):
         self.app.start_round("ordered")

@@ -65,10 +65,11 @@ def main():
     pyxel.stop()
 
     pyxel.cls(game.BACKGROUND)
-    for row, species in enumerate(("otter", "fox")):
+    for row, species in enumerate(("rabbit", "red_panda")):
         for col, action in enumerate(ACTIONS):
             x, y = 20 + col * 102, 62 + row * 148
-            draw_rival(pyxel, x, y, species, action)
+            with patch.object(pyxel, "frame_count", 42):
+                draw_rival(pyxel, x, y, species, action)
             pyxel.text(x, y + 70, action.upper(), game.CARD)
     pyxel.screenshot(str(out / "character-poses.png"), scale=2)
 

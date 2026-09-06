@@ -27,7 +27,7 @@ jobs:
       - name: Test game logic
         run: python -m unittest discover -s tests -v
       - name: Test viewport sizing
-        run: node --test tests/test_viewport.cjs
+        run: node --test tests/*.cjs
 
   deploy:
     needs: test
@@ -44,6 +44,8 @@ jobs:
         run: |
           mkdir _site
           cp index.html player.html viewport.js game.py game_logic.py music.py characters.py progress.py ui_text.py ui_glyphs.py THIRD_PARTY.md _site/
+          cp character_layer.py character-layer.js character-layer.css _site/
+          cp -r assets _site/
           touch _site/.nojekyll
       - name: Upload static site
         uses: actions/upload-pages-artifact@v4

@@ -3,7 +3,7 @@ from ui_glyphs import GLYPHS
 
 LABELS = {
     "HOW TO PLAY - LANTERN LEAGUE": "あそびかた / ランタン・リーグ",
-    "FIND THE LARGE TARGET BEFORE THE FOX.": "下のお題と同じ数字を、キツネより先に見つけよう。",
+    "FIND THE LARGE TARGET BEFORE THE FOX.": "下のお題と同じ数字を、CPUより先に見つけよう。",
     "FIRST CORRECT ANSWER WINS 1 POINT.": "先に見つけると1点。青があなた、桃がCPU。",
     "REACH THE GOLD LINE: 6 / 12 / 18 / 24 POINTS.": "金色の目標ラインで勝利! 全問ノーミスで特別賞。",
     "MISS? A BOMB APPEARS. YOU CAN STILL TAP THAT CELL.": "ミスしてもマスは押せる。CPU加速は1問に1回だけ。",

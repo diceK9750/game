@@ -2,7 +2,7 @@
 # author: diceK9750 / Codex
 # desc: Find 1 to 10, 20, 30, or 40 in order or in a shuffled sequence.
 # site: https://dicek9750.github.io/game/
-# version: 10.0
+# version: 11.0
 
 """横持ちブラウザ向けの数字タップゲーム NUMBER RUSH。"""
 
@@ -13,6 +13,7 @@ import math
 import progress
 from ui_text import text as ui_text, text_width, translate
 from characters import draw_rival
+from character_layer import CharacterLayer
 try:
     from js import document as browser_document
     from pyodide.ffi import create_proxy
@@ -189,6 +190,7 @@ class NumberRush:
         pyxel.colors.from_list(PALETTE)
         pyxel.mouse(True)
         self.configure_sounds()
+        self.character_layer = CharacterLayer(browser_document)
         self.selected_max_number = 40
         self.round = NumberTapRound(max_number=self.selected_max_number)
         self.screen = "ready"
@@ -806,6 +808,9 @@ class NumberRush:
         return None
 
     def draw(self) -> None:
+        left, right = self.character_actions()
+        self.character_layer.sync(self.screen, left, right, self.reduced_motion,
+                                  isinstance(self.round, BattleRound) and self.round.is_perfect)
         pyxel.cls(BACKGROUND)
         self.draw_background()
         self.draw_header()
@@ -1193,7 +1198,7 @@ class NumberRush:
         """左プレイヤーと右CPUへ、互いに逆のリアクションを返す。"""
         if self.screen == "finished":
             if isinstance(getattr(self, "round", None), BattleRound) and not self.round.won:
-                return "hurt", "celebrate"
+                return "defeat", "victory"
             return "victory", "defeat"
         if pyxel.frame_count < getattr(self, "cpu_reaction_until", 0):
             return "frustrated", "celebrate"
@@ -1206,6 +1211,8 @@ class NumberRush:
         return "idle", "idle"
 
     def draw_characters(self) -> None:
+        if self.character_layer.ready:
+            return
         player_action, cpu_action = self.character_actions()
         bob = (pyxel.frame_count // 18) % 2
         reaction_tick = (pyxel.frame_count // 4) % 2
@@ -1232,10 +1239,10 @@ class NumberRush:
 
         pyxel.rect(61, 252, 56, 14, PANEL)
         pyxel.rectb(61, 252, 56, 14, BLUE)
-        ui_text(pyxel, 69, 257, "MILO / YOU", BLUE)
+        ui_text(pyxel, 69, 257, "RIN / YOU", BLUE)
         pyxel.rect(523, 252, 56, 14, PANEL)
         pyxel.rectb(523, 252, 56, 14, PINK)
-        ui_text(pyxel, 531, 257, "RUBY / CPU", PINK)
+        ui_text(pyxel, 531, 257, "KOH / CPU", PINK)
 
         if player_action == "celebrate":
             ui_text(pyxel, 78, 270, "NICE!", BLUE)
@@ -1254,22 +1261,22 @@ class NumberRush:
         elif self.screen == "playing" and isinstance(self.round, BattleRound):
             ui_text(pyxel, 534, 270, "SEARCH" + "." * (1 + pyxel.frame_count // 20 % 3), PINK)
 
-        self.draw_otter(
+        self.draw_rabbit(
             58 + player_shake,
             282 - bob - player_jump,
             player_action,
         )
-        self.draw_fox(
+        self.draw_red_panda(
             518 + cpu_shake,
             280 - bob - cpu_jump + cpu_slump,
             cpu_action,
         )
 
-    def draw_otter(self, x: int, y: int, action: str) -> None:
-        draw_rival(pyxel, x, y, "otter", action, motion=not self.reduced_motion)
+    def draw_rabbit(self, x: int, y: int, action: str) -> None:
+        draw_rival(pyxel, x, y, "rabbit", action, motion=not self.reduced_motion)
 
-    def draw_fox(self, x: int, y: int, action: str) -> None:
-        draw_rival(pyxel, x, y, "fox", action, motion=not self.reduced_motion)
+    def draw_red_panda(self, x: int, y: int, action: str) -> None:
+        draw_rival(pyxel, x, y, "red_panda", action, motion=not self.reduced_motion)
 
     def draw_side_console(self) -> None:
         if isinstance(self.round, BattleRound):
