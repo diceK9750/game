@@ -166,9 +166,17 @@ SCENE_SCORES = {
         "g3:2 e3:2 b2:2 r:2", "a3:2 g3 e3 c3:2 r:2",
         "f#3:2 a3 d4:2 c4 r:2", "b3:2 d4:2 g3:2 r:2",
     ), ("e2", "c2", "d2", "g1")),
+    "perfect": (8, (
+        "g3 b3 d4 g4:2 b4 a4 r", "g4:2 e4 g4 c4:2 r:2",
+        "f#4 a4 d4:2 e4 f#4 a4 r", "g4:3 d4 b3:2 r:2",
+        "b3 d4 g4:2 d4 g4 b4 r", "a4 g4 e4:2 c4 e4 g4 r",
+        "f#4:2 d4 a3 d4 f#4 a4 r", "g4:2 d4 b3 g3:2 r:2",
+    ), ("g1", "c2", "d2", "g1", "g1", "c2", "d2", "g1")),
 }
 SCENE_TRACKS = {name: (54 + i * 2, 55 + i * 2)
-                for i, name in enumerate(SCENE_SCORES)}
+                for i, name in enumerate(SCENE_SCORES) if name != "perfect"}
+# Two unused slots between the six bass patches and drum bank; stay within 64.
+SCENE_TRACKS["perfect"] = (46, 47)
 
 
 def configure_scene_bgm(sounds):

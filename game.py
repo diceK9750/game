@@ -2,7 +2,7 @@
 # author: diceK9750 / Codex
 # desc: Find 1 to 10, 20, 30, or 40 in order or in a shuffled sequence.
 # site: https://dicek9750.github.io/game/
-# version: 9.0
+# version: 9.1
 
 """横持ちブラウザ向けの数字タップゲーム NUMBER RUSH。"""
 
@@ -112,6 +112,7 @@ DIGITS = {
 }
 
 LETTERS = {
+    "T": ("11111", "00100", "00100", "00100", "00100", "00100", "00100"),
     "A": ("01110", "10001", "10001", "11111", "10001", "10001", "10001"),
     "C": ("01111", "10000", "10000", "10000", "10000", "10000", "01111"),
     "+": ("00000", "00100", "00100", "11111", "00100", "00100", "00000"),
@@ -192,6 +193,9 @@ class NumberRush:
         self.cpu_reaction_until = 0
         self.resume_end_frame = 0
         self.battle_records = {}
+        self.bonus_bank = 0
+        self._settled_round = None
+        self.result_started_frame = 0
         self.confirm_action: str | None = None
         self.countdown_end_frame = 0
         self.go_until_frame = 0
@@ -240,6 +244,7 @@ class NumberRush:
         pyxel.sounds[4].set("e3g3b3e4", "t", "3443", "nnnf", 5)
         pyxel.sounds[5].set("b3g3e3", "p", "443", "nnf", 5)
         pyxel.sounds[6].set("e4b3g3e3b2", "t", "44332", "nnnnf", 9)
+        pyxel.sounds[7].set("g3b3d4g4rd4g4a4b4g4", "t", "4455045543", "nnnnnnnnnf", 6)
 
         configure_bgm(pyxel.sounds)
         configure_scene_bgm(pyxel.sounds)
@@ -467,7 +472,7 @@ class NumberRush:
 
     def start_round(self, mode: str) -> None:
         self.selected_mode = mode
-        # Gameplay banks are shared; scene tracks occupy separate slots 54-63.
+        # Gameplay banks are shared; scene tracks occupy slots 46-47 and 54-63.
         # Rebuild only at a new round, never on pause/resume or stage changes.
         configure_bgm(pyxel.sounds, battle=self.play_kind == "battle")
         self.round = (BattleRound(max_number=self.selected_max_number, difficulty=self.difficulty)
@@ -566,12 +571,17 @@ class NumberRush:
             self.round.completed_count, max_number=self.round.max_number)
 
     def finish_battle(self):
+        if self._settled_round is self.round:
+            return
+        self._settled_round = self.round
+        self.bonus_bank += self.round.special_bonus
+        self.result_started_frame = pyxel.frame_count
         key = (self.round.max_number, self.selected_mode, self.difficulty)
         previous = self.battle_records.get(key, -1)
         self.is_new_best = self.round.player_points > previous
         self.battle_records[key] = max(previous, self.round.player_points)
         self.stop_bgm()
-        self.play_sfx(3 if self.round.won else 6, protect_frames=15)
+        self.play_sfx(7 if self.round.is_perfect else 3 if self.round.won else 6, protect_frames=15)
         self.screen = "finished"
         self.result_music_after = pyxel.frame_count + (45 if self.sfx_on else 0)
 
@@ -627,7 +637,8 @@ class NumberRush:
                    "help": "menu",
                    "resuming": "countdown", "countdown": "countdown"}.get(self.screen)
         if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
-            desired = ("loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")
+            desired = ("perfect" if isinstance(self.round, BattleRound) and self.round.is_perfect
+                       else "loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")
         if desired == self.scene_music:
             return
         self.stop_scene_music()
@@ -1143,6 +1154,16 @@ class NumberRush:
         player_shake = (2 if reaction_tick else -2) if player_action in {"hurt", "frustrated"} else 0
         cpu_shake = (2 if reaction_tick else -2) if cpu_action == "frustrated" else 0
         cpu_slump = 3 if cpu_action == "defeat" else 0
+        if (self.screen == "finished" and isinstance(getattr(self, "round", None), BattleRound)
+                and self.round.is_perfect):
+            # A personal gold halo makes this distinct from the ordinary crown.
+            pyxel.circb(89, 307, 27, YELLOW)
+            for i in range(8):
+                angle = i * math.pi / 4 + pyxel.frame_count / 90
+                sx = round(89 + 26 * math.cos(angle))
+                sy = round(307 + 26 * math.sin(angle))
+                pyxel.line(sx - 2, sy, sx + 2, sy, YELLOW)
+                pyxel.line(sx, sy - 2, sx, sy + 2, YELLOW)
         pyxel.ellib(65, 335, 46, 5, DEEP_BLUE)
         pyxel.ellib(526, 334, 48, 5, DEEP_BLUE)
 
@@ -1376,6 +1397,9 @@ class NumberRush:
 
     def draw_finished_panel(self) -> None:
         if isinstance(self.round, BattleRound):
+            if self.round.is_perfect:
+                self.draw_perfect_panel()
+                return
             color = GREEN if self.round.won else PINK
             self.draw_box(118, 62, 404, 214, color)
             label = "YOU WIN" if self.round.won else "CPU WINS"
@@ -1409,6 +1433,39 @@ class NumberRush:
         self.draw_button(MODE_BUTTON, "MODE SELECT", BLUE)
         pyxel.text(196, 282, "SPACE", MUTED)
         pyxel.text(430, 282, "KEY M", MUTED)
+
+    def draw_perfect_panel(self) -> None:
+        """A skippable celebration: awards settle once, drawing only animates."""
+        age = max(0, pyxel.frame_count - self.result_started_frame)
+        self.draw_box(118, 62, 404, 214, YELLOW)
+        # Confetti stays in side gutters, outside all text and action buttons.
+        if age < 300:
+            for i in range(30):
+                side = i % 2
+                x = (121 if side == 0 else 491) + (i * 7 % 24)
+                y = 68 + (i * 29 + age * (1 + i % 3)) % 144
+                pyxel.rect(x, y, 2 + i % 2, 2, (YELLOW, BLUE, PINK, CARD)[i % 4])
+        pixel_label(278, 78, "PERFECT", YELLOW)
+        centered_text(101, f"ALL {self.round.max_number} FOUND / NO MISSES", CARD)
+        centered_text(117, f"YOU {self.round.player_points} : 0 CPU / {self.difficulty.upper()}", BLUE)
+        # A gold trophy on either side of the title, plus Milo's victory crown.
+        for x in (170, 458):
+            pyxel.rectb(x - 5, 80, 20, 10, YELLOW)
+            pyxel.rect(x - 1, 77, 12, 14, YELLOW)
+            pyxel.rect(x + 4, 90, 3, 9, YELLOW)
+            pyxel.rect(x - 3, 99, 16, 3, YELLOW)
+            pyxel.line(x + 1, 79, x + 1, 86, CARD)
+        pyxel.rect(182, 131, 276, 41, DEEP_BLUE)
+        pyxel.rectb(182, 131, 276, 41, YELLOW)
+        centered_text(136, "SPECIAL BONUS", YELLOW)
+        amount = self.round.special_bonus
+        shown = min(amount, amount * age // 90)
+        pixel_label(290, 149, f"+{shown:04d}", YELLOW)
+        centered_text(181, f"SESSION BONUS {self.bonus_bank} / DUEL POINTS UNCHANGED", CARD)
+        centered_text(196, f"TIME {self.round.elapsed():.2f}s / BEST STREAK {self.max_streak}", MUTED)
+        centered_text(211, f"1-{self.round.max_number} / {self.selected_mode.upper()} / PERFECT AWARD", BLUE)
+        self.draw_button(REPLAY_BUTTON, "PLAY AGAIN", GREEN)
+        self.draw_button(MODE_BUTTON, "MODE SELECT", BLUE)
 
     @staticmethod
     def draw_box(x: int, y: int, width: int, height: int, border: int) -> None:

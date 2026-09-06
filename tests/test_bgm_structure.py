@@ -70,7 +70,11 @@ class BgmStructureTests(unittest.TestCase):
                 self.assertLessEqual(max(map(int, volume)), 3)
                 self.assertEqual(tone, "t")
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertTrue(all(54 <= index < 64 for index in ids))
+        self.assertTrue(all(index in (46, 47) or 54 <= index < 64 for index in ids))
+        self.assertEqual(SCENE_TRACKS["perfect"], (46, 47))
+        for battle in (False, True):
+            for part in game.NumberRush.bgm_sequences(2, battle=battle):
+                self.assertTrue(set(ids).isdisjoint(part))
 
     def test_arrangement_changes_keep_melody_and_harmony(self):
         base = game.NumberRush.bgm_sequences(0)
@@ -176,7 +180,7 @@ class DuelMusicTests(unittest.TestCase):
                     self.assertEqual(len(notes.split()), 32)
                     self.assertEqual(speed, game.BGM_SOUND_SPEED)
                     self.assertLessEqual(max(map(int, volume)), 3)
-        for index in list(range(8)) + list(range(54, 64)):
+        for index in list(range(8)) + [46, 47] + list(range(54, 64)):
             sounds[index].set.assert_not_called()
 
     def test_switch_to_practice_restores_original_score(self):
@@ -202,6 +206,53 @@ class DuelMusicTests(unittest.TestCase):
 
 
 class BattleUiTests(unittest.TestCase):
+    def complete_perfect(self, count=10):
+        self.app.selected_max_number = count
+        self.app.start_round("ordered")
+        now = [0.0]
+        self.app.round = BattleRound(max_number=count, clock=lambda: now[0])
+        self.app.round.start("ordered")
+        while not self.app.round.is_finished:
+            now[0] = self.app.round.ready_at + 0.1
+            self.app.handle_tap(self.app.round.board_cells.index(self.app.round.current_target))
+
+    def test_perfect_award_is_once_per_round_and_accumulates(self):
+        self.complete_perfect()
+        self.assertEqual(self.app.bonus_bank, 1000)
+        self.app.finish_battle()
+        for age in (0, 45, 90, 360):
+            self.runtime.frame_count = self.app.result_started_frame + age
+            self.app.draw()
+        self.assertEqual(self.app.bonus_bank, 1000)
+        self.assertEqual(self.app.round.player_points, 10)
+        self.complete_perfect(20)
+        self.assertEqual(self.app.bonus_bank, 3000)
+
+    def test_perfect_music_and_fanfare_respect_mute(self):
+        self.complete_perfect()
+        self.assertIn(((3, 7), {}), self.runtime.play.call_args_list)
+        self.runtime.frame_count = self.app.result_music_after
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "perfect")
+        self.app.toggle_bgm()
+        self.app.toggle_sfx()
+        self.runtime.play.reset_mock()
+        self.complete_perfect()
+        self.app.sync_scene_music()
+        self.runtime.play.assert_not_called()
+        self.assertEqual(self.app.bonus_bank, 2000)
+
+    def test_perfect_animation_never_blocks_replay_or_menu(self):
+        for key in (self.runtime.KEY_RETURN, self.runtime.KEY_M):
+            self.runtime.btnp.return_value = False
+            self.runtime.btnp.side_effect = None
+            self.complete_perfect()
+            bank = self.app.bonus_bank
+            self.runtime.btnp.side_effect = lambda candidate, *args: candidate == key
+            self.app.update()
+            self.assertEqual(self.app.screen, "countdown" if key == self.runtime.KEY_RETURN else "ready")
+            self.assertEqual(self.app.bonus_bank, bank)
+
     def setUp(self):
         self.runtime = MagicMock()
         self.runtime.frame_count = 100
@@ -283,7 +334,7 @@ class BattleUiTests(unittest.TestCase):
             self.app.draw()
 
     def test_pixel_labels_include_all_used_characters(self):
-        for word in ("CPU +1", "YOU +1", "MISS", "FIND"):
+        for word in ("CPU +1", "YOU +1", "MISS", "FIND", "PERFECT"):
             for char in word.replace(" ", ""):
                 self.assertTrue(char in game.LETTERS or char in game.DIGITS)
 

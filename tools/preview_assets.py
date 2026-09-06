@@ -38,6 +38,20 @@ def main():
     pyxel.screenshot(str(out / "miss.png"), scale=2)
     pyxel.stop()
 
+    # Earn the award through real round logic with a deterministic QA clock.
+    app.start_round("ordered")
+    now = [0.0]
+    app.round = game.BattleRound(max_number=40, clock=lambda: now[0])
+    app.round.start("ordered")
+    while not app.round.is_finished:
+        now[0] = app.round.ready_at + 0.1
+        app.handle_tap(app.round.board_cells.index(app.round.current_target))
+    for age in (0, 45, 90):
+        with patch.object(pyxel, "frame_count", app.result_started_frame + age):
+            app.draw()
+            pyxel.screenshot(str(out / f"perfect-{age:03d}.png"), scale=2)
+    pyxel.stop()
+
     pyxel.cls(game.BACKGROUND)
     for row, species in enumerate(("otter", "fox")):
         for col, action in enumerate(ACTIONS):

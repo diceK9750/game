@@ -27,6 +27,35 @@ class BattleTests(unittest.TestCase):
                         self.assertTrue(battle.is_finished)
                         self.assertEqual(battle.player_points, count)
                         self.assertEqual(len(battle.owners), count)
+                        self.assertTrue(battle.is_perfect)
+                        self.assertEqual(battle.special_bonus, count * 100)
+
+    def test_perfect_requires_completion_without_misses_or_cpu_claims(self):
+        for fault in ("incomplete", "miss", "cpu"):
+            battle = self.make_round(mode="ordered")
+            if fault == "miss":
+                battle.tap(2)
+            elif fault == "cpu":
+                self.now = battle.cpu_at
+                battle.update_cpu()
+            while not battle.is_finished:
+                self.now = battle.ready_at + 0.1
+                if fault == "incomplete" and battle.completed_count == 9:
+                    break
+                battle.tap(battle.current_target)
+            self.assertTrue(battle.won)
+            self.assertFalse(battle.is_perfect)
+            self.assertEqual(battle.special_bonus, 0)
+
+    def test_new_round_resets_perfect_award(self):
+        battle = self.make_round()
+        while not battle.is_finished:
+            self.now = battle.ready_at + 0.1
+            battle.tap(battle.current_target)
+        self.assertEqual(battle.special_bonus, 1000)
+        battle.start()
+        self.assertFalse(battle.is_perfect)
+        self.assertEqual(battle.special_bonus, 0)
 
     def test_cpu_can_finish_every_target_without_input(self):
         battle = self.make_round()

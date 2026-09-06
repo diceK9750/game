@@ -186,6 +186,17 @@ class BattleRound(NumberTapRound):
         return self.player_points >= self.goal
 
     @property
+    def is_perfect(self):
+        """Only a completed, error-free sweep earns the special award."""
+        return (self.is_finished and self.player_points == self.max_number
+                and self.cpu_points == 0 and self.mistakes == 0)
+
+    @property
+    def special_bonus(self):
+        # Separate from duel points: never changes the winner or victory line.
+        return self.max_number * 100 if self.is_perfect else 0
+
+    @property
     def in_transition(self):
         return self.elapsed() < self.ready_at
 
