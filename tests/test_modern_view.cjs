@@ -119,6 +119,20 @@ test('modern view starts only after render and releases ownership on backend fal
   browser.render('ready'); assert.equal(browser.app.hidden, false);
 });
 
+test('first screen is only a two-game chooser, with number options on another screen', () => {
+  const browser = browserHarness();
+  browser.render('home');
+  const screens = walk(browser.app).filter(n => n.dataset.screen);
+  assert.deepEqual(screens.filter(n => !n.hidden).map(n => n.dataset.screen), ['home']);
+  const home = screens.find(n => n.dataset.screen === 'home');
+  const games = walk(home).filter(n => n.tagName === 'BUTTON');
+  assert.equal(games.length, 2);
+  games[1].emit('click');
+  assert.equal(browser.queue()[0].action, 'numbers');
+  browser.render('ready');
+  assert.deepEqual(screens.filter(n => !n.hidden).map(n => n.dataset.screen), ['ready']);
+});
+
 test('real cell handlers enqueue fast taps once and a mistake does not disable the tile', () => {
   const browser = browserHarness(); const round = browser.render('playing');
   const cells = browser.cells(); assert.equal(cells.length, 40);

@@ -9,6 +9,7 @@ import json
 import math
 
 from game_logic import BattleRound
+from shiritori import ShiritoriRound
 
 
 class ModernUI:
@@ -74,8 +75,31 @@ class ModernUI:
             app.toggle_sfx()
         elif action == "motion":
             app.toggle_motion()
+        elif screen == "shiritori":
+            if action == "sh_exit" and app.shiritori.phase in ("intro", "paused", "finished"):
+                app.screen = "ready"
+                app.game_selected = False
+            elif action.startswith("sh_"):
+                before = (len(app.shiritori.history), app.shiritori.mistakes)
+                app.shiritori.command(action[3:], value)
+                if app.shiritori.mistakes > before[1]:
+                    app.play_sfx(1)
+                elif len(app.shiritori.history) > before[0]:
+                    app.play_sfx(0)
         elif screen == "ready":
-            if action == "kind" and value in ("battle", "practice"):
+            if action == "home":
+                app.game_selected = False
+            elif action == "numbers":
+                app.game_selected = True
+            elif action == "shiritori":
+                if not hasattr(app, "shiritori"):
+                    app.shiritori = ShiritoriRound(app.difficulty, mode="solo")
+                else:
+                    app.shiritori.phase = "intro"
+                app.screen = "shiritori"
+            elif not getattr(app, "game_selected", False):
+                return
+            elif action == "kind" and value in ("battle", "practice"):
                 app.play_kind = value
             elif action == "range" and type(value) is int and value in (10, 20, 30, 40):
                 app.selected_max_number = value
@@ -124,9 +148,9 @@ class ModernUI:
 
     def snapshot(self, app, frame_count=0):
         """Return presentation state without revealing hidden boards or targets."""
-        screen = app.screen
+        screen = "home" if app.screen == "ready" and not getattr(app, "game_selected", False) else app.screen
         round_ = app.round
-        uses_round = screen not in ("ready", "help", "countdown")
+        uses_round = screen not in ("home", "ready", "help", "countdown")
         battle = uses_round and isinstance(round_, BattleRound)
         count = round_.max_number if uses_round else app.selected_max_number
         mode = round_.mode if uses_round else app.selected_mode
@@ -183,6 +207,7 @@ class ModernUI:
             "hint_index": hint_index, "countdown": countdown,
             "confirm_action": app.confirm_action if screen == "confirm" else None,
             "cells": cells, "left": left, "right": right, "history": history, "ack": self.ack,
+            "shiritori": app.shiritori.snapshot() if screen == "shiritori" else None,
         }
 
     def sync(self, app, frame_count=0):

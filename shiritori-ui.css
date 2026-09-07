@@ -1,0 +1,105 @@
+.sh-launch { width: 100%; margin-bottom: 12px; border-color: #f9d58a80; }
+.sh-page { flex: 1; min-height: 0; overflow: auto; padding: 12px 0; width: 100%; max-width: 1180px; margin: auto; }
+.sh-intro { max-width: 780px; padding: clamp(18px, 4vw, 36px); margin: 16px auto; border-radius: 24px; display: grid; gap: 16px; }
+.sh-intro p { line-height: 1.8; }
+.sh-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sh-actions button { flex: 1; }
+.sh-stage { height: 100%; min-height: 320px; display: flex; flex-direction: column; gap: 8px; }
+.sh-hud { display: flex; align-items: center; gap: 12px; justify-content: center; border-radius: 16px; padding: 4px 12px; }
+.sh-hud .nr-character { width: 58px; flex: 0 0 58px; }
+.sh-hud .nr-character-art { width: 58px; height: 58px; }
+.sh-hud .nr-character-name { display: none; }
+.sh-task { flex: 1; text-align: center; }
+.sh-task span { display: block; font-size: 12px; color: var(--nr-mint); }
+.sh-prompt { font-size: clamp(17px, 2.8vw, 28px); }
+.sh-clock { font-variant-numeric: tabular-nums; min-width: 64px; }
+.sh-clock[data-urgent='true'] { color: #ff9fae; }
+.sh-status { min-height: 22px; text-align: center; font-size: 13px; }
+.sh-board { flex: 1; min-height: 200px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 1fr)); gap: 6px; }
+.sh-card { min-width: 0; padding: 2px; border-radius: 12px; border: 2px solid #d7ebe1; background: linear-gradient(#fffef4, #e3ece0); color: #19343b; display: flex; align-items: center; justify-content: center; gap: 4px; flex-direction: column; }
+.sh-icon { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif; font-size: clamp(30px, min(6vw, 10vh), 96px); line-height: 1.1; }
+.sh-card small { font-size: 9px; font-weight: 800; }
+.sh-card[data-owner='you'] { background: #28494c; border-color: #84d7c0; }
+.sh-card[data-owner='cpu'] { background: #443a4c; border-color: #e0a3c0; }
+.sh-card:disabled .sh-icon { opacity: .45; }
+.sh-card:disabled small { color: #e9f5f0; }
+.sh-card[data-hint='true'] { outline: 3px solid #f9d58a; outline-offset: -4px; }
+.sh-daruma { width: 1em; height: 1.2em; background: url('assets/shiritori/daruma.svg') center / contain no-repeat; }
+.sh-levels button[aria-pressed='true'] { background: #395d62; border-color: var(--nr-gold); }
+.sh-overlay { position: fixed; inset: 0; z-index: 60; background: #06121ecb; display: flex; align-items: center; justify-content: center; padding: 12px; }
+.sh-dialog { padding: 24px; border-radius: 20px; width: min(520px, 100%); max-height: 100%; overflow: auto; background: #17313e; display: grid; gap: 14px; }
+.sh-choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.sh-choices button { flex: 1; min-height: 52px; }
+.sh-result-cast { display: flex; justify-content: center; gap: 40px; }
+.sh-result-cast .nr-character { width: 100px; }
+.sh-result-cast .nr-character-art { width: 100px; height: 100px; }
+.sh-log { max-height: 220px; overflow: auto; line-height: 1.8; }
+.sh-log small { display: block; color: var(--nr-muted); }
+@media(max-height: 500px) {
+  .sh-page { padding: 4px 0; }
+  .sh-stage { min-height: 248px; gap: 3px; }
+  .sh-hud { padding: 0 8px; }
+  .sh-hud .nr-character, .sh-hud .nr-character-art { width: 36px; height: 36px; flex-basis: 36px; }
+  .sh-prompt { font-size: 18px; }
+  .sh-board { min-height: 160px; gap: 4px; grid-template-rows: repeat(4, minmax(36px, 1fr)); }
+  .sh-card { flex-direction: row; }
+  .sh-icon { font-size: 28px; }
+  .sh-status { min-height: 16px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .sh-actions button { min-height: 36px; padding: 6px 10px; }
+  .sh-intro { margin: 0 auto; }
+  .sh-result-cast { display: none; }
+}
+/* Landscape phones first: only 12 large, fixed-position slots, not a tiny wall. */
+.sh-board { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(44px, 1fr)); min-height: 144px; }
+.sh-stage { min-height: 270px; }
+.sh-progress { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--nr-muted); }
+.sh-stock { color: var(--nr-gold); }
+.sh-setup { max-width: 1000px; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.sh-setup > h1, .sh-start-actions { grid-column: 1 / -1; }
+.sh-config, .sh-level-settings { display: grid; align-content: start; gap: 10px; }
+.sh-config h2 { font-size: 13px; }
+.sh-setting-note { font-size: 12px; color: var(--nr-muted); }
+.sh-guide { font-size: 12px; }
+.sh-guide summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
+.sh-config .sh-actions button[aria-pressed='true'] { border-color: var(--nr-gold); background: #395d62; }
+.sh-start-actions { position: sticky; bottom: 0; background: #16303cf5; padding: 8px 0; z-index: 2; }
+.sh-play-actions button { min-height: 44px; }
+.sh-card[data-dealt='0'] .sh-icon { animation: sh-deal-a 240ms ease-out; }
+.sh-card[data-dealt='1'] .sh-icon { animation: sh-deal-b 240ms ease-out; }
+@keyframes sh-deal-a { from { opacity: .2; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes sh-deal-b { from { opacity: .2; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+#modern-app[data-reduced='true'] .sh-icon { animation: none; }
+@media (max-height: 500px) {
+  .sh-page { padding: 4px 0; }
+  .sh-hud { flex-shrink: 0; }
+  .sh-stage { min-height: 254px; gap: 3px; }
+  .sh-progress { font-size: 10px; line-height: 14px; }
+  .sh-board { min-height: 138px; gap: 4px; }
+  .sh-card { flex-direction: row; gap: 6px; }
+  .sh-icon { font-size: clamp(28px, 9vh, 42px); }
+  .sh-setup { padding: 12px 16px 0; gap: 8px 18px; }
+  .sh-setup > h1 { font-size: 23px; }
+  .sh-config, .sh-level-settings { gap: 6px; }
+  .sh-config .sh-actions button { min-height: 44px; padding: 6px 8px; }
+  .sh-setup .sh-setting-note { font-size: 11px; line-height: 1.4; }
+  .sh-start-actions { padding: 6px 0; }
+  .sh-start-actions button { min-height: 44px; }
+  .sh-dialog { padding: 16px; gap: 8px; width: min(560px, 100%); }
+  .sh-dialog h2 { font-size: 20px; }
+  .sh-dialog p { font-size: 12px; }
+}
+@media (orientation: portrait) and (max-width: 600px) {
+  .sh-board { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 1fr)); }
+  .sh-setup { grid-template-columns: 1fr; padding: 18px; gap: 14px; }
+  .sh-icon { font-size: clamp(32px, 12vw, 56px); }
+  .sh-overlay { align-items: flex-end; padding: 8px; }
+  .sh-dialog { padding: 18px; border-radius: 22px 22px 12px 12px; }
+}
+@media(max-width: 450px) {
+  .sh-hud { gap: 4px; padding: 4px; }
+  .sh-hud .nr-character, .sh-hud .nr-character-art { width: 38px; height: 38px; flex-basis: 38px; }
+  .sh-board { gap: 4px; }
+  .sh-icon { font-size: clamp(36px, 12vw, 52px); }
+  .sh-prompt { font-size: 15px; }
+  .sh-clock { min-width: 52px; font-size: 12px; }
+}

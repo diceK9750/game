@@ -281,6 +281,8 @@ class NumberRush:
         hidden = browser_document is not None and bool(browser_document.hidden)
         if hidden:
             if not self.auto_suspended:
+                if self.screen == "shiritori":
+                    self.shiritori.command("pause")
                 if self.screen == "playing":
                     self.open_confirmation("pause")
                 elif self.screen in {"countdown", "resuming"}:
@@ -300,6 +302,12 @@ class NumberRush:
 
     def update_frame(self) -> None:
         modern = getattr(self, "modern_ui", None)
+        if self.screen == "shiritori":
+            if modern is None or not modern.ready:
+                self.screen = "ready"
+            else:
+                self.shiritori.update()
+            return
         if modern is not None and modern.ready:
             # HTML owns all input in this renderer. Keep only the existing
             # simulation clocks here so pointer/key events cannot fire twice.
@@ -710,6 +718,9 @@ class NumberRush:
         desired = {"ready": "menu", "confirm": "wait",
                    "help": "menu", "review": "wait",
                    "resuming": "countdown", "countdown": "countdown"}.get(self.screen)
+        if self.screen == "shiritori":
+            phase = self.shiritori.phase
+            desired = ("win" if self.shiritori.winner == "you" else "wait" if self.shiritori.mode == "solo" else "loss") if phase == "finished" else "wait" if phase == "paused" else "menu"
         if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
             desired = ("perfect" if isinstance(self.round, BattleRound) and self.round.is_perfect
                        else "loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")

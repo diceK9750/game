@@ -41,6 +41,7 @@ class ModernUITests(unittest.TestCase):
         self.root = Root()
         self.bridge = ModernUI(SimpleNamespace(documentElement=self.root))
         self.app.modern_ui = self.bridge
+        self.app.game_selected = True
         self.now = [0.0]
         self.serial = 0
 
@@ -61,6 +62,66 @@ class ModernUITests(unittest.TestCase):
 
     def cell(self, number):
         return {"action": "cell", "index": self.app.round.board_cells.index(number)}
+
+    def test_shiritori_launch_pause_exit_keeps_number_settings(self):
+        self.app.selected_max_number = 20
+        self.queue({"action": "shiritori"})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.app.screen, "shiritori")
+        self.assertEqual(self.bridge.snapshot(self.app)["shiritori"]["phase"], "intro")
+        self.queue({"action": "sh_start"})
+        self.bridge.consume(self.app)
+        self.assertEqual(len(self.bridge.snapshot(self.app)["shiritori"]["cards"]), 12)
+        self.queue({"action": "sh_exit"})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.app.screen, "shiritori")
+        self.queue({"action": "sh_pause"})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.bridge.snapshot(self.app)["shiritori"]["cards"], [])
+        self.queue({"action": "sh_exit"})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.app.screen, "ready")
+        self.assertEqual(self.app.selected_max_number, 20)
+
+    def test_game_chooser_separates_settings_and_remembers_shiritori_choice(self):
+        self.app.game_selected = False
+        self.assertEqual(self.bridge.snapshot(self.app)['screen'], 'home')
+        self.queue({'action':'start', 'value':'ordered'})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.bridge.snapshot(self.app)['screen'], 'home')
+        self.queue({'action':'numbers'})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.bridge.snapshot(self.app)['screen'], 'ready')
+        self.queue({'action':'home'}, {'action':'shiritori'}, {'action':'sh_total','value':36}, {'action':'sh_mode','value':'solo'}, {'action':'sh_exit'})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.bridge.snapshot(self.app)['screen'], 'home')
+        self.queue({'action':'shiritori'})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.app.shiritori.total, 36)
+        self.assertEqual(self.app.shiritori.mode, 'solo')
+
+    def test_shiritori_auto_pause_and_native_fallback(self):
+        self.queue({"action": "shiritori"}, {"action": "sh_start"})
+        self.bridge.consume(self.app)
+        with patch.object(game, "browser_document", SimpleNamespace(hidden=True)):
+            self.assertTrue(self.app.update_visibility())
+        self.assertEqual(self.app.shiritori.phase, "paused")
+        self.root.attributes["data-modern-ready"] = "false"
+        self.app.update_frame()
+        self.assertEqual(self.app.screen, "ready")
+
+    def test_shiritori_scene_music_uses_existing_original_tracks(self):
+        self.queue({"action": "shiritori"})
+        self.bridge.consume(self.app)
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "menu")
+        self.app.shiritori.start()
+        self.app.shiritori.command("pause")
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "wait")
+        self.app.shiritori.finish("you", "test")
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "win")
 
     def test_native_and_broken_document_are_nonfatal(self):
         self.assertFalse(ModernUI().ready)

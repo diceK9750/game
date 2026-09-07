@@ -1,7 +1,7 @@
 /* Responsive, accessible presentation. Python remains the only game engine. */
 (function () {
   'use strict';
-  const SCREENS = new Set(['ready', 'playing', 'countdown', 'resuming', 'confirm', 'help', 'finished', 'review']);
+  const SCREENS = new Set(['home', 'ready', 'playing', 'countdown', 'resuming', 'confirm', 'help', 'finished', 'review', 'shiritori']);
   const POSES = Object.freeze({idle: 0, celebrate: 1, victory: 2, hurt: 3, frustrated: 4, defeat: 5});
   const integer = (value, fallback = 0) => Number.isInteger(value) ? value : fallback;
   const finite = (value, fallback = 0) => Number.isFinite(value) ? value : fallback;
@@ -103,8 +103,18 @@
   const help = button('?', 'help', undefined, 'nr-icon-button nr-help-button'); help.setAttribute('aria-label', '遊び方');
   const pause = button('一時停止', 'pause', undefined, 'nr-quiet');
   const retry = button('やり直す', 'retry', undefined, 'nr-quiet nr-play-retry');
-  add(topControls, sound, help, retry, pause); add(header, brand, headerContext, topControls); app.append(header, live);
+  const gamesBack = button('ゲーム選択', 'home', undefined, 'nr-quiet nr-games-back');
+  add(topControls, gamesBack, sound, help, retry, pause); add(header, brand, headerContext, topControls); app.append(header, live);
 
+  const home = section('home', 'nr-home');
+  const homeChoices = E('div', 'nr-game-choices');
+  const pictureGame = button('', 'shiritori', undefined, 'nr-game-card nr-picture-game');
+  add(pictureGame, E('span', 'nr-game-icon', '🍎 → 🦍'), E('strong', '', '絵しりとり'), E('span', '', 'ことばをつなぐ、ひらめきパズル'), E('small', '', '一人でじっくり ／ CPUと対戦 →'));
+  pictureGame.disabled = !window.createShiritoriView;
+  const numberGame = button('', 'numbers', undefined, 'nr-game-card nr-number-game');
+  add(numberGame, E('span', 'nr-game-icon', '1  2  3'), E('strong', '', '数字さがし'), E('span', '', '見つけてタップ、集中力チャレンジ'), E('small', '', '一人で練習 ／ CPUと対戦 →'));
+  add(homeChoices, pictureGame, numberGame);
+  add(home, E('span', 'nr-eyebrow', 'LANTERN LEAGUE'), E('h1', '', 'どちらで遊ぶ？'), homeChoices);
   const ready = section('ready', 'nr-ready');
   const intro = E('div', 'nr-intro');
   const heroCast = E('div', 'nr-hero-cast');
@@ -225,7 +235,9 @@
   const review = section('review', 'nr-centered');
   const reviewSummary = E('p', 'nr-muted'), history = E('ol', 'nr-history');
   add(review, add(E('div', 'nr-review-card nr-surface'), E('span', 'nr-eyebrow', 'ROUND INSIGHTS'), E('h1', '', '対戦を振り返る'), reviewSummary, history, button('結果へ戻る', 'back', undefined, 'nr-primary')));
-  const screenMap = {ready, playing: play, countdown, resuming: countdown, confirm, help: helpScreen, finished, review};
+  const screenMap = {home, ready, playing: play, countdown, resuming: countdown, confirm, help: helpScreen, finished, review};
+  const shiritori = window.createShiritoriView?.({section, E, add, button, portrait, command});
+  if (shiritori) screenMap.shiritori = shiritori.page;
   const allPortraits = [[heroRin, 'left'], [heroKoh, 'right'], [playRin, 'left'], [playKoh, 'right'], [resultRin, 'left'], [resultKoh, 'right']];
   function select(buttons, values, value) { buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(values[i] === value))); }
   function update() {
@@ -240,8 +252,11 @@
     for (const element of new Set(Object.values(screenMap))) element.hidden = element !== screenMap[state.screen];
     const playing = state.screen === 'playing', battle = state.kind === 'battle';
     headerContext.textContent = state.screen === 'ready' ? 'ひと目で見つける、ひと勝負。' : `1–${state.max_number} · ${state.mode === 'ordered' ? '順番' : 'ランダム'}${battle ? ' · 対戦' : ' · 練習'}`;
+    if (state.screen === 'home') headerContext.textContent = 'ゲームを選ぶ';
+    if (state.screen === 'shiritori') { headerContext.textContent = '絵しりとり'; shiritori.update(state.shiritori); }
     sound.textContent = state.bgm ? '♪ ON' : '♪ OFF'; sound.setAttribute('aria-pressed', String(!!state.bgm));
     help.hidden = !['ready', 'help'].includes(state.screen); help.disabled = state.screen === 'help';
+    gamesBack.hidden = state.screen !== 'ready';
     pause.hidden = !playing; retry.hidden = !playing;
     const reduced = state.reduced === true;
     sfx.textContent = pauseSfx.textContent = `効果音 ${state.sfx ? 'ON' : 'OFF'}`;
