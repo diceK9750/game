@@ -26,23 +26,30 @@ function harness() {
   const view = window.createShiritoriView({section: (n, c) => E('section', c), E, add, button, portrait, command});
   const state = {phase: 'playing', turn: 'you', required: 'り', last_word: 'しりとり', remaining: 20, limit: 20,
     hints: 3, hint: null, selected: null, message: 'りからはじめよう', mistakes: 0, history: [], winner: null,
-    mode:'battle', total:24, stock:12, completed:0, relinks:2, seen:[],
-    cards: Array.from({length:12}, () => ({id:'apple', icon:'🍎', words:['りんご','くだもの'], owner:null}))};
+    mode:'battle', total:24, stock:0, completed:0, relinks:2, seen:[],
+    cards: Array.from({length:24}, () => ({id:'apple', icon:'🍎', words:['りんご','くだもの'], owner:null}))};
   return {view, state, queue, doc};
 }
 
-test('shiritori renderer keeps 12 stable cards and sends explicit reading commands', () => {
+test('one tap submits a card with no reading dialog and keeps stable 24 slots', () => {
   const {view, state, queue} = harness(); view.update(state);
-  const cards = view.page.querySelectorAll('.sh-card'); assert.equal(cards.length, 12);
-  cards[0].click(); assert.equal(queue[0].action, 'sh_card'); assert.equal(queue[0].value, 0);
-  view.update({...state, selected:0});
-  const options = view.page.querySelector('.sh-choices').querySelectorAll('button');
-  assert.deepEqual(options.map(n => n.textContent), ['りんご', 'くだもの']);
-  options[1].click(); assert.equal(queue[1].action, 'sh_word'); assert.equal(queue[1].value, 'くだもの');
-  view.update({...state, selected:0, remaining:17, mistakes:1, message:'ちがうよ −3秒'});
+  const cards = view.page.querySelectorAll('.sh-card'); assert.equal(cards.length, 24);
+  cards[0].click(); assert.deepEqual(queue[0], {action:'sh_card', value:0});
+  assert.equal(view.page.querySelector('.sh-overlay'), undefined);
+  assert.match(cards[0]['aria-label'], /タップで自動回答/);
+  view.update({...state, remaining:17, mistakes:1, message:'ちがうよ −3秒'});
   assert.equal(view.page.querySelectorAll('.sh-card')[0], cards[0]);
   assert.equal(cards[0].disabled, false);
-  assert.equal(view.page.querySelector('.sh-choices').querySelectorAll('button')[0], options[0]);
+});
+
+test('12 card course hides surplus slots and 24 card course restores them', () => {
+  const {view, state} = harness();
+  view.update({...state, total:12, cards:state.cards.slice(0,12)});
+  assert.equal(view.page.querySelectorAll('.sh-card').filter(c => !c.hidden).length, 12);
+  assert.equal(view.page.querySelector('.sh-board').dataset.count, '12');
+  view.update(state);
+  assert.equal(view.page.querySelectorAll('.sh-card').filter(c => !c.hidden).length, 24);
+  assert.equal(view.page.querySelector('.sh-board').dataset.count, '24');
 });
 
 test('pause conceals cards, CPU turn disables input, result exposes replay and history', () => {
@@ -51,7 +58,7 @@ test('pause conceals cards, CPU turn disables input, result exposes replay and h
   assert.ok(view.page.querySelectorAll('.sh-card').every(c => c.disabled));
   view.update({...state, phase:'paused', cards:[]});
   assert.equal(view.page.querySelector('.sh-stage').hidden, true);
-  assert.equal(view.page.querySelector('.sh-overlay').hidden, true);
+  assert.equal(view.page.querySelector('.sh-overlay'), undefined);
   view.update({...state, phase:'finished', winner:'you', history:[{word:'りんご', icon:'🍎', owner:'you'}]});
   assert.equal(view.page.querySelector('.sh-log').children.length, 1);
   assert.ok(view.page.querySelectorAll('button').some(b => b.textContent === 'もう一度遊ぶ'));
@@ -66,7 +73,7 @@ test('new mode is shipped in Pages and loaded before its host renderer', () => {
 
 test('solo setup offers deck counts, hides CPU, and permits immediate replacement selection', () => {
   const {view,state,queue} = harness();
-  const solo = {...state, mode:'solo', total:36, stock:24, phase:'intro'};
+  const solo = {...state, mode:'solo', total:36, stock:12, phase:'intro'};
   view.update(solo);
   const counts = view.page.querySelector('.sh-counts').querySelectorAll('button');
   assert.deepEqual(counts.map(b => b.textContent), ['12枚','24枚','36枚']);
@@ -75,20 +82,18 @@ test('solo setup offers deck counts, hides CPU, and permits immediate replacemen
   solo.phase = 'playing'; view.update(solo);
   const card = view.page.querySelectorAll('.sh-card')[0];
   solo.cards[0] = {id:'cat',icon:'🐈',words:['ねこ','こねこ'],owner:null};
-  solo.stock = 23; solo.completed = 1; solo.refilled = 0; solo.revision = 1;
+  solo.stock = 11; solo.completed = 1; solo.refilled = 0; solo.revision = 1;
   view.update(solo);
   assert.equal(view.page.querySelectorAll('.sh-card')[0], card);
   assert.equal(card.disabled, false);
   assert.equal(card.children[1].textContent, 'NEW');
-  assert.equal(view.page.querySelector('.sh-stock').textContent, '山札 23枚');
+  assert.equal(view.page.querySelector('.sh-stock').textContent, '山札 11枚');
 });
 
-test('used readings are labelled and disabled, while blocked solo exposes rescue', () => {
+test('blocked solo exposes rescue without any reading choices', () => {
   const {view,state} = harness();
-  view.update({...state, selected:0, seen:['くだもの']});
-  const options = view.page.querySelector('.sh-choices').querySelectorAll('button');
-  assert.equal(options[1].disabled, true);
-  assert.match(options[1].textContent, /使用済み/);
+  view.update(state);
+  assert.equal(view.page.querySelector('.sh-choices'), undefined);
   view.update({...state, mode:'solo', phase:'blocked', relinks:2});
   const rescue = view.page.querySelectorAll('button').find(b => b.textContent === 'つなぎ直す あと2回');
   assert.equal(rescue.hidden, false);

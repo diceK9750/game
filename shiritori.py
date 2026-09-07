@@ -3,47 +3,47 @@ import random
 import time
 
 # Emoji are platform pictograms, not artwork copied from a commercial game.
-# Readings are deliberately finite and disclosed when inspecting a card.
+# Finite picture names, categories and visible features; one reading per head.
 CARDS = (
-    ("apple", "🍎", ("りんご", "くだもの")),
-    ("gorilla", "🦍", ("ごりら", "さる")),
-    ("trumpet", "🎺", ("らっぱ", "がっき")),
-    ("panda", "🐼", ("ぱんだ", "くま")),
-    ("daruma", "🔴", ("だるま", "おきもの")),
-    ("camel", "🐪", ("らくだ", "どうぶつ")),
-    ("radish", "🥕", ("にんじん", "やさい")),
-    ("dog", "🐕", ("いぬ", "こいぬ")),
-    ("teddy", "🧸", ("ぬいぐるみ", "くま", "おもちゃ")),
-    ("orange", "🍊", ("みかん", "くだもの")),
-    ("turtle", "🐢", ("かめ", "りくがめ")),
-    ("glasses", "👓", ("めがね", "がんきょう")),
-    ("cat", "🐈", ("ねこ", "こねこ")),
-    ("tree", "🌲", ("まつ", "き")),
-    ("moon", "🌙", ("つき", "よぞら")),
-    ("fox", "🦊", ("きつね", "どうぶつ")),
-    ("mouse", "🐁", ("ねずみ", "どうぶつ")),
-    ("ear", "👂", ("みみ", "からだ")),
-    ("bee", "🐝", ("みつばち", "はち")),
-    ("butterfly", "🦋", ("ちょう", "むし")),
-    ("rabbit", "🐇", ("うさぎ", "どうぶつ")),
-    ("guitar", "🎸", ("ぎたー", "がっき")),
-    ("octopus", "🐙", ("たこ", "うみのいきもの")),
-    ("bird", "🐦", ("ことり", "とり")),
-    ("squirrel", "🐿️", ("りす", "どうぶつ")),
-    ("melon", "🍉", ("すいか", "くだもの")),
-    ("umbrella", "☂️", ("かさ", "あまがさ")),
-    ("fish", "🐟", ("さかな", "たい")),
-    ("eggplant", "🍆", ("なす", "やさい")),
-    ("bell", "🔔", ("すず", "かね")),
-    ("trousers", "👖", ("ずぼん", "ふく")),
-    ("ship", "🚢", ("ふね", "のりもの")),
-    ("mushroom", "🍄", ("きのこ", "しょくざい")),
-    ("ice", "🧊", ("こおり", "こおったみず")),
-    ("car", "🚗", ("くるま", "じどうしゃ")),
-    ("mountain", "⛰️", ("やま", "さん")),
-    ("peach", "🍑", ("もも", "くだもの")),
-    ("bread", "🍞", ("ぱん", "しょくぱん", "とーすと")),
-    ("lion", "🦁", ("らいおん", "どうぶつ")),
+    ("apple", "🍎", ("りんご", "くだもの", "ふるーつ", "たべもの")),
+    ("gorilla", "🦍", ("ごりら", "さる", "どうぶつ", "るいじんえん")),
+    ("trumpet", "🎺", ("らっぱ", "がっき", "とらんぺっと", "きんかんがっき")),
+    ("panda", "🐼", ("ぱんだ", "くま", "どうぶつ", "じゃいあんとぱんだ")),
+    ("daruma", "🔴", ("だるま", "おきもの", "えんぎもの", "にんぎょう")),
+    ("camel", "🐪", ("らくだ", "どうぶつ", "ひとこぶらくだ")),
+    ("radish", "🥕", ("にんじん", "やさい", "きゃろっと", "こんさい", "たべもの")),
+    ("dog", "🐕", ("いぬ", "こいぬ", "どうぶつ", "ぺっと")),
+    ("teddy", "🧸", ("ぬいぐるみ", "くま", "おもちゃ", "てでぃべあ", "にんぎょう")),
+    ("orange", "🍊", ("みかん", "くだもの", "ふるーつ", "たべもの")),
+    ("turtle", "🐢", ("かめ", "りくがめ", "どうぶつ", "はちゅうるい")),
+    ("glasses", "👓", ("めがね", "がんきょう", "れんず", "ふれーむ")),
+    ("cat", "🐈", ("ねこ", "こねこ", "どうぶつ", "ぺっと")),
+    ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく")),
+    ("moon", "🌙", ("つき", "よぞら", "みかづき", "てんたい")),
+    ("fox", "🦊", ("きつね", "どうぶつ", "けもの", "ふぉっくす")),
+    ("mouse", "🐁", ("ねずみ", "どうぶつ", "まうす", "けもの")),
+    ("ear", "👂", ("みみ", "からだ", "じかく", "ちょうかくきかん")),
+    ("bee", "🐝", ("みつばち", "はち", "むし", "こんちゅう")),
+    ("butterfly", "🦋", ("ちょう", "むし", "こんちゅう", "ばたふらい")),
+    ("rabbit", "🐇", ("うさぎ", "どうぶつ", "らびっと", "けもの")),
+    ("guitar", "🎸", ("ぎたー", "がっき", "えれきぎたー", "げんがっき")),
+    ("octopus", "🐙", ("たこ", "うみのいきもの", "なんたいどうぶつ", "おくとぱす")),
+    ("bird", "🐦", ("ことり", "とり", "どうぶつ", "ばーど")),
+    ("squirrel", "🐿️", ("りす", "どうぶつ", "けもの")),
+    ("melon", "🍉", ("すいか", "くだもの", "ふるーつ", "たべもの")),
+    ("umbrella", "☂️", ("かさ", "あまがさ", "ようがさ", "れいんぐっず")),
+    ("fish", "🐟", ("さかな", "ぎょるい", "うみのいきもの", "ふぃっしゅ")),
+    ("eggplant", "🍆", ("なす", "やさい", "たべもの", "しょくざい")),
+    ("bell", "🔔", ("すず", "かね", "べる", "がっき")),
+    ("trousers", "👖", ("ずぼん", "ふく", "じーんず", "でにむ", "ぼとむす")),
+    ("ship", "🚢", ("ふね", "のりもの", "きせん", "しっぷ")),
+    ("mushroom", "🍄", ("きのこ", "しょくざい", "まっしゅるーむ")),
+    ("ice", "🧊", ("こおり", "あいすきゅーぶ", "ろっくあいす", "ひょうかい")),
+    ("car", "🚗", ("くるま", "じどうしゃ", "のりもの", "まいかー")),
+    ("mountain", "⛰️", ("やま", "さん", "まうんてん", "みね")),
+    ("peach", "🍑", ("もも", "くだもの", "ぴーち", "ふるーつ", "たべもの")),
+    ("bread", "🍞", ("ぱん", "しょくぱん", "とーすと", "ぶれっど", "たべもの")),
+    ("lion", "🦁", ("らいおん", "どうぶつ", "しし", "けもの")),
 )
 SMALL = str.maketrans("ゃゅょぁぃぅぇぉっゎ", "やゆよあいうえおつわ")
 
@@ -71,7 +71,7 @@ class ShiritoriRound:
         self.cards = []
         self.history = []
         self.used = {}
-        self.message = "絵を選び、読み方を選んでしりとり！"
+        self.message = "絵をタップ！つながる読み方を自動で選ぶよ。"
         self.required = "り"
         self.last_word = "しりとり"
         self.selected = None
@@ -99,7 +99,7 @@ class ShiritoriRound:
         chosen = [by_id[key] for key in route_ids[:self.total]]
         others = [card for card in CARDS if card[0] not in route_ids and card[0] != ids[offset]]
         chosen += self.rng.sample(others, self.total - len(chosen))
-        self.cards, self.stock = chosen[:12], chosen[12:]
+        self.cards, self.stock = chosen[:24], chosen[24:]
         self.rng.shuffle(self.cards)
         self.used = {}
         self.history = []
@@ -236,27 +236,20 @@ class ShiritoriRound:
             self.finish("draw", "ここまでの結果。自分のペースでまた遊ぼう！")
         elif self.phase == "playing" and self.turn == "you":
             if action == "card" and type(value) is int and 0 <= value < len(self.cards) and value not in self.used:
-                self.selected = value
-            elif action == "cancel":
-                self.selected = None
+                move = next((m for m in self.moves() if m[0] == value), None)
+                if move is not None:
+                    self.take(*move)
+                else:
+                    self.mistakes += 1
+                    if self.mode != "solo":
+                        self.deadline -= 3
+                    self.message = f"この絵は「{self.required}」につながらないよ（使用済み・ん終わりも不可）。" + (" 選び直そう。" if self.mode == "solo" else " −3秒")
+                    self.revision += 1
+                    self.update()
             elif action == "hint" and self.hints and self.moves():
                 self.hints -= 1
                 self.hint = self.moves()[0][0]
                 self.message = "光る絵の読み方を考えてみよう。"
-            elif action == "word" and self.selected is not None and isinstance(value, str):
-                if value not in self.cards[self.selected][2]:
-                    return
-                if value[0] != self.required or value in self.seen:
-                    self.mistakes += 1
-                    if self.mode != "solo":
-                        self.deadline -= 3
-                    penalty = " 選び直そう。" if self.mode == "solo" else " −3秒"
-                    self.message = (f"「{value}」はもう使ったことば！" if value in self.seen
-                                    else f"「{value}」は「{self.required}」で始まらない！") + penalty
-                    self.revision += 1
-                    self.update()
-                else:
-                    self.take(self.selected, value)
 
     def snapshot(self):
         visible = self.phase in ("playing", "blocked", "finished")

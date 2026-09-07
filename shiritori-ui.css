@@ -103,3 +103,13 @@
   .sh-prompt { font-size: 15px; }
   .sh-clock { min-width: 52px; font-size: 12px; }
 }
+/* Size artwork from its actual panel, never from the viewport alone. */
+.sh-board[data-count='24'] { grid-template-columns: repeat(8, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(44px, 1fr)); }
+.sh-card { position: relative; container-type: size; min-height: 44px; overflow: hidden; gap: 0; }
+.sh-card .sh-icon { font-size: min(88cqw, 86cqh); line-height: 1; }
+.sh-card small { position: absolute; bottom: 1px; right: 3px; padding: 0 3px; border-radius: 4px; background: #19343be6; color: white; pointer-events: none; }
+.sh-card small:empty { display: none; }
+.sh-card .sh-daruma { height: 1em; }
+@media (orientation: portrait) and (max-width: 600px) {
+  .sh-board[data-count='24'] { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(44px, 1fr)); min-height: 284px; }
+}

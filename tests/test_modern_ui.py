@@ -71,7 +71,7 @@ class ModernUITests(unittest.TestCase):
         self.assertEqual(self.bridge.snapshot(self.app)["shiritori"]["phase"], "intro")
         self.queue({"action": "sh_start"})
         self.bridge.consume(self.app)
-        self.assertEqual(len(self.bridge.snapshot(self.app)["shiritori"]["cards"]), 12)
+        self.assertEqual(len(self.bridge.snapshot(self.app)["shiritori"]["cards"]), 24)
         self.queue({"action": "sh_exit"})
         self.bridge.consume(self.app)
         self.assertEqual(self.app.screen, "shiritori")
