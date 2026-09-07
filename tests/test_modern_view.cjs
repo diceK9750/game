@@ -94,6 +94,8 @@ function browserHarness() {
   document = {documentElement: root, activeElement: root, createElement: tag => new Element(tag), getElementById: id => id === 'modern-app' ? app : null};
   const observers = [];
   const browserWindow = {matchMedia: () => ({matches: false, addEventListener() {}})}; browserWindow.parent = browserWindow;
+  browserWindow.rivalCursor=require('../rival-cursor.js').rivalCursor;
+  browserWindow.createShiritoriView=({section})=>({page:section('shiritori','sh-page'),update(){},isOverlayOpen:()=>false,headerAction(){}});
   vm.runInNewContext(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'), {
     document, window: browserWindow, location: {origin: 'http://localhost'}, console,
     MutationObserver: class { constructor(callback) { observers.push(callback); } observe() {} },
@@ -108,6 +110,32 @@ function browserHarness() {
     queue: () => JSON.parse(root.getAttribute('data-modern-commands') || '[]')};
 }
 function walk(element) { return element.children.flatMap(child => [child, ...walk(child)]); }
+
+test('both games reuse the same header nodes, positions and game-aware commands',()=>{
+  const b=browserHarness();
+  const header=walk(b.app).find(n=>n.className==='nr-toolbar');
+  const controls=header.children;
+  const back=controls.find(n=>n.textContent==='ゲーム選択');
+  const pause=controls.find(n=>n.textContent==='一時停止');
+  const retry=controls.find(n=>n.textContent==='やり直す');
+  for(const [screen,extra] of [['ready',{}],['shiritori',{shiritori:{phase:'intro'}}]]) {
+    b.render(screen,extra); assert.equal(back.hidden,false); assert.equal(pause.hidden,true);
+    assert.equal(controls.indexOf(back),0);
+  }
+  back.emit('click'); assert.equal(b.queue().at(-1).action,'sh_exit');
+  b.render('shiritori',{shiritori:{phase:'playing'}});
+  assert.equal(back.hidden,true); assert.equal(pause.hidden,false); assert.equal(retry.hidden,false);
+  pause.emit('click'); assert.equal(b.queue().at(-1).action,'sh_pause');
+  b.render('playing'); pause.emit('click'); assert.equal(b.queue().at(-1).action,'pause');
+});
+
+test('number rival frame is unique, keeps input enabled and hides for pause or solo',()=>{
+  const b=browserHarness(); b.render('playing',{kind:'battle',cpu_progress:.4});
+  const selected=b.cells().filter(c=>c.dataset.cpuSelecting==='true');
+  assert.equal(selected.length,1); assert.equal(selected[0].disabled,false);
+  b.render('confirm',{kind:'battle'}); assert.ok(b.cells().every(c=>c.dataset.cpuSelecting==='false'));
+  b.render('playing',{kind:'practice'}); assert.ok(b.cells().every(c=>c.dataset.cpuSelecting==='false'));
+});
 
 test('modern view starts only after render and releases ownership on backend fallback', () => {
   const browser = browserHarness();

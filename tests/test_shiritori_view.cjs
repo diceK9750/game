@@ -22,14 +22,83 @@ function harness() {
   const button = (text, action, value, cls) => { const b = E('button', cls, text); b.click = () => command(action, value); return b; };
   const portrait = () => { const image = E('div'); return {wrap: add(E('div'), image), image}; };
   const window = {};
+  window.rivalCursor=require('../rival-cursor.js').rivalCursor;
+  const saved = new Map(); window.localStorage={getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v)};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../shiritori-dictionary.js'), 'utf8'), {window});
   vm.runInNewContext(fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8'), {window, document: doc});
   const view = window.createShiritoriView({section: (n, c) => E('section', c), E, add, button, portrait, command});
   const state = {phase: 'playing', turn: 'you', required: 'り', last_word: 'しりとり', remaining: 20, limit: 20,
     hints: 3, hint: null, selected: null, message: 'りからはじめよう', mistakes: 0, history: [], winner: null,
     mode:'battle', total:24, stock:0, completed:0, relinks:2, seen:[],
+    catalog:[{id:'apple',icon:'🍎',words:['りんご','くだもの','たべもの']}],
     cards: Array.from({length:24}, () => ({id:'apple', icon:'🍎', words:['りんご','くだもの'], owner:null}))};
   return {view, state, queue, doc};
 }
+
+test('setup shares number-game hero and controls without story exposition', () => {
+  const {view,state}=harness();
+  view.update({...state,phase:'intro'});
+  const intro=view.page.querySelector('.sh-ready');
+  assert.equal(intro.hidden,false);
+  assert.ok(intro.className.includes('nr-ready'));
+  assert.equal(intro.querySelector('.nr-hero-cast').children.length,3);
+  assert.ok(intro.querySelector('.nr-setup'));
+  assert.equal(intro.querySelectorAll('.nr-segment').length,3);
+  assert.ok(intro.querySelector('.nr-intro-copy').textContent.includes('読み方は自動'));
+  assert.ok(!intro.querySelectorAll('*').some(e=>/そそのか|コウ/.test(e.textContent)));
+  view.update({...state,phase:'playing'});
+  assert.equal(intro.hidden,true);
+});
+
+test('shiritori delegates navigation to the common header and confirms restart after pausing',()=>{
+  const {view,state,queue}=harness();
+  view.update({...state,phase:'intro'});
+  const intro=view.page.querySelector('.sh-ready');
+  assert.ok(!intro.querySelectorAll('button').some(b=>b.textContent.includes('ゲーム選択')));
+  view.headerAction('help'); assert.equal(view.isOverlayOpen(),true); assert.equal(intro.hidden,true);
+  view.update({...state,phase:'playing'});
+  assert.ok(!view.page.querySelector('.sh-stage').querySelectorAll('button').some(b=>/休憩|一時停止/.test(b.textContent)));
+  view.headerAction('retry'); assert.equal(queue.at(-1).action,'sh_pause');
+  assert.ok(!queue.some(c=>c.action==='sh_restart'));
+  view.update({...state,phase:'paused'});
+  const confirm=view.page.querySelectorAll('.nr-dialog').find(n=>n.querySelectorAll('h1').some(h=>h.textContent==='やり直しますか？'));
+  assert.equal(confirm.hidden,false);
+  confirm.querySelectorAll('button').find(b=>b.textContent==='やり直す').click();
+  assert.equal(queue.at(-1).action,'sh_restart');
+  view.update({...state,phase:'playing'}); assert.equal(confirm.hidden,true);
+});
+
+test('dictionary collects player answers only, hides undiscovered readings and returns to setup',()=>{
+  const {view,state}=harness(); view.update({...state,phase:'intro',cards:[]});
+  const open=view.page.querySelectorAll('.sh-dict-open')[0]; open.events.click();
+  assert.equal(view.page.querySelector('.sh-dictionary').hidden,false);
+  assert.equal(view.page.querySelectorAll('.sh-undiscovered').length,3);
+  const back=view.page.querySelector('.sh-dict-header').querySelector('button'); back.events.click();
+  assert.equal(view.page.querySelector('.sh-dictionary').hidden,true);
+  view.update({...state,history:[{id:'apple',word:'くだもの',owner:'cpu',icon:'🍎'}]});
+  assert.match(open.textContent,/0 \/ 3/);
+  view.update({...state,history:[{id:'apple',word:'りんご',owner:'you',icon:'🍎'}]});
+  assert.match(open.textContent,/1 \/ 3/);
+  view.update({...state,phase:'finished',history:[{id:'apple',word:'りんご',owner:'you',icon:'🍎'}]});
+  view.page.querySelectorAll('.sh-dict-open')[1].events.click();
+  assert.equal(view.page.querySelectorAll('.sh-found').length,1);
+  assert.equal(view.page.querySelectorAll('.sh-undiscovered').length,2);
+});
+
+test('dictionary challenge reveals each discovered word and celebrates full completion',()=>{
+  const {view,state}=harness(); view.update({...state,phase:'intro',cards:[]});
+  view.page.querySelectorAll('.sh-dict-open')[0].events.click();
+  const challenge=view.page.querySelectorAll('button').find(b=>b.textContent==='発見チャレンジ');
+  for(let i=0;i<3;i++) {
+    challenge.events.click();
+    const choice=view.page.querySelector('.sh-dict-choice');
+    choice.events.click(); choice.events.click();
+    assert.equal(view.page.querySelectorAll('.sh-found').length,i+1);
+  }
+  assert.match(view.page.querySelector('.sh-dict-notice').textContent,/コンプリート/);
+  assert.match(view.page.querySelector('.sh-dict-progress').textContent,/100.0%/);
+  assert.equal(view.page.querySelector('.sh-dict-entry').dataset.complete,'true');
+});
 
 test('one tap submits a card with no reading dialog and keeps stable 24 slots', () => {
   const {view, state, queue} = harness(); view.update(state);
@@ -42,14 +111,41 @@ test('one tap submits a card with no reading dialog and keeps stable 24 slots', 
   assert.equal(cards[0].disabled, false);
 });
 
+test('shiritori rival frame follows target only on CPU turns and clears for pause',()=>{
+  const {view,state}=harness(); view.update({...state,turn:'cpu',cpu_target:10,cpu_progress:1});
+  const cards=view.page.querySelectorAll('.sh-card');
+  assert.equal(cards.filter(c=>c.dataset.cpuSelecting==='true').length,1);
+  assert.equal(cards[10].dataset.cpuSelecting,'true');
+  view.update({...state,phase:'paused',cards:[]});
+  assert.ok(cards.every(c=>c.dataset.cpuSelecting==='false'));
+  view.update({...state,mode:'solo',cpu_target:10,cpu_progress:1});
+  assert.ok(cards.every(c=>c.dataset.cpuSelecting==='false'));
+});
+
 test('12 card course hides surplus slots and 24 card course restores them', () => {
   const {view, state} = harness();
   view.update({...state, total:12, cards:state.cards.slice(0,12)});
   assert.equal(view.page.querySelectorAll('.sh-card').filter(c => !c.hidden).length, 12);
   assert.equal(view.page.querySelector('.sh-board').dataset.count, '12');
+  assert.equal(view.page.querySelector('.sh-board-space').dataset.count, '12');
   view.update(state);
   assert.equal(view.page.querySelectorAll('.sh-card').filter(c => !c.hidden).length, 24);
   assert.equal(view.page.querySelector('.sh-board').dataset.count, '24');
+  assert.equal(view.page.querySelector('.sh-board-space').dataset.count, '24');
+});
+
+test('hint visibly identifies exactly one panel without blocking its input and clears after use', () => {
+  const {view, state, queue} = harness();
+  view.update({...state, hint:5, hints:2});
+  const cards = view.page.querySelectorAll('.sh-card');
+  assert.equal(cards.filter(c => c.dataset.hint === 'true').length, 1);
+  assert.equal(cards[5].querySelector('.sh-hint-label').hidden, false);
+  assert.match(cards[5]['aria-label'], /^ヒント：/);
+  assert.equal(cards[5].disabled, false);
+  cards[5].click(); assert.deepEqual(queue.pop(), {action:'sh_card', value:5});
+  view.update({...state, hint:null});
+  assert.ok(cards.every(c => c.querySelector('.sh-hint-label').hidden));
+  assert.ok(cards.every(c => c.dataset.hint === 'false'));
 });
 
 test('pause conceals cards, CPU turn disables input, result exposes replay and history', () => {

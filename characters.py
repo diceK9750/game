@@ -70,7 +70,16 @@ def draw_rival(g, x, y, species, action, *, motion=True):
             g.circ(x + ax, ay, 5, shade)
             g.circ(x + ax - 1, ay - 1, 4, fur)
 
-    # Long soft rabbit ears; Koh has rounded ears, no fox goggles.
+    # Koh is a dark enchantress: layered skirt, cape and long plum hair.
+    if panda:
+        g.tri(x + 18, y + 27, x + 7, y + 50, x + 31, y + 47, PLUM)
+        g.tri(x + 42, y + 27, x + 57, y + 50, x + 30, y + 47, DARK)
+        g.tri(x + 24, y + 33, x + 13, y + 48, x + 48, y + 48, DARK)
+        g.line(x + 15, y + 48, x + 46, y + 48, PINK)
+        g.elli(x + 7, hy + 3, 17, 44, PLUM)
+        g.elli(x + 44, hy + 5, 16, 41, PLUM)
+        g.line(x + 10, hy + 23, x + 13, hy + 42, PINK)
+    # Long soft rabbit ears; Koh has rounded ears.
     if panda:
         for ex in (17, 46):
             g.circ(x + ex, hy + 3, 8, INK)
@@ -110,9 +119,16 @@ def draw_rival(g, x, y, species, action, *, motion=True):
         else:
             g.elli(x + ex - 1, hy + 12, 9, 12, INK)
             g.elli(x + ex, hy + 13, 7, 10, WHITE)
-            g.elli(x + ex + (0 if panda else 2), hy + 15, 5, 8, TEAL if panda else BROWN)
+            g.elli(x + ex + (0 if panda else 2), hy + 15, 5, 8, PINK if panda else BROWN)
             g.elli(x + ex + (1 if panda else 3), hy + 16, 3, 6, INK)
             g.pset(x + ex + 2, hy + 15, WHITE)
+            if panda:
+                g.line(x + ex - 2, hy + 11, x + ex + 1, hy + 14, INK)
+    if panda:
+        g.tri(x + 13, hy + 9, x + 30, hy - 2, x + 36, hy + 3, PLUM)
+        for cx, cy in ((24, -5), (32, -10), (40, -5)):
+            g.tri(x + cx - 4, hy + 2, x + cx, hy + cy, x + cx + 4, hy + 2, DARK)
+            g.line(x + cx, hy + cy, x + cx + 3, hy + 1, PINK)
             g.pset(x + ex + 4, hy + 20, MINT if panda else GOLD)
         if action == "frustrated":
             g.line(x + ex, hy + 11, x + ex + 6, hy + 14, INK)

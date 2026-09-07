@@ -218,11 +218,16 @@ class BattleRound(NumberTapRound):
 
     @property
     def cpu_cursor(self):
-        """A cosmetic search path; it never changes deadlines or reveals the answer."""
+        """Adjacent visual search ending on the answer; never changes deadlines."""
         if not self.is_playing:
             return None
-        step = int(max(0, self.elapsed() - self.ready_at) / 0.28)
-        return self.search_cells[step % len(self.search_cells)]
+        snake = [row * 8 + col for row in range(5)
+                 for col in (range(8) if row % 2 == 0 else range(7, -1, -1))]
+        cycle = snake + snake[1:-1][::-1]
+        target = self.board_cells.index(self.current_target)
+        progress = max(0, (self.elapsed() - self.ready_at) / max(.01, self.cpu_at - self.ready_at))
+        step = min(8, int(progress * 9))
+        return cycle[(len(cycle) + snake.index(target) - 8 + step) % len(cycle)]
 
     @property
     def points_needed(self):

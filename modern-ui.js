@@ -62,6 +62,11 @@
   const add = (parent, ...children) => { parent.append(...children); return parent; };
   function command(action, value, index) {
     if (!state) return;
+    if (state.screen === 'shiritori') {
+      if (['help', 'retry'].includes(action)) { shiritori.headerAction(action); update(); return; }
+      if (action === 'home') action = 'sh_exit';
+      if (action === 'pause') action = 'sh_pause';
+    }
     const queue = remainingCommands(root.getAttribute('data-modern-commands'), integer(state.ack));
     if (queue.length >= 128) return;
     sequence = Math.max(sequence, integer(state.ack), ...queue.map(c => c.id)) + 1;
@@ -88,8 +93,14 @@
     const wrap = E('div', `nr-character nr-${who}`);
     const image = E('div', 'nr-character-art');
     image.setAttribute('role', 'img');
-    image.setAttribute('aria-label', who === 'rin' ? 'うさぎのリン' : 'レッサーパンダのコウ');
+    image.setAttribute('aria-label', who === 'rin' ? 'うさぎのリン' : '闇の魔法少女ルナ（レッサーパンダ）');
     add(wrap, image, E('span', 'nr-character-name', label));
+    if (who === 'koh') {
+      const fairy = E('div', 'nr-dark-fairy');
+      fairy.setAttribute('role', 'img');
+      fairy.setAttribute('aria-label', '闇の妖精');
+      wrap.append(fairy);
+    }
     return {wrap, image};
   }
   const live = E('div', 'nr-sr-only');
@@ -118,10 +129,10 @@
   const ready = section('ready', 'nr-ready');
   const intro = E('div', 'nr-intro');
   const heroCast = E('div', 'nr-hero-cast');
-  const heroRin = portrait('rin', 'RIN / あなた'), heroKoh = portrait('koh', 'KOH / ライバル');
+  const heroRin = portrait('rin', 'RIN / あなた'), heroKoh = portrait('koh', 'LUNA / ライバル');
   const title = E('h1', '', '見つけた！が、勝負になる。');
   add(intro, E('span', 'nr-eyebrow', 'QUICK EYES. BRIGHT MOMENTS.'), title,
-    E('p', 'nr-intro-copy', 'お題の数字を、ライバルより先に。\nひらめきと集中力で駆け抜ける、数字さがし。'),
+    E('p', 'nr-intro-copy', 'お題の数字を、ライバルより先に見つけよう。\n順番・ランダムのお題で対戦。一人での練習も楽しめます。'),
     add(heroCast, heroRin.wrap, E('span', 'nr-versus', 'VS'), heroKoh.wrap));
   const setup = E('div', 'nr-setup nr-surface');
   add(setup, E('div', 'nr-setup-heading', '今日のチャレンジ'));
@@ -156,7 +167,7 @@
   const youScore = E('strong', '', '0'), cpuScore = E('strong', '', '0');
   const youGoal = E('span', 'nr-score-note');
   const youHud = add(E('div', 'nr-score-card nr-you'), add(E('div'), E('span', 'nr-overline', 'YOU / リン'), youGoal), youScore);
-  const cpuHud = add(E('div', 'nr-score-card nr-cpu'), add(E('div'), E('span', 'nr-overline', 'CPU / コウ'), E('span', 'nr-score-note', '同じお題を探しています')), cpuScore);
+  const cpuHud = add(E('div', 'nr-score-card nr-cpu'), add(E('div'), E('span', 'nr-overline', 'CPU / ルナ'), E('span', 'nr-score-note', '同じお題を探しています')), cpuScore);
   const target = E('strong', 'nr-target-number', '1');
   const targetWrap = add(E('div', 'nr-target'), E('span', 'nr-overline', 'この数字をさがそう'), target);
   add(hud, youHud, targetWrap, cpuHud);
@@ -180,7 +191,7 @@
   const progressTrack = E('div', 'nr-round-progress'); progressTrack.setAttribute('role', 'progressbar'); progressTrack.setAttribute('aria-label', '見つけた数字');
   const progressFill = E('div'); progressTrack.append(progressFill);
   const stage = E('footer', 'nr-play-stage');
-  const playRin = portrait('rin', 'RIN'), playKoh = portrait('koh', 'KOH');
+  const playRin = portrait('rin', 'RIN'), playKoh = portrait('koh', 'LUNA');
   const playStats = E('div', 'nr-play-stats');
   const elapsed = E('strong'), completed = E('strong'), mistakes = E('strong'), streak = E('strong');
   function stat(label, value) { return add(E('div', 'nr-stat'), E('span', '', label), value); }
@@ -210,14 +221,14 @@
   const instructions = E('ol', 'nr-instructions');
   for (const [heading, text] of [
     ['お題と同じ数字をタップ', '盤面はいつも5行×8列。1から順番、またはランダムなお題を探します。'],
-    ['ライバルより先に見つけよう', '青いYOUがあなた、ピンクのCPUがコウ。先に見つけると1点。全体の6割で勝利です。'],
+    ['ライバルより先に見つけよう', '青いYOUがあなた、ピンクのCPUがルナ。先に見つけると1点。全体の6割で勝利です。'],
     ['ミスしても、すぐ次へ', 'まちがいは爆弾の演出でお知らせ。同じマスはすぐ押し直せます。正解後も待ち時間はありません。'],
     ['練習と休憩も、気軽に', 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。'],
   ]) add(instructions, add(E('li'), E('h2', '', heading), E('p', '', text)));
   add(helpScreen, add(E('div', 'nr-help-card nr-surface'), E('span', 'nr-eyebrow', 'HOW TO PLAY'), E('h1', '', '遊び方'), instructions, E('p', 'nr-muted', 'PC：クリック、または矢印キー＋Enter。Escで一時停止。スマートフォンは横持ちがおすすめ。'), button('戻る', 'back', undefined, 'nr-primary')));
 
   const finished = section('finished', 'nr-centered');
-  const resultRin = portrait('rin', 'RIN / YOU'), resultKoh = portrait('koh', 'KOH / CPU');
+  const resultRin = portrait('rin', 'RIN / YOU'), resultKoh = portrait('koh', 'LUNA / CPU');
   const resultTitle = E('h1'), resultTag = E('span', 'nr-eyebrow'), resultCopy = E('p', 'nr-muted');
   const resultScore = E('strong', 'nr-result-score');
   const resultStats = E('div', 'nr-result-stats');
@@ -236,7 +247,14 @@
   const reviewSummary = E('p', 'nr-muted'), history = E('ol', 'nr-history');
   add(review, add(E('div', 'nr-review-card nr-surface'), E('span', 'nr-eyebrow', 'ROUND INSIGHTS'), E('h1', '', '対戦を振り返る'), reviewSummary, history, button('結果へ戻る', 'back', undefined, 'nr-primary')));
   const screenMap = {home, ready, playing: play, countdown, resuming: countdown, confirm, help: helpScreen, finished, review};
-  const shiritori = window.createShiritoriView?.({section, E, add, button, portrait, command});
+  const shSettings = [];
+  function settingsControls() {
+    const effects=button('効果音','sfx',undefined,'nr-setting');
+    const animation=button('演出','motion',undefined,'nr-setting');
+    shSettings.push([effects,animation]);
+    return add(E('div','nr-settings'),effects,animation);
+  }
+  const shiritori = window.createShiritoriView?.({section, E, add, button, portrait, command, settingsControls, onNavigationChange: update});
   if (shiritori) screenMap.shiritori = shiritori.page;
   const allPortraits = [[heroRin, 'left'], [heroKoh, 'right'], [playRin, 'left'], [playKoh, 'right'], [resultRin, 'left'], [resultKoh, 'right']];
   function select(buttons, values, value) { buttons.forEach((b, i) => b.setAttribute('aria-pressed', String(values[i] === value))); }
@@ -256,13 +274,21 @@
     if (state.screen === 'shiritori') { headerContext.textContent = '絵しりとり'; shiritori.update(state.shiritori); }
     sound.textContent = state.bgm ? '♪ ON' : '♪ OFF'; sound.setAttribute('aria-pressed', String(!!state.bgm));
     help.hidden = !['ready', 'help'].includes(state.screen); help.disabled = state.screen === 'help';
-    gamesBack.hidden = state.screen !== 'ready';
-    pause.hidden = !playing; retry.hidden = !playing;
+    const shPhase = state.screen === 'shiritori' ? state.shiritori?.phase : null;
+    const shMenu = shPhase === 'intro' && !shiritori?.isOverlayOpen();
+    gamesBack.hidden = !(state.screen === 'ready' || shMenu);
+    if (shPhase) { help.hidden = shPhase !== 'intro'; help.disabled = shiritori.isOverlayOpen(); }
+    const shPlaying = ['playing', 'blocked'].includes(shPhase);
+    pause.hidden = !(playing || shPlaying); retry.hidden = !(playing || shPlaying);
     const reduced = state.reduced === true;
     sfx.textContent = pauseSfx.textContent = `効果音 ${state.sfx ? 'ON' : 'OFF'}`;
     sfx.setAttribute('aria-pressed', String(!!state.sfx)); pauseSfx.setAttribute('aria-pressed', String(!!state.sfx));
     motion.textContent = pauseMotion.textContent = `演出 ${reduced ? 'ひかえめ' : '通常'}`;
     motion.setAttribute('aria-pressed', String(reduced)); pauseMotion.setAttribute('aria-pressed', String(reduced));
+    for (const [effects,animation] of shSettings) {
+      effects.textContent=sfx.textContent; effects.setAttribute('aria-pressed',String(!!state.sfx));
+      animation.textContent=motion.textContent; animation.setAttribute('aria-pressed',String(reduced));
+    }
     select(kindButtons, ['battle', 'practice'], state.kind); select(rangeButtons, [10, 20, 30, 40], state.max_number); select(levelButtons, ['easy', 'normal', 'hard'], state.difficulty);
     difficultyWrap.hidden = !battle;
     kindDescription.textContent = battle ? `先に見つけると1点。${state.goal || Math.ceil(state.max_number * .6)}点以上で勝利！` : '自分のペースで、すべての数字を見つけよう。';
@@ -286,6 +312,8 @@
     cpuTrack.dataset.urgent = String(cpuProgress > .75);
     hint.hidden = battle; hint.textContent = state.hint_used ? 'ヒント（記録対象外）' : 'ヒントを見る';
     let recent = '';
+    const cpuCursor = playing && battle ? window.rivalCursor?.(40,8,state.cells.findIndex(c=>c.n===state.target),cpuProgress) : null;
+    if (!playing) cells.forEach(item=>{ item.cell.dataset.cpuSelecting='false'; });
     state.cells.forEach((data, index) => {
       const item = cells[index], claimed = !!data.owner, empty = data.n == null;
       item.number.textContent = empty ? '' : data.n;
@@ -293,6 +321,7 @@
       item.cell.dataset.owner = data.owner || ''; item.cell.dataset.empty = String(empty);
       item.cell.dataset.feedback = data.effect || '';
       item.cell.dataset.hint = String(playing && index === state.hint_index);
+      item.cell.dataset.cpuSelecting = String(index === cpuCursor);
       item.owner.textContent = data.owner === 'cpu' ? 'CPU' : claimed ? '✓' : '';
       item.cell.setAttribute('aria-label', empty ? '空のマス' : `${data.n}${data.owner === 'cpu' ? ' CPUが獲得' : claimed ? ' 獲得済み' : ''}`);
       if (data.effect && data.effect_id !== item.effectId) {

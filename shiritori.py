@@ -53,6 +53,79 @@ def tail(word):
     return word.rstrip("ー")[-1].translate(SMALL)
 
 
+def chain_moves(cards, required, seen):
+    """Pure legal-move enumeration; None is a consumed board slot."""
+    return [(i, word) for i, card in enumerate(cards) if card is not None
+            for word in card[2] if word[0] == required and tail(word) != "ん" and word not in seen]
+
+
+def chain_step(cards, stock, seen, move):
+    """Simulate the real refill/rescue rules without touching the live round."""
+    i, word = move
+    cards, stock = list(cards), list(stock)
+    seen = seen | {word}
+    required = tail(word)
+    cards[i] = stock.pop(0) if stock else None
+    if cards[i] is not None and not chain_moves(cards, required, seen):
+        for j, card in enumerate(stock):
+            if chain_moves((card,), required, seen):
+                cards[i], stock[j] = card, cards[i]
+                break
+    return tuple(cards), tuple(stock), required, frozenset(seen)
+
+
+def longest_chain_move(cards, stock, required, seen, node_budget=4096):
+    """Cooperative longest continuation, with a fair bounded search per root.
+
+    A full route is a proof of possibility, not a prediction of player input.
+    On cutoff, scores are achieved path lengths, never invented exact optima.
+    """
+    initial = (tuple(cards), tuple(stock), required, frozenset(seen))
+    candidates = chain_moves(initial[0], required, initial[3])
+    if not candidates:
+        return None, {"length": 0, "perfect": False, "exact": True, "nodes": 0}
+    remaining = sum(c is not None for c in cards) + len(stock)
+    per_move = max(1, node_budget // len(candidates))
+    best_move, best_length, total_nodes, all_exact = candidates[0], 0, 0, True
+    for move in candidates:
+        memo, nodes = {}, 0
+
+        def search(state):
+            nonlocal nodes
+            if state in memo:
+                return memo[state], True
+            if nodes >= per_move:
+                return 0, False
+            nodes += 1
+            board, deck, head, words = state
+            bound = sum(c is not None for c in board) + len(deck)
+            options = chain_moves(board, head, words)
+            best, exact = 0, True
+            for option in options:
+                length, complete = search(chain_step(board, deck, words, option))
+                best = max(best, 1 + length)
+                exact = exact and complete
+                if best == bound:
+                    memo[state] = best
+                    return best, True
+                if nodes >= per_move:
+                    exact = False
+                    break
+            if exact:
+                memo[state] = best
+            return best, exact
+
+        length, exact = search(chain_step(initial[0], initial[1], initial[3], move))
+        length += 1
+        total_nodes += nodes
+        all_exact = all_exact and exact
+        if length > best_length:
+            best_move, best_length = move, length
+        if length == remaining:
+            return move, {"length": length, "perfect": True, "exact": True, "nodes": total_nodes}
+    return best_move, {"length": best_length, "perfect": False, "exact": all_exact, "nodes": total_nodes}
+
+
 class ShiritoriRound:
     def __init__(self, difficulty="normal", rng=None, clock=None, mode="battle", total=24):
         self.rng = rng or random.Random()
@@ -69,6 +142,7 @@ class ShiritoriRound:
         self.refilled = None
         self.break_next = False
         self.cards = []
+        self.discoveries = set()  # Retain earned readings across pause/restart snapshots.
         self.history = []
         self.used = {}
         self.message = "絵をタップ！つながる読み方を自動で選ぶよ。"
@@ -83,6 +157,7 @@ class ShiritoriRound:
         self.deadline = 0
         self.saved_remaining = 0
         self.revision = 0
+        self.cpu_move = None
 
     def start(self):
         # A shuffled complete ring supplies a known 14-move route. Decoys and
@@ -107,6 +182,7 @@ class ShiritoriRound:
         self.seen = {seed}
         self.turn, self.phase = "you", "playing"
         self.winner = None
+        self.cpu_move = None
         self.selected = self.hint = None
         self.mistakes, self.hints = 0, 3
         self.relinks = 2
@@ -135,25 +211,25 @@ class ShiritoriRound:
             return
         if self.turn == "you" and self.remaining() <= 0:
             self.finish("cpu", "時間切れ。次は読み方の候補も使ってみよう！")
-        elif self.turn == "cpu" and self.remaining() <= 0:
-            moves = self.moves()
-            if not moves:
-                self.finish("you", "コウがつなげなくなった！")
-                return
-            if self.difficulty == "hard":
-                # One-ply, public-board-only strategy; never peek at player input.
-                def replies(move):
-                    i, word = move
-                    return sum(j != i and j not in self.used and w[0] == tail(word) and tail(w) != "ん" and w not in self.seen and w != word
-                               for j, c in enumerate(self.cards) for w in c[2])
-                self.rng.shuffle(moves)
-                move = min(moves, key=replies)
-            else:
-                move = self.rng.choice(moves)
-            self.take(*move)
+        elif self.turn == "cpu":
+            if self.cpu_move is None:
+                self.prepare_cpu()
+            if self.remaining() <= 0 and self.cpu_move is not None:
+                self.take(*self.cpu_move)
+
+    def prepare_cpu(self):
+        moves = self.moves()
+        if not moves:
+            self.finish("you", "ルナがつなげなくなった！")
+            return
+        board = tuple(None if i in self.used else c for i, c in enumerate(self.cards))
+        self.cpu_move, self.cpu_plan = longest_chain_move(board, self.stock, self.required, self.seen)
 
     def take(self, index, word):
         owner = self.turn
+        self.cpu_move = None
+        if owner == "you":
+            self.discoveries.add((self.cards[index][0], word))
         self.used[index] = owner
         self.history.append({"word": word, "owner": owner, "icon": self.cards[index][1], "id": self.cards[index][0], "readings": self.cards[index][2], "relinked": self.break_next})
         self.break_next = False
@@ -165,7 +241,7 @@ class ShiritoriRound:
             self.finish("cpu" if owner == "you" else "you", "「ん」で終わったので負け！別の読み方にも注目しよう。")
             return
         self.turn = "you" if self.mode == "solo" else "cpu" if owner == "you" else "you"
-        self.message = f"{'リン' if owner == 'you' else 'コウ'}：{word} → 次は「{self.required}」"
+        self.message = f"{'リン' if owner == 'you' else 'ルナ'}：{word} → 次は「{self.required}」"
         self.refilled = None
         if self.stock:
             self.cards[index] = self.stock.pop(0)
@@ -185,9 +261,11 @@ class ShiritoriRound:
             if self.mode == "solo":
                 self.check_solo_blocked()
             else:
-                self.finish(owner, f"{'コウ' if self.turn == 'cpu' else 'リン'}がつなげる絵がなくなった！")
+                self.finish(owner, f"{'ルナ' if self.turn == 'cpu' else 'リン'}がつなげる絵がなくなった！")
         else:
             self.deadline = self.clock() + (2.2 if self.turn == "cpu" else self.limit)
+            if self.turn == "cpu":
+                self.prepare_cpu()
 
     def check_solo_blocked(self):
         if self.relinks and any(tail(w) != "ん" and w not in self.seen
@@ -254,6 +332,8 @@ class ShiritoriRound:
     def snapshot(self):
         visible = self.phase in ("playing", "blocked", "finished")
         return {"phase": self.phase, "turn": self.turn, "required": self.required,
+                "cpu_target": self.cpu_move[0] if self.cpu_move is not None and self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else None,
+                "cpu_progress": max(0, min(1, 1-self.remaining()/2.2)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
                 "last_word": self.last_word, "remaining": round(self.remaining(), 1) if self.phase in ("playing", "paused") else 0,
                 "limit": self.limit, "difficulty": self.difficulty, "message": self.message, "winner": self.winner,
                 "mistakes": self.mistakes, "hints": self.hints, "hint": self.hint,
@@ -261,4 +341,6 @@ class ShiritoriRound:
                 "mode": self.mode, "total": self.total, "stock": len(self.stock), "completed": len(self.history),
                 "relinks": self.relinks, "refilled": self.refilled, "seen": sorted(self.seen) if visible else [],
                 "cards": [{"id": c[0], "icon": c[1], "words": c[2], "owner": self.used.get(i)} for i, c in enumerate(self.cards)] if visible else [],
+                "catalog": [{"id": c[0], "icon": c[1], "words": c[2]} for c in CARDS] if self.phase in ("intro", "finished") else [],
+                "discoveries": [{"id": i, "word": w, "owner": "you"} for i, w in sorted(self.discoveries)],
                 "history": self.history if visible else []}

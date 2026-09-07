@@ -61,7 +61,7 @@ if (typeof document !== 'undefined') {
       portraits[i].dataset.pose = action;
     }
   }
-  const images = ['assets/characters/rin-atlas.png', 'assets/characters/koh-atlas.png'];
+  const images = ['assets/characters/rin-atlas.png', 'assets/characters/koh-dark-cutout-atlas.png'];
   Promise.all(images.map(src => new Promise((resolve, reject) => {
     const image = new Image();
     image.onload = () => image.naturalWidth === 1536 && image.naturalHeight === 1024

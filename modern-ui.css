@@ -72,9 +72,19 @@ html[data-modern-active='true'] #character-layer { opacity: 0 !important; pointe
 .nr-character-art { position: relative; width: 100%; aspect-ratio: 1; background-size: 300% 200%; background-repeat: no-repeat;
   transform-origin: 50% 90%; image-rendering: auto; }
 .nr-rin .nr-character-art { background-image: url('assets/characters/rin-atlas.png'); }
-.nr-koh .nr-character-art { background-image: url('assets/characters/koh-atlas.png'); }
+.nr-koh .nr-character-art { background-image: url('assets/characters/koh-dark-cutout-atlas.png'); }
+.nr-dark-fairy { position: absolute; top: 0; right: 0; width: 35%; aspect-ratio: 1;
+  background: url('assets/characters/dark-fairy.png') center / contain no-repeat;
+  pointer-events: none; filter: drop-shadow(0 0 3px #bc73ef66);
+  animation: dark-fairy-hover 3s ease-in-out infinite; }
+@keyframes dark-fairy-hover { 50% { transform: translateY(-3px) rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .nr-dark-fairy { animation: none; } }
+#modern-app[data-reduced='true'] .nr-dark-fairy { animation: none; }
 .nr-character-name { display: inline-block; position: relative; font-size: 9px; font-weight: 800; letter-spacing: 1.4px; color: #b9f5e3; }
-.nr-koh .nr-character-name { color: var(--nr-pink); }
+.nr-koh .nr-character-name { color: #ef9cff; }
+/* Exterior CPU frame never intercepts input or changes cell geometry. */
+.nr-cell[data-cpu-selecting='true'], .sh-card[data-cpu-selecting='true'] { outline: 3px solid #ee56ff; outline-offset: -1px; box-shadow: inset 0 0 0 2px #651680, 0 0 9px #ed56ff; z-index: 2; }
+.nr-cell[data-cpu-selecting='true']::after, .sh-card[data-cpu-selecting='true']::after { content: 'CPU'; position: absolute; top: 1px; right: 2px; padding: 1px 3px; border-radius: 3px; font-size: 9px; line-height: 1.2; font-weight: 900; color: white; background: #751887; pointer-events: none; }
 .nr-hero-cast .nr-character { width: min(44%, 230px); }
 .nr-hero-cast .nr-character-name { font-size: 11px; }
 .nr-versus { color: #f9d58a99; font: italic 800 20px/1 Georgia, serif; }

@@ -1305,7 +1305,7 @@ class NumberRush:
         ui_text(pyxel, 69, 257, "RIN / YOU", BLUE)
         pyxel.rect(523, 252, 56, 14, PANEL)
         pyxel.rectb(523, 252, 56, 14, PINK)
-        ui_text(pyxel, 531, 257, "KOH / CPU", PINK)
+        ui_text(pyxel, 531, 257, "LUNA / CPU", PINK)
 
         if player_action == "celebrate":
             ui_text(pyxel, 78, 270, "NICE!", BLUE)

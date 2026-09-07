@@ -46,7 +46,7 @@ jobs:
           cp index.html player.html viewport.js game.py game_logic.py music.py characters.py progress.py ui_text.py ui_glyphs.py THIRD_PARTY.md _site/
           cp character_layer.py character-layer.js character-layer.css _site/
           cp modern_ui.py modern-ui.js modern-ui.css _site/
-          cp shiritori.py shiritori-ui.js shiritori-ui.css _site/
+          cp shiritori.py shiritori-ui.js shiritori-ui.css shiritori-dictionary.js rival-cursor.js _site/
           cp -r assets _site/
           touch _site/.nojekyll
       - name: Upload static site

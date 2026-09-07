@@ -23,7 +23,10 @@
 .rival-portrait { width: 86px; height: 86px; margin: 3px; background-size: 300% 200%;
   position: relative; background-repeat: no-repeat; image-rendering: auto; transform-origin: 50% 95%; }
 #rin-portrait { background-image: url('assets/characters/rin-atlas.png'); }
-#koh-portrait { background-image: url('assets/characters/koh-atlas.png'); }
+#koh-portrait { background-image: url('assets/characters/koh-dark-cutout-atlas.png'); }
+.rival-dark-fairy { position: absolute; top: 0; right: 0; width: 30px; height: 30px;
+  background: url('assets/characters/dark-fairy.png') center / contain no-repeat;
+  pointer-events: none; }
 .rival-name { height: 16px; line-height: 16px; text-align: center; color: #b6eff9;
   font: 600 8px/16px system-ui, sans-serif; letter-spacing: 1px; }
 .koh .rival-name { color: #ffcae5; }

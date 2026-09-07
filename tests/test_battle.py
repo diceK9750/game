@@ -165,19 +165,26 @@ class BattleTests(unittest.TestCase):
         self.assertEqual(battle.player_points, 0)
         self.assertEqual(battle.cpu_points, 0)
 
-    def test_search_cursor_is_cosmetic_and_visits_only_live_cells(self):
+    def test_search_cursor_is_cosmetic_and_walks_adjacent_cells(self):
         battle = self.make_round()
         deadline = battle.cpu_at
         for t in (0, 0.3, 0.7, 1):
             self.now = t
             index = battle.cpu_cursor
-            self.assertIsNotNone(battle.board_cells[index])
+            self.assertIn(index, range(40))
             self.assertEqual(battle.cpu_at, deadline)
             self.assertEqual(battle.completed_count, 0)
         battle.tap(battle.current_target)
         self.assertIsNotNone(battle.cpu_cursor)
         self.now = battle.ready_at
-        self.assertNotIn(battle.board_cells[battle.cpu_cursor], battle.found_numbers)
+        previous = battle.cpu_cursor
+        duration = battle.cpu_at - battle.ready_at
+        for step in range(1, 9):
+            self.now = battle.ready_at + duration * (step / 9 + .0001)
+            index = battle.cpu_cursor
+            self.assertEqual(abs(index % 8 - previous % 8) + abs(index // 8 - previous // 8), 1)
+            previous = index
+        self.assertEqual(battle.board_cells[previous], battle.current_target)
 
     def test_search_cursor_freezes_during_pause(self):
         battle = self.make_round()

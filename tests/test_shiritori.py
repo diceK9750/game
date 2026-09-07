@@ -29,6 +29,23 @@ class ShiritoriTests(unittest.TestCase):
         self.assertEqual(tail('ぎたー'), 'た')
         self.assertEqual(tail('うさぎ'), 'ぎ')
 
+    def test_dictionary_earnings_survive_immediate_pause_and_restart(self):
+        i,w=self.game.moves()[0]
+        identity=self.game.cards[i][0]
+        self.game.command('card',i)
+        self.game.command('pause')
+        self.assertIn({'id':identity,'word':w,'owner':'you'},self.game.snapshot()['discoveries'])
+        self.game.command('restart')
+        self.assertIn((identity,w),self.game.discoveries)
+
+    def test_dictionary_catalog_and_cpu_do_not_award_discoveries(self):
+        game=ShiritoriRound()
+        self.assertEqual(sum(len(c['words']) for c in game.snapshot()['catalog']),158)
+        game.start()
+        game.turn='cpu'
+        game.take(*game.moves()[0])
+        self.assertEqual(game.snapshot()['discoveries'],[])
+
     def test_settings_accept_only_supported_values_before_start(self):
         game = ShiritoriRound()
         for n in [12,24,36]:
@@ -293,6 +310,24 @@ class ShiritoriTests(unittest.TestCase):
         row = self.game.history[0]
         self.assertEqual(row['owner'], 'cpu')
         self.assertIn(row['word'], [word for _, word in legal])
+
+    def test_cpu_cursor_target_is_its_committed_answer_and_pause_preserves_it(self):
+        self.game.turn='cpu'
+        self.game.deadline=2.2
+        self.game.update()
+        index,word=self.game.cpu_move
+        self.assertEqual(self.game.snapshot()['cpu_target'],index)
+        self.now=1
+        progress=self.game.snapshot()['cpu_progress']
+        self.game.command('pause')
+        self.assertIsNone(self.game.snapshot()['cpu_target'])
+        self.now=20
+        self.game.command('resume')
+        self.assertAlmostEqual(self.game.snapshot()['cpu_progress'],progress)
+        self.now=22
+        self.game.update()
+        self.assertEqual(self.game.history[-1]['word'],word)
+        self.assertIsNone(self.game.snapshot()['cpu_target'])
 
     def test_blocked_opponent_and_all_used_draw(self):
         self.game.stock = []

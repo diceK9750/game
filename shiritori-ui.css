@@ -1,4 +1,21 @@
 .sh-launch { width: 100%; margin-bottom: 12px; border-color: #f9d58a80; }
+/* Setup shares the number game's hero, surface, typography and controls. */
+.sh-ready { min-height: 100%; padding: 12px 0; }
+.sh-ready-settings { display: grid; gap: 10px; min-width: 0; }
+.sh-ready-settings .nr-field-label { margin: 4px 0 !important; }
+.sh-ready-settings .sh-start-actions { position: static; background: transparent; }
+.sh-ready-settings .sh-dict-open { width: 100%; }
+.sh-ready-settings .sh-actions { flex-wrap: nowrap; }
+.sh-ready .sh-ready-settings .nr-segment button[aria-pressed='true'] { border-color: transparent; background: #395660; color: #e4fff6; }
+.sh-page > .nr-dialog { max-width: 520px; }
+@media (max-height: 500px) {
+  .sh-ready { align-items: start; gap: 18px; }
+  .sh-ready .nr-intro { position: sticky; top: 6px; }
+  .sh-ready-settings { gap: 5px; }
+  .sh-ready-settings .sh-config, .sh-ready-settings .sh-level-settings { gap: 4px; }
+  .sh-ready-settings { max-height: calc(100dvh - 72px); overflow-y: auto; scrollbar-width: thin; }
+  .sh-ready-settings .sh-start-actions { position: sticky; bottom: -12px; background: #16303cf5; margin: 0 -2px; padding: 8px 2px; z-index: 2; }
+}
 .sh-page { flex: 1; min-height: 0; overflow: auto; padding: 12px 0; width: 100%; max-width: 1180px; margin: auto; }
 .sh-intro { max-width: 780px; padding: clamp(18px, 4vw, 36px); margin: 16px auto; border-radius: 24px; display: grid; gap: 16px; }
 .sh-intro p { line-height: 1.8; }
@@ -23,7 +40,11 @@
 .sh-card[data-owner='cpu'] { background: #443a4c; border-color: #e0a3c0; }
 .sh-card:disabled .sh-icon { opacity: .45; }
 .sh-card:disabled small { color: #e9f5f0; }
-.sh-card[data-hint='true'] { outline: 3px solid #f9d58a; outline-offset: -4px; }
+.sh-card[data-hint='true'] { border-color: #fff1a6; background: #fff6bb; outline: 3px solid #ffc83d; outline-offset: -3px; box-shadow: inset 0 0 0 5px #ffca35, 0 0 12px #ffd342cc; animation: sh-hint-glow 1.4s ease-in-out infinite; z-index: 1; }
+.sh-hint-label { position: absolute; top: 2px; left: 2px; border-radius: 5px; padding: 2px 5px; background: #143d57; color: #fff6ab; font-size: 11px; font-weight: 900; line-height: 1.2; pointer-events: none; }
+@keyframes sh-hint-glow { 50% { box-shadow: inset 0 0 0 5px #ffca35, 0 0 18px #ffd342; } }
+#modern-app[data-reduced='true'] .sh-card[data-hint='true'] { animation: none; }
+@media (prefers-reduced-motion: reduce) { .sh-card[data-hint='true'] { animation: none; } }
 .sh-daruma { width: 1em; height: 1.2em; background: url('assets/shiritori/daruma.svg') center / contain no-repeat; }
 .sh-levels button[aria-pressed='true'] { background: #395d62; border-color: var(--nr-gold); }
 .sh-overlay { position: fixed; inset: 0; z-index: 60; background: #06121ecb; display: flex; align-items: center; justify-content: center; padding: 12px; }
@@ -105,7 +126,7 @@
 }
 /* Size artwork from its actual panel, never from the viewport alone. */
 .sh-board[data-count='24'] { grid-template-columns: repeat(8, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(44px, 1fr)); }
-.sh-card { position: relative; container-type: size; min-height: 44px; overflow: hidden; gap: 0; }
+.sh-card { position: relative; container-type: size; min-height: 44px; overflow: hidden; gap: 0; box-sizing: border-box; width: 100%; height: auto; aspect-ratio: 1; max-height: 100%; align-self: center; }
 .sh-card .sh-icon { font-size: min(88cqw, 86cqh); line-height: 1; }
 .sh-card small { position: absolute; bottom: 1px; right: 3px; padding: 0 3px; border-radius: 4px; background: #19343be6; color: white; pointer-events: none; }
 .sh-card small:empty { display: none; }
@@ -113,3 +134,31 @@
 @media (orientation: portrait) and (max-width: 600px) {
   .sh-board[data-count='24'] { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(44px, 1fr)); min-height: 284px; }
 }
+/* Keep spare viewport height outside the grid, never between panel rows. */
+.sh-board-space { --sh-cols: 4; --sh-rows: 3; flex: 1; min-height: calc(var(--sh-rows) * 44px + (var(--sh-rows) - 1) * 4px); container-type: size; display: flex; align-items: center; }
+.sh-board-space[data-count='24'] { --sh-cols: 8; }
+.sh-board-space .sh-board { flex: none; width: 100%; min-height: 0; height: min(100%, calc((100cqw - (var(--sh-cols) - 1) * 4px) / var(--sh-cols) * var(--sh-rows) + (var(--sh-rows) - 1) * 4px)); gap: 4px; grid-template-columns: repeat(var(--sh-cols), minmax(0, 1fr)); grid-template-rows: repeat(var(--sh-rows), minmax(0, 1fr)); }
+.sh-board-space .sh-card { height: 100%; aspect-ratio: auto; align-self: stretch; }
+@media (orientation: portrait) and (max-width: 600px) {
+  .sh-board-space { --sh-cols: 3; --sh-rows: 4; }
+  .sh-board-space[data-count='24'] { --sh-cols: 4; --sh-rows: 6; }
+}
+.sh-dict-open { min-height: 44px; grid-column: 1 / -1; }
+.sh-dictionary { margin: 8px auto; padding: 16px; border-radius: 18px; display: grid; gap: 12px; }
+.sh-dict-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.sh-dictionary button { min-height: 44px; }
+.sh-dict-progress { font-size: 22px; font-weight: 900; color: var(--nr-gold); }
+.sh-dict-warning { color: #ffbfbc; }
+.sh-dict-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 8px; }
+.sh-dict-entry { padding: 10px; border: 1px solid #72998e; border-radius: 12px; display: flex; gap: 18px; background: #102a35; }
+.sh-dict-entry[data-complete='true'] { border-color: #ffd15a; }
+.sh-dict-picture { display: grid; justify-items: center; align-content: center; min-width: 68px; }
+.sh-dict-icon { display: block; font-family: 'Apple Color Emoji','Segoe UI Emoji',sans-serif; font-size: 56px; line-height: 1; }
+.sh-dict-entry ul { padding-left: 18px; line-height: 1.7; }
+.sh-undiscovered { color: #92a6ad; }
+.sh-found { color: #e2fff3; }
+.sh-dict-quiz { padding: 12px; background: #23414b; border-radius: 12px; display: grid; gap: 10px; }
+.sh-dict-choices { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 4px; }
+.sh-dict-choice { border: 2px solid #e7ead3; background: #fff8dd; border-radius: 12px; aspect-ratio: 1; max-height: 110px; display: grid; place-items: center; }
+.sh-dict-choice .sh-dict-icon { font-size: clamp(30px,8vw,72px); }
+@media (max-width: 600px) { .sh-dict-choices { grid-template-columns: repeat(3,minmax(0,1fr)); } .sh-dict-choice .sh-dict-icon { font-size: 56px; } }
