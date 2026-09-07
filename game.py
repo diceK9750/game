@@ -20,7 +20,7 @@ try:
 except ImportError:
     browser_document = None
 from music import configure_bgm, configure_scene_bgm, SCENE_TRACKS, sequences as music_sequences
-from music import SPEED, TICKS, PHRASE_COUNT
+from music import SPEED, TICKS, PHRASE_COUNT, BATTLE_SPEED, BATTLE_PHRASE_COUNT
 
 from game_logic import (
     BOARD_CELL_COUNT,
@@ -81,6 +81,10 @@ BGM_PHRASE_FRAMES = (
     BGM_NOTES_PER_PHRASE * BGM_SOUND_SPEED * FPS // PYXEL_AUDIO_TICKS_PER_SECOND
 )
 BGM_LOOP_FRAMES = BGM_PHRASE_FRAMES * BGM_PHRASE_COUNT
+BATTLE_BGM_PHRASE_FRAMES = (
+    BGM_NOTES_PER_PHRASE * BATTLE_SPEED * FPS // PYXEL_AUDIO_TICKS_PER_SECOND
+)
+BATTLE_BGM_LOOP_FRAMES = BATTLE_BGM_PHRASE_FRAMES * BATTLE_PHRASE_COUNT
 
 # Pyxel標準16色パレット。
 BACKGROUND = 0
@@ -706,6 +710,12 @@ class NumberRush:
         pyxel.play(1, bass, sec=position_seconds, loop=True)
         pyxel.play(2, drums, sec=position_seconds, loop=True)
 
+    def bgm_timing(self) -> tuple[int, int]:
+        """対戦曲と練習曲、それぞれのテンポに合った句・ループ長を返す。"""
+        if isinstance(self.round, BattleRound):
+            return BATTLE_BGM_PHRASE_FRAMES, BATTLE_BGM_LOOP_FRAMES
+        return BGM_PHRASE_FRAMES, BGM_LOOP_FRAMES
+
     def start_bgm(
         self,
         stage: int,
@@ -715,14 +725,15 @@ class NumberRush:
     ) -> None:
         """指定した曲位置から3パートを同期して開始する。"""
         self.stop_scene_music()
-        position_frames %= BGM_LOOP_FRAMES
+        phrase_frames, loop_frames = self.bgm_timing()
+        position_frames %= loop_frames
         self.bgm_stage = stage
         if clear_pending:
             self.pending_bgm_stage = None
         self.play_bgm_channels(stage, position_frames)
         self.bgm_origin_frame = pyxel.frame_count - position_frames
-        phrase_offset = position_frames % BGM_PHRASE_FRAMES
-        frames_to_boundary = BGM_PHRASE_FRAMES - phrase_offset
+        phrase_offset = position_frames % phrase_frames
+        frames_to_boundary = phrase_frames - phrase_offset
         self.bgm_next_phrase_frame = pyxel.frame_count + frames_to_boundary
         self.bgm_paused_position_frames = position_frames
         self.bgm_paused = False
@@ -733,7 +744,8 @@ class NumberRush:
             return self.bgm_paused_position_frames
         if not self.bgm_has_started:
             return 0
-        return (pyxel.frame_count - self.bgm_origin_frame) % BGM_LOOP_FRAMES
+        _phrase_frames, loop_frames = self.bgm_timing()
+        return (pyxel.frame_count - self.bgm_origin_frame) % loop_frames
 
     def update_bgm_transition(self) -> None:
         """進行度による編曲変更を、次の句境界まで待って適用する。"""
@@ -746,9 +758,10 @@ class NumberRush:
             # 曲中の現在位置を保ったまま編曲だけを切り替える。
             self.start_bgm(self.pending_bgm_stage, position_frames)
             return
-        phrase_offset = position_frames % BGM_PHRASE_FRAMES
+        phrase_frames, _loop_frames = self.bgm_timing()
+        phrase_offset = position_frames % phrase_frames
         self.bgm_next_phrase_frame = (
-            pyxel.frame_count + BGM_PHRASE_FRAMES - phrase_offset
+            pyxel.frame_count + phrase_frames - phrase_offset
         )
 
     def pause_bgm(self) -> None:

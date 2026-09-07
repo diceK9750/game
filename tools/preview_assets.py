@@ -73,20 +73,26 @@ def main():
             pyxel.text(x, y + 70, action.upper(), game.CARD)
     pyxel.screenshot(str(out / "character-poses.png"), scale=2)
 
-    for battle, label in ((True, "lantern-rivals"), (False, "riverlight-walk")):
+    audio_paths = []
+    for battle, label, stage in ((True, "skybound-sprint", 1),
+                                 (True, "skybound-sprint-opening", 0),
+                                 (True, "skybound-sprint-finale", 2),
+                                 (False, "riverlight-walk", 1)):
         configure_bgm(pyxel.sounds, battle=battle)
         # Write two copies so the first loop boundary is definitely in the WAV.
-        parts = [part * 2 for part in sequences(1, battle=battle)]
+        parts = [part * 2 for part in sequences(stage, battle=battle)]
         pyxel.musics[0].set(*parts)
         pyxel.musics[0].save(str(out / label), 80.8)
+        audio_paths.append(out / f"{label}.wav")
     configure_scene_bgm(pyxel.sounds)
     for name, ids in SCENE_TRACKS.items():
         pyxel.musics[0].set(*([index] for index in ids))
         speed, bars, _ = SCENE_SCORES[name]
         pyxel.musics[0].save(str(out / name), len(bars) * 32 * speed / 120)
+        audio_paths.append(out / f"{name}.wav")
 
     # Validate the real engine's PCM, not an approximation of the synthesizer.
-    for path in sorted(out.glob("*.wav")):
+    for path in sorted(audio_paths):
         with wave.open(str(path), "rb") as wav:
             assert wav.getsampwidth() == 2
             rate, channels, frames = wav.getframerate(), wav.getnchannels(), wav.getnframes()
@@ -95,7 +101,7 @@ def main():
         assert 0 < peak < 32767, (path.name, peak)
         duration = frames / rate
         print(f"{path.name}: {duration:.3f}s, peak={peak}/32767")
-        if path.stem in {"lantern-rivals", "riverlight-walk"}:
+        if path.stem.startswith("skybound-sprint") or path.stem == "riverlight-walk":
             seam = round(76.8 * rate) * channels
             assert any(values[seam:seam + rate * channels]), "Silent second loop"
             jump = max(abs(values[seam + c] - values[seam + c - channels])
