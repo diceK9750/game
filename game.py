@@ -2,7 +2,7 @@
 # author: diceK9750 / Codex
 # desc: Find 1 to 10, 20, 30, or 40 in order or in a shuffled sequence.
 # site: https://dicek9750.github.io/game/
-# version: 11.0
+# version: 12.0
 
 """横持ちブラウザ向けの数字タップゲーム NUMBER RUSH。"""
 
@@ -14,6 +14,7 @@ import progress
 from ui_text import text as ui_text, text_width, translate
 from characters import draw_rival
 from character_layer import CharacterLayer
+from modern_ui import ModernUI
 try:
     from js import document as browser_document
     from pyodide.ffi import create_proxy
@@ -195,6 +196,7 @@ class NumberRush:
         pyxel.mouse(True)
         self.configure_sounds()
         self.character_layer = CharacterLayer(browser_document)
+        self.modern_ui = ModernUI(browser_document)
         self.selected_max_number = 40
         self.round = NumberTapRound(max_number=self.selected_max_number)
         self.screen = "ready"
@@ -269,6 +271,9 @@ class NumberRush:
     def update(self) -> None:
         if self.update_visibility():
             return
+        modern = getattr(self, "modern_ui", None)
+        if modern is not None:
+            modern.consume(self)
         self.update_frame()
         self.sync_scene_music()
 
@@ -294,6 +299,21 @@ class NumberRush:
         return False
 
     def update_frame(self) -> None:
+        modern = getattr(self, "modern_ui", None)
+        if modern is not None and modern.ready:
+            # HTML owns all input in this renderer. Keep only the existing
+            # simulation clocks here so pointer/key events cannot fire twice.
+            self.update_visual_feedback()
+            if self.screen == "playing":
+                self.update_bgm_transition()
+                self.update_cpu_turn()
+            elif self.screen == "resuming" and pyxel.frame_count >= self.resume_end_frame:
+                self.round.resume()
+                self.screen = "playing"
+                self.resume_bgm()
+            elif self.screen == "countdown" and pyxel.frame_count >= self.countdown_end_frame:
+                self.start_round(self.selected_mode)
+            return
         clicked = pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT)
         mouse = (pyxel.mouse_x, pyxel.mouse_y)
         self.update_visual_feedback()
@@ -317,14 +337,12 @@ class NumberRush:
                 return
             if (pyxel.btnp(pyxel.KEY_H) or clicked and point_in_rect(*mouse, HINT_BUTTON)):
                 if not isinstance(self.round, BattleRound):
-                    self.hint_used = True
-                    self.hint_until = pyxel.frame_count + 120
+                    self.show_hint()
                     clicked = False
 
         if self.screen == "ready":
             if clicked and point_in_rect(*mouse, EXTRA_BUTTON):
-                self.reduced_motion = not self.reduced_motion
-                self.storage_saved = progress.save(self)
+                self.toggle_motion()
                 return
             if pyxel.btnp(pyxel.KEY_H) or (clicked and point_in_rect(*mouse, RETRY_BUTTON)):
                 self.screen = "help"
@@ -448,6 +466,10 @@ class NumberRush:
                 self.cursor_cell = cell_index
                 self.handle_tap(cell_index)
         # 入力を先に判定し、同一フレームの競合はプレイヤー優先にする。
+        self.update_cpu_turn()
+
+    def update_cpu_turn(self) -> None:
+        """Advance the original CPU once, after either renderer's player input."""
         if self.screen == "playing" and isinstance(self.round, BattleRound):
             number = self.round.update_cpu()
             if number is not None:
@@ -459,6 +481,15 @@ class NumberRush:
                 self.update_battle_progress()
                 if self.round.is_finished:
                     self.finish_battle()
+
+    def show_hint(self) -> None:
+        if self.screen == "playing" and not isinstance(self.round, BattleRound):
+            self.hint_used = True
+            self.hint_until = pyxel.frame_count + 120
+
+    def toggle_motion(self) -> None:
+        self.reduced_motion = not self.reduced_motion
+        self.storage_saved = progress.save(self)
 
     def update_visual_feedback(self) -> None:
         """期限切れのリアクションと盤面エフェクトを片付ける。"""
@@ -821,6 +852,11 @@ class NumberRush:
         return None
 
     def draw(self) -> None:
+        modern = getattr(self, "modern_ui", None)
+        if modern is not None:
+            modern.sync(self, pyxel.frame_count)
+            if modern.ready:
+                return
         left, right = self.character_actions()
         self.character_layer.sync(self.screen, left, right, self.reduced_motion,
                                   isinstance(self.round, BattleRound) and self.round.is_perfect,

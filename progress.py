@@ -40,16 +40,27 @@ def decode(raw):
     for field in ("bgm_on", "sfx_on", "reduced_motion"):
         if type(data.get(field)) is bool:
             result[field] = data[field]
+    # Optional additions to v1: old saves keep their existing defaults.
+    for field, allowed in (("selected_max_number", (10, 20, 30, 40)),
+                           ("selected_mode", ("ordered", "random")),
+                           ("play_kind", ("battle", "practice")),
+                           ("difficulty", ("easy", "normal", "hard"))):
+        value = data.get(field)
+        if type(value) is type(allowed[0]) and value in allowed:
+            result[field] = value
     return result
 
 
 def encode(app):
-    return json.dumps({"version": 1,
+    data = {"version": 1,
         "best_times": [list(k) + [v] for k, v in app.best_times.items()],
         "battle_records": [list(k) + [v] for k, v in app.battle_records.items()],
         "bonus_bank": app.bonus_bank, "bgm_on": app.bgm_on,
-        "sfx_on": app.sfx_on, "reduced_motion": app.reduced_motion},
-        allow_nan=False)
+        "sfx_on": app.sfx_on, "reduced_motion": app.reduced_motion}
+    for field in ("selected_max_number", "selected_mode", "play_kind", "difficulty"):
+        if hasattr(app, field):
+            data[field] = getattr(app, field)
+    return json.dumps(data, allow_nan=False)
 
 
 def load():

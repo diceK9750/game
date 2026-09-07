@@ -34,3 +34,14 @@ class ProgressTests(unittest.TestCase):
         self.assertEqual(text_width("CPU DUEL"), text_width(translate("CPU DUEL")))
         self.assertLess(text_width("ランダムで開始"), 188)
 
+    def test_last_played_settings_are_optional_and_validated(self):
+        values = dict(version=1, selected_max_number=20, selected_mode='random',
+                      play_kind='practice', difficulty='easy')
+        restored = decode(json.dumps(values))
+        for key in values.keys() - {'version'}:
+            self.assertEqual(restored[key], values[key])
+        invalid = dict(version=1, selected_max_number=True, selected_mode='bad',
+                       play_kind=['battle'], difficulty=None)
+        restored = decode(json.dumps(invalid))
+        for key in invalid.keys() - {'version'}:
+            self.assertNotIn(key, restored)

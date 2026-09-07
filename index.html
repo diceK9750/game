@@ -9,6 +9,11 @@
     * { box-sizing: border-box; }
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #090e19; color: #f1f6ed; }
     body { font-family: system-ui, sans-serif; }
+    body::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none;
+      background: linear-gradient(#081321dd, #081321f2),
+        url("assets/backgrounds/lantern-forest.png") center / cover;
+    }
     main {
       position: fixed;
       left: var(--view-left, 0px); top: var(--view-top, 0px);
@@ -17,28 +22,60 @@
                max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
       display: flex; flex-direction: column; gap: 4px;
     }
-    header { flex: none; text-align: center; min-height: 26px; }
-    h1 { margin: 0; font-size: 14px; letter-spacing: 2px; }
-    .hint { margin: 0; font-size: 11px; text-align: center; color: #91a8bd; }
+    header { flex: none; padding: 8px 12px 4px; text-align: center; }
+    .brand { display: flex; justify-content: center; align-items: center; gap: 12px; }
+    .brand-mark { color: #f8d88f; font-size: 20px; line-height: 1; }
+    h1 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: 3px; }
+    .subtitle { margin: 3px 0 0; font-size: 10px; letter-spacing: 2px; color: #9fcec8; }
+    .hint { margin: 0; font-size: 11px; line-height: 1.5; text-align: center; color: #adbecb; }
+    #loading-status { margin: 7px 0 0; font-size: 12px; color: #d9e7e9; }
+    #connection-help { margin: 4px 0 0; font-size: 11px; color: #ead5a6; }
+    #connection-help[hidden], button[hidden] { display: none; }
+    button { min-height: 32px; padding: 5px 12px; border: 1px solid #607d82;
+      border-radius: 999px; background: #16313c; color: #f1f6ed; font: inherit;
+      cursor: pointer; touch-action: manipulation; }
+    button:focus-visible { outline: 3px solid #f8d88f; outline-offset: 3px; }
+    #fullscreen-button { font-size: 11px; }
+    #reload-button { margin: 5px 0 0; font-size: 12px; }
     #stage { flex: 1; min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; }
     #game-box { position: relative; width: 640px; height: 360px; }
     #game-frame { position: absolute; left: 0; top: 0; display: block; width: 640px; height: 360px; transform-origin: top left; border: 0; background: #090e19; }
-    footer { flex: none; }
+    footer { flex: none; padding: 4px 10px 6px; }
+    html[data-app-ready="true"] header,
+    html[data-app-ready="true"] footer,
+    html[data-app-ready="true"] #orientation-hint { display: none; }
+    html[data-app-ready="true"] main { gap: 0; }
     @media (orientation: landscape) and (max-height: 500px) {
-      header, footer, #orientation-hint { display: none; }
-      main { gap: 0; }
+      footer, #orientation-hint, .subtitle { display: none; }
+      header { padding: 2px 8px; }
+      .brand { display: inline-flex; gap: 8px; vertical-align: middle; }
+      .brand-mark { font-size: 15px; }
+      h1 { font-size: 11px; letter-spacing: 2px; }
+      #loading-status { display: inline; margin: 0 0 0 10px; font-size: 10px; }
+      #connection-help { margin: 1px 0 0; font-size: 10px; }
+      #reload-button { min-height: 28px; padding: 3px 10px; margin: 0 0 0 8px; }
+      main { gap: 2px; }
     }
   </style>
-  <script src="viewport.js?v=2" defer></script>
+  <script src="viewport.js?v=3" defer></script>
 </head>
 <body>
   <main>
-    <header><h1>NUMBER RUSH</h1></header>
-    <p class="hint" id="orientation-hint">縦向きでも遊べます。横向きにすると数字とボタンが大きくなります。</p>
+    <header>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span>
+        <div><h1>NUMBER RUSH</h1><p class="subtitle">ひらめきで、一歩先へ。</p></div>
+        <button id="fullscreen-button" type="button" hidden>全画面</button>
+      </div>
+      <p id="loading-status" role="status" aria-live="polite">ゲームを準備しています。初回は通信が必要です。</p>
+      <div id="connection-help" hidden>時間がかかる場合は通信環境を確認してください。開始ボタンが見えたら押してください。
+        <button id="reload-button" type="button">再読み込み</button>
+      </div>
+    </header>
+    <p class="hint" id="orientation-hint">画面の開始ボタンを押すと起動します。音が出ます。スマートフォンは横向きがおすすめです。</p>
     <section id="stage" aria-label="数字さがしゲーム">
       <div id="game-box"><iframe id="game-frame" title="NUMBER RUSH ゲーム画面" src="player.html" width="640" height="360" allow="autoplay; fullscreen" allowfullscreen></iframe></div>
     </section>
-    <footer class="hint">範囲と難易度を選び「1から順番に開始」か「ランダムで開始」。練習にはヒントもあります。<br>「休憩」で一時停止。記録はこのブラウザに保存されます（保存が許可されている場合）。</footer>
+    <footer class="hint">お題の数字を見つけてタップ。範囲と難易度を選んで対戦できます。<br>記録はこのブラウザに保存されます（保存が許可されている場合）。</footer>
   </main>
   <noscript>JavaScriptを有効にして遊んでください。</noscript>
 </body>
