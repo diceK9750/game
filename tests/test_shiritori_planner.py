@@ -48,8 +48,10 @@ class ChainPlannerTests(unittest.TestCase):
         self.assertEqual(move, (0, 'あい'))
         self.assertFalse(plan['perfect'])
         self.assertEqual(len(game._chain_advice), 1)
+        previous_states=set(game._chain_advice)
         game.start()
-        self.assertEqual(game._chain_advice, {})
+        self.assertTrue(previous_states.isdisjoint(game._chain_advice))
+        self.assertTrue(game.chain_advice()[1]['perfect'])
 
     def test_returned_route_replays_with_refill_and_shared_readings(self):
         for seed in range(20):

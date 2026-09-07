@@ -7,7 +7,7 @@
     const hero = E('div', 'nr-intro');
     const heroRin = portrait('rin', 'RIN / あなた'), heroRival = portrait('koh', 'LUNA / ライバル');
     add(hero, E('span', 'nr-eyebrow', 'PICTURE WORD CHALLENGE'), E('h1', '', '絵を見つけて、つなごう。'),
-      E('p', 'nr-intro-copy', 'お題の文字から始まる絵を見つけてタップ。\n読み方は自動で選択。一人でも、ライバルとの対戦でも。'),
+      E('p', 'nr-intro-copy', 'お題の文字につながる絵をタップ。読み方は自動で選択。\nどの枚数でも、全札をつなげられる配置でスタート！'),
       add(E('div', 'nr-hero-cast'), heroRin.wrap, E('span', 'nr-versus', 'VS'), heroRival.wrap));
     const setup = E('div', 'nr-setup nr-surface sh-ready-settings');
     const modeButtons = [button('CPUと対戦', 'sh_mode', 'battle'), button('ひとりで練習', 'sh_mode', 'solo')];
@@ -21,7 +21,7 @@
     const guide = add(E('details', 'sh-guide'), E('summary', '', '遊び方・読み方のルール'),
       E('p', '', '絵を1回タップするだけ！必要な頭文字につながる未使用の読み方を自動確定。「ん」終わりは自動で除外します。各絵に頭文字の異なる3〜5種類の読み方があります。'),
       E('p', '', '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。'),
-      E('p', '', '画面は最大24枚。36枚では使った場所に新しい札が登場。つながる札が盤面にない場合、山札にある札を優先して補充します（両者共通）。'),
+      E('p', '', '画面は最大24枚。36枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。'),
       E('p', '', 'ヒントは3回。小さい文字は大きく（ちゃ→や）、長音は直前の文字（ぎたー→た）。濁点は区別。札とことばの再使用はできません。'));
     const start = button('はじめる', 'sh_start', undefined, 'nr-primary');
     add(setup, E('div', 'nr-setup-heading', '絵しりとりのチャレンジ'),

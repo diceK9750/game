@@ -1,7 +1,8 @@
 import random
 import unittest
+from unittest.mock import patch
 
-from shiritori import CARDS, ShiritoriRound, tail
+from shiritori import CARDS, PERFECT_RING, ShiritoriRound, tail
 
 
 class ShiritoriTests(unittest.TestCase):
@@ -40,7 +41,7 @@ class ShiritoriTests(unittest.TestCase):
 
     def test_dictionary_catalog_and_cpu_do_not_award_discoveries(self):
         game=ShiritoriRound()
-        self.assertEqual(sum(len(c['words']) for c in game.snapshot()['catalog']),158)
+        self.assertEqual(sum(len(c['words']) for c in game.snapshot()['catalog']),239)
         game.start()
         game.turn='cpu'
         game.take(*game.moves()[0])
@@ -169,20 +170,43 @@ class ShiritoriTests(unittest.TestCase):
                             if not b['relinked']:
                                 self.assertEqual(tail(a['word']), b['word'][0])
 
-    def test_every_starting_rotation_has_fourteen_linked_moves(self):
-        ring = ['りんご', 'ごりら', 'らっぱ', 'ぱんだ', 'だるま', 'まつ', 'つき',
-                'きつね', 'ねずみ', 'みつばち', 'ちょう', 'うさぎ', 'ぎたー', 'たこ', 'ことり']
-        for offset in range(15):
-            rng = random.Random(offset)
-            rng.randrange = lambda *args, n=offset: n
-            game = ShiritoriRound(rng=rng)
+    def test_every_rotation_count_and_mode_has_a_real_perfect_route(self):
+        by_id = {c[0]: c for c in CARDS}
+        self.assertEqual(len(PERFECT_RING),len(set(PERFECT_RING)))
+        for offset in range(len(PERFECT_RING)):
+            for total in (12,24,36):
+                for mode in ('solo','battle'):
+                    rng = random.Random(offset)
+                    rng.randrange = lambda *args, n=offset: n
+                    game = ShiritoriRound(rng=rng,total=total,mode=mode,clock=lambda:0)
+                    game.start()
+                    self.assertEqual(game.last_word,by_id[PERFECT_RING[offset]][2][0])
+                    self.assertEqual(len({c[0] for c in game.cards+game.stock}),total)
+                    for _ in range(total):
+                        self.assertEqual(game.phase,'playing')
+                        move,plan=game.chain_advice()
+                        self.assertTrue(plan['perfect'])
+                        self.assertIn(move,game.moves())
+                        if game.turn=='cpu':
+                            self.assertEqual(game.cpu_move,move)
+                        game.take(*move)
+                    self.assertEqual(len(game.history),total)
+                    self.assertEqual(game.phase,'finished')
+                    self.assertEqual(game.winner,'you' if mode=='solo' else 'draw')
+                    self.assertEqual(game.stock,[])
+                    self.assertEqual(len(game.used),len(game.cards))
+
+    def test_certified_fallback_also_completes_every_rotation(self):
+        with patch('shiritori.starting_route', return_value=None):
+            self.test_every_rotation_count_and_mode_has_a_real_perfect_route()
+
+    def test_full_catalog_remains_available_in_normal_deals(self):
+        dealt = set()
+        for seed in range(500):
+            game = ShiritoriRound(rng=random.Random(seed), total=36)
             game.start()
-            self.assertEqual(game.last_word, ring[offset])
-            for word in ring[offset + 1:] + ring[:offset]:
-                self.assertEqual(game.phase, 'playing')
-                index = next(i for i, reading in game.moves() if reading == word)
-                game.take(index, word)
-            self.assertEqual(len(game.history), 14)
+            dealt.update(c[0] for c in game.cards + game.stock)
+        self.assertEqual(dealt, {c[0] for c in CARDS})
 
     def test_difficulty_only_changes_before_start(self):
         game = ShiritoriRound()

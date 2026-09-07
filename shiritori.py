@@ -44,6 +44,44 @@ CARDS = (
     ("peach", "🍑", ("もも", "くだもの", "ぴーち", "ふるーつ", "たべもの")),
     ("bread", "🍞", ("ぱん", "しょくぱん", "とーすと", "ぶれっど", "たべもの")),
     ("lion", "🦁", ("らいおん", "どうぶつ", "しし", "けもの")),
+    ("top", "🌀", ("こま", "おもちゃ", "かいてんたい")),
+    ("pillow", "🛏️", ("まくら", "しんぐ", "ねどこ")),
+    ("otter", "🦦", ("らっこ", "どうぶつ", "うみのいきもの")),
+    ("koala", "🐨", ("こあら", "どうぶつ", "ゆうたいるい")),
+    ("ramune", "🍾", ("らむね", "のみもの", "たんさんいんりょう")),
+    ("tie", "👔", ("ねくたい", "ふく", "えりもと")),
+    ("chair", "🪑", ("いす", "かぐ", "ざせき")),
+    ("zucchini", "🥒", ("ずっきーに", "やさい", "たべもの")),
+    ("chicken", "🐔", ("にわとり", "とり", "どうぶつ")),
+    ("backpack", "🎒", ("りゅっく", "かばん", "にもつ")),
+    ("scarf", "🧣", ("まふらー", "えりまき", "ぼうかんぐ")),
+    ("radio", "📻", ("らじお", "じゅしんき", "おんきょうきき")),
+    ("riceball", "🍙", ("おにぎり", "ごはん", "たべもの")),
+    ("dragon", "🐉", ("りゅう", "どらごん", "でんせつのいきもの")),
+    ("cow", "🐄", ("うし", "どうぶつ", "かちく")),
+    ("salt", "🧂", ("しお", "ちょうみりょう", "そると")),
+    ("plate", "🍽️", ("おさら", "しょっき", "ぷれーと")),
+    ("lavender", "🪻", ("らべんだー", "はな", "しょくぶつ")),
+    ("diamond", "💎", ("だいや", "ほうせき", "きせき")),
+    ("beans", "🫘", ("まめ", "しょくざい", "たね")),
+    ("medaka", "🐟", ("めだか", "さかな", "ぎょるい")),
+    ("sand", "🏖️", ("すな", "はまべ", "びーち")),
+    ("pot", "🍲", ("なべ", "りょうり", "しょっき")),
+    ("bagel", "🥯", ("べーぐる", "ぱん", "たべもの")),
+    ("loupe", "🔍", ("るーぺ", "むしめがね", "かくだいきょう")),
+    ("paint", "🎨", ("ぺんき", "とりょう", "いろ")),
+    ("knife", "🔪", ("ないふ", "ほうちょう", "かとらりー")),
+)
+# Each distinct picture's primary reading connects to the next, including wrap.
+# A window of at most 36 cards leaves the initial prompt outside the board.
+PERFECT_RING = (
+    'apple', 'gorilla', 'trumpet', 'panda', 'daruma', 'tree', 'moon', 'fox',
+    'mouse', 'bee', 'butterfly', 'rabbit', 'guitar', 'octopus', 'top', 'pillow',
+    'otter', 'koala', 'ramune', 'tie', 'chair', 'melon', 'turtle', 'glasses',
+    'cat', 'ice', 'squirrel', 'bell', 'zucchini', 'chicken', 'backpack', 'car',
+    'scarf', 'radio', 'riceball', 'dragon', 'cow', 'salt', 'plate', 'lavender',
+    'diamond', 'mountain', 'beans', 'medaka', 'umbrella', 'fish', 'eggplant',
+    'sand', 'pot', 'bagel', 'loupe', 'paint', 'mushroom', 'bird',
 )
 SMALL = str.maketrans("ゃゅょぁぃぅぇぉっゎ", "やゆよあいうえおつわ")
 
@@ -57,6 +95,37 @@ def chain_moves(cards, required, seen):
     """Pure legal-move enumeration; None is a consumed board slot."""
     return [(i, word) for i, card in enumerate(cards) if card is not None
             for word in card[2] if word[0] == required and tail(word) != "ん" and word not in seen]
+
+
+def starting_route(required, total, seen, rng, node_budget=256):
+    """Randomized catalog-wide chain; a bounded miss uses the certified ring."""
+    by_head = {}
+    for card in CARDS:
+        for word in card[2]:
+            if tail(word) != "ん":
+                by_head.setdefault(word[0], []).append((card[0], word))
+    nodes = 0
+
+    def search(head, route, ids, words):
+        nonlocal nodes
+        if len(route) == total:
+            return route
+        if nodes >= node_budget:
+            return None
+        nodes += 1
+        choices = list(by_head.get(head, ()))
+        rng.shuffle(choices)
+        for identity, word in choices:
+            if identity in ids or word in words:
+                continue
+            found = search(tail(word), route + [(identity, word)], ids | {identity}, words | {word})
+            if found is not None:
+                return found
+            if nodes >= node_budget:
+                break
+        return None
+
+    return search(required, [], set(), set(seen))
 
 
 def chain_step(cards, stock, seen, move):
@@ -167,20 +236,14 @@ class ShiritoriRound:
 
     def start(self):
         self._chain_advice.clear()
-        # A shuffled complete ring supplies a known 14-move route. Decoys and
-        # alternative readings create branches; no start has zero legal moves.
-        ring = ["りんご", "ごりら", "らっぱ", "ぱんだ", "だるま", "まつ", "つき",
-                "きつね", "ねずみ", "みつばち", "ちょう", "うさぎ", "ぎたー",
-                "たこ", "ことり"]
-        ids = ["apple", "gorilla", "trumpet", "panda", "daruma", "tree", "moon",
-               "fox", "mouse", "bee", "butterfly", "rabbit", "guitar", "octopus", "bird"]
-        offset = self.rng.randrange(len(ring))
-        seed = ring[offset]
-        route_ids = ids[offset + 1:] + ids[:offset]
         by_id = {card[0]: card for card in CARDS}
-        chosen = [by_id[key] for key in route_ids[:self.total]]
-        others = [card for card in CARDS if card[0] not in route_ids and card[0] != ids[offset]]
-        chosen += self.rng.sample(others, self.total - len(chosen))
+        offset = self.rng.randrange(len(PERFECT_RING))
+        seed = by_id[PERFECT_RING[offset]][2][0]
+        route_ids = [PERFECT_RING[(offset + step) % len(PERFECT_RING)] for step in range(1, self.total + 1)]
+        route_words = starting_route(tail(seed), self.total, {seed}, self.rng)
+        if route_words is None:
+            route_words = [(key, by_id[key][2][0]) for key in route_ids]
+        chosen = [by_id[key] for key, _ in route_words]
         self.cards, self.stock = chosen[:24], chosen[24:]
         self.rng.shuffle(self.cards)
         self.used = {}
@@ -197,6 +260,22 @@ class ShiritoriRound:
         self.break_next = False
         self.message = f"「{self.required}」から始まる絵をさがそう。"
         self.deadline = self.clock() + self.limit
+        # Replay the witness using the same transition rules as planning.
+        state = (tuple(self.cards), tuple(self.stock), self.required, frozenset(self.seen))
+        witnesses = []
+        for identity, word in route_words:
+            index = next(i for i, c in enumerate(state[0]) if c is not None and c[0] == identity)
+            move = (index, word)
+            if move not in chain_moves(state[0], state[2], state[3]):
+                raise ValueError('Invalid perfect starting route')
+            witnesses.append((state, move))
+            state = chain_step(state[0], state[1], state[3], move)
+        if any(state[0]) or state[1]:
+            raise ValueError('Perfect starting route did not consume the deck')
+        route = tuple(move for _, move in witnesses)
+        for i, (state, move) in enumerate(witnesses):
+            self._chain_advice[state] = (move, {'length': len(route)-i, 'perfect': True,
+                                               'exact': True, 'nodes': 0, 'route': route[i:]})
         self.revision += 1
 
     def moves(self):
