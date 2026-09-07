@@ -184,21 +184,21 @@ test('new mode is shipped in Pages and loaded before its host renderer', () => {
 
 test('solo setup offers deck counts, hides CPU, and permits immediate replacement selection', () => {
   const {view,state,queue} = harness();
-  const solo = {...state, mode:'solo', total:36, stock:12, phase:'intro'};
+  const solo = {...state, mode:'solo', total:48, stock:24, phase:'intro'};
   view.update(solo);
   const counts = view.page.querySelector('.sh-counts').querySelectorAll('button');
-  assert.deepEqual(counts.map(b => b.textContent), ['12枚','24枚','36枚']);
-  counts[2].click(); assert.deepEqual(queue.pop(), {action:'sh_total', value:36});
+  assert.deepEqual(counts.map(b => b.textContent), ['12枚','24枚','36枚','48枚']);
+  counts[3].click(); assert.deepEqual(queue.pop(), {action:'sh_total', value:48});
   assert.equal(view.page.querySelector('.sh-level-settings').hidden, true);
   solo.phase = 'playing'; view.update(solo);
   const card = view.page.querySelectorAll('.sh-card')[0];
   solo.cards[0] = {id:'cat',icon:'🐈',words:['ねこ','こねこ'],owner:null};
-  solo.stock = 11; solo.completed = 1; solo.refilled = 0; solo.revision = 1;
+  solo.stock = 23; solo.completed = 1; solo.refilled = 0; solo.revision = 1;
   view.update(solo);
   assert.equal(view.page.querySelectorAll('.sh-card')[0], card);
   assert.equal(card.disabled, false);
   assert.equal(card.children[1].textContent, 'NEW');
-  assert.equal(view.page.querySelector('.sh-stock').textContent, '山札 11枚');
+  assert.equal(view.page.querySelector('.sh-stock').textContent, '山札 23枚');
 });
 
 test('blocked solo exposes rescue without any reading choices', () => {

@@ -73,7 +73,7 @@ CARDS = (
     ("knife", "🔪", ("ないふ", "ほうちょう", "かとらりー")),
 )
 # Each distinct picture's primary reading connects to the next, including wrap.
-# A window of at most 36 cards leaves the initial prompt outside the board.
+# A window of at most 48 cards leaves the initial prompt outside the board.
 PERFECT_RING = (
     'apple', 'gorilla', 'trumpet', 'panda', 'daruma', 'tree', 'moon', 'fox',
     'mouse', 'bee', 'butterfly', 'rabbit', 'guitar', 'octopus', 'top', 'pillow',
@@ -208,7 +208,7 @@ class ShiritoriRound:
         self.limit = {"easy": 30, "normal": 20, "hard": 12}[self.difficulty]
         self.phase = "intro"
         self.mode = mode if mode in ("battle", "solo") else "battle"
-        self.total = total if type(total) is int and total in (12, 24, 36) else 24
+        self.total = total if type(total) is int and total in (12, 24, 36, 48) else 24
         self.stock = []
         self.seen = set()
         self.relinks = 2
@@ -388,7 +388,7 @@ class ShiritoriRound:
             self.selected = None
         elif action == "mode" and self.phase == "intro" and isinstance(value, str) and value in ("battle", "solo"):
             self.mode = value
-        elif action == "total" and self.phase == "intro" and type(value) is int and value in (12, 24, 36):
+        elif action == "total" and self.phase == "intro" and type(value) is int and value in (12, 24, 36, 48):
             self.total = value
         elif action == "difficulty" and self.phase == "intro" and isinstance(value, str) and value in ("easy", "normal", "hard"):
             self.difficulty = value

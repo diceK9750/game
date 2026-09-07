@@ -51,7 +51,7 @@ def decode(raw):
     settings = data.get('shiritori_settings')
     if isinstance(settings, dict):
         clean = {}
-        for key, allowed in (('mode', ('battle', 'solo')), ('total', (12, 24, 36)),
+        for key, allowed in (('mode', ('battle', 'solo')), ('total', (12, 24, 36, 48)),
                              ('difficulty', ('easy', 'normal', 'hard'))):
             value = settings.get(key)
             if type(value) is type(allowed[0]) and value in allowed:

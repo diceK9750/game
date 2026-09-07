@@ -13,8 +13,8 @@ class ProgressTests(unittest.TestCase):
 
     def test_shiritori_settings_round_trip_and_invalid_fields(self):
         app=SimpleNamespace(best_times={},battle_records={},bonus_bank=0,bgm_on=True,sfx_on=True,reduced_motion=False,
-                            shiritori=SimpleNamespace(mode='solo',total=36,difficulty='hard'))
-        self.assertEqual(decode(encode(app))['shiritori_settings'],{'mode':'solo','total':36,'difficulty':'hard'})
+                            shiritori=SimpleNamespace(mode='solo',total=48,difficulty='hard'))
+        self.assertEqual(decode(encode(app))['shiritori_settings'],{'mode':'solo','total':48,'difficulty':'hard'})
         self.assertNotIn('shiritori_settings',decode(json.dumps({'version':1,'shiritori_settings':{'mode':[], 'total':True,'difficulty':'invalid'}})))
     def test_round_trip_and_separate_modes(self):
         app = SimpleNamespace(best_times={(10, "ordered"): 3.5, (40, "random"): 42.0},

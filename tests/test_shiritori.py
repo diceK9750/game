@@ -49,19 +49,19 @@ class ShiritoriTests(unittest.TestCase):
 
     def test_settings_accept_only_supported_values_before_start(self):
         game = ShiritoriRound()
-        for n in [12,24,36]:
+        for n in [12,24,36,48]:
             game.command('total', n)
             self.assertEqual(game.total, n)
         for n in [0,13,100,True,'12',None,{}]:
             game.command('total', n)
-            self.assertEqual(game.total, 36)
+            self.assertEqual(game.total, 48)
         game.command('mode', 'solo')
         game.command('mode', {})
         self.assertEqual(game.mode, 'solo')
         game.start()
         game.command('total', 12)
         game.command('mode', 'battle')
-        self.assertEqual((game.total, game.mode), (36, 'solo'))
+        self.assertEqual((game.total, game.mode), (48, 'solo'))
 
     def test_solo_has_no_deadline_or_cpu_and_refills_in_place(self):
         game = ShiritoriRound(mode='solo', total=36, rng=random.Random(2), clock=lambda:self.now)
@@ -144,7 +144,7 @@ class ShiritoriTests(unittest.TestCase):
 
     def test_all_modes_and_deck_sizes_conserve_cards_through_complete_games(self):
         for mode in ('solo','battle'):
-            for total in (12,24,36):
+            for total in (12,24,36,48):
                 for difficulty in ('easy','normal','hard'):
                     for seed in range(50):
                         game = ShiritoriRound(difficulty, mode=mode, total=total, rng=random.Random(seed), clock=lambda:self.now)
@@ -174,7 +174,7 @@ class ShiritoriTests(unittest.TestCase):
         by_id = {c[0]: c for c in CARDS}
         self.assertEqual(len(PERFECT_RING),len(set(PERFECT_RING)))
         for offset in range(len(PERFECT_RING)):
-            for total in (12,24,36):
+            for total in (12,24,36,48):
                 for mode in ('solo','battle'):
                     rng = random.Random(offset)
                     rng.randrange = lambda *args, n=offset: n

@@ -116,12 +116,12 @@ class ModernUITests(unittest.TestCase):
         self.queue({'action':'numbers'})
         self.bridge.consume(self.app)
         self.assertEqual(self.bridge.snapshot(self.app)['screen'], 'ready')
-        self.queue({'action':'home'}, {'action':'shiritori'}, {'action':'sh_total','value':36}, {'action':'sh_mode','value':'solo'}, {'action':'sh_exit'})
+        self.queue({'action':'home'}, {'action':'shiritori'}, {'action':'sh_total','value':48}, {'action':'sh_mode','value':'solo'}, {'action':'sh_exit'})
         self.bridge.consume(self.app)
         self.assertEqual(self.bridge.snapshot(self.app)['screen'], 'home')
         self.queue({'action':'shiritori'})
         self.bridge.consume(self.app)
-        self.assertEqual(self.app.shiritori.total, 36)
+        self.assertEqual(self.app.shiritori.total, 48)
         self.assertEqual(self.app.shiritori.mode, 'solo')
 
     def test_shiritori_auto_pause_and_native_fallback(self):

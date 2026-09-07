@@ -12,7 +12,8 @@
     const setup = E('div', 'nr-setup nr-surface sh-ready-settings');
     const modeButtons = [button('CPUと対戦', 'sh_mode', 'battle'), button('ひとりで練習', 'sh_mode', 'solo')];
     const modeHint = E('p', 'sh-setting-note');
-    const countButtons = [12,24,36].map(n => button(`${n}枚`, 'sh_total', n));
+    const counts = [12,24,36,48];
+    const countButtons = counts.map(n => button(`${n}枚`, 'sh_total', n));
     const countHint = E('p', 'sh-setting-note');
     const levels = E('div', 'sh-level-settings');
     const levelButtons = [['easy','ゆったり'],['normal','ふつう'],['hard','てごわい']].map(([v,label]) => button(label, 'sh_difficulty', v));
@@ -21,7 +22,7 @@
     const guide = add(E('details', 'sh-guide'), E('summary', '', '遊び方・読み方のルール'),
       E('p', '', '絵を1回タップするだけ！必要な頭文字につながる未使用の読み方を自動確定。「ん」終わりは自動で除外します。各絵に頭文字の異なる3〜5種類の読み方があります。'),
       E('p', '', '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。'),
-      E('p', '', '画面は最大24枚。36枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。'),
+      E('p', '', '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。'),
       E('p', '', 'ヒントは3回。小さい文字は大きく（ちゃ→や）、長音は直前の文字（ぎたー→た）。濁点は区別。札とことばの再使用はできません。'));
     const start = button('はじめる', 'sh_start', undefined, 'nr-primary');
     add(setup, E('div', 'nr-setup-heading', '絵しりとりのチャレンジ'),
@@ -139,7 +140,7 @@
       if (wasConfirmHidden && !restartPage.hidden) { confirmTitle.tabIndex=-1; confirmTitle.focus(); }
       if (!restartPage.hidden) pause.hidden=true;
       if (dictionaryOpen || helpOpen) intro.hidden=result.hidden=true;
-      pressed(modeButtons, ['battle','solo'], s.mode); pressed(countButtons, [12,24,36], s.total); pressed(levelButtons, ['easy','normal','hard'], s.difficulty);
+      pressed(modeButtons, ['battle','solo'], s.mode); pressed(countButtons, counts, s.total); pressed(levelButtons, ['easy','normal','hard'], s.difficulty);
       modeHint.textContent = solo ? '時間無制限。自分のペースで最後までつなごう。' : 'ライバルと交互に回答。制限時間内につながる絵を見つけよう。';
       countHint.textContent = s.total > 24 ? `画面24枚＋山札${s.total - 24}枚。使った場所に補充。` : `${s.total}枚を並べてスタート。補充なし。`;
       levels.hidden = solo;
