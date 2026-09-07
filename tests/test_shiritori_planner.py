@@ -9,6 +9,73 @@ def card(name, *words):
 
 
 class ChainPlannerTests(unittest.TestCase):
+    def route_game(self):
+        game = ShiritoriRound(mode='solo', clock=lambda: 0)
+        game.cards = [card('end', 'あい'), card('start', 'あう'), card('bridge', 'うあ')]
+        game.required, game.phase = 'あ', 'playing'
+        return game
+
+    def test_hint_chooses_perfect_route_without_playing_or_awarding_a_word(self):
+        game = self.route_game()
+        game.command('hint')
+        self.assertEqual(game.hint, 1)
+        self.assertEqual(game.hints, 2)
+        self.assertIn('完走', game.message)
+        self.assertEqual(game.history, [])
+        self.assertEqual(game.discoveries, set())
+        self.assertEqual(game.seen, set())
+
+    def test_perfect_suffix_is_reused_and_each_step_remains_legal(self):
+        game = self.route_game()
+        move, plan = game.chain_advice()
+        route = plan['route']
+        self.assertEqual(len(route), 3)
+        for expected in route:
+            move, plan = game.chain_advice()
+            self.assertEqual(move, expected)
+            self.assertIn(move, game.moves())
+            self.assertTrue(plan['perfect'])
+            self.assertEqual(plan['nodes'], 0)
+            game.take(*move)
+        self.assertEqual(game.phase, 'finished')
+        self.assertEqual(len(game.history), 3)
+
+    def test_player_deviation_seen_words_and_restart_invalidate_advice(self):
+        game = self.route_game()
+        game.chain_advice()
+        game.seen.add('あう')
+        move, plan = game.chain_advice()
+        self.assertEqual(move, (0, 'あい'))
+        self.assertFalse(plan['perfect'])
+        self.assertEqual(len(game._chain_advice), 1)
+        game.start()
+        self.assertEqual(game._chain_advice, {})
+
+    def test_returned_route_replays_with_refill_and_shared_readings(self):
+        for seed in range(20):
+            game = ShiritoriRound(total=36, rng=random.Random(seed))
+            game.start()
+            move, plan = game.chain_advice()
+            state = (tuple(game.cards), tuple(game.stock), game.required, frozenset(game.seen))
+            self.assertEqual(len(plan['route']), plan['length'])
+            for step in plan['route']:
+                self.assertIn(step, chain_moves(state[0], state[2], state[3]))
+                state = chain_step(state[0], state[1], state[3], step)
+            if plan['perfect']:
+                self.assertFalse(any(state[0]) or state[1])
+
+    def test_hint_search_time_is_not_charged_to_player(self):
+        game = self.route_game()
+        now = [0]
+        game.mode, game.clock, game.deadline = 'battle', lambda: now[0], 20
+        advice = game.chain_advice
+        def delayed_advice():
+            now[0] += .25
+            return advice()
+        game.chain_advice = delayed_advice
+        game.command('hint')
+        self.assertEqual(game.remaining(), 20)
+
     def test_full_clear_beats_immediate_dead_end_in_every_difficulty(self):
         for difficulty in ('easy', 'normal', 'hard'):
             game = ShiritoriRound(difficulty, clock=lambda: 0)

@@ -83,10 +83,11 @@ def longest_chain_move(cards, stock, required, seen, node_budget=4096):
     initial = (tuple(cards), tuple(stock), required, frozenset(seen))
     candidates = chain_moves(initial[0], required, initial[3])
     if not candidates:
-        return None, {"length": 0, "perfect": False, "exact": True, "nodes": 0}
+        return None, {"length": 0, "perfect": False, "exact": True, "nodes": 0, "route": ()}
     remaining = sum(c is not None for c in cards) + len(stock)
     per_move = max(1, node_budget // len(candidates))
     best_move, best_length, total_nodes, all_exact = candidates[0], 0, 0, True
+    best_route = ()
     for move in candidates:
         memo, nodes = {}, 0
 
@@ -95,17 +96,19 @@ def longest_chain_move(cards, stock, required, seen, node_budget=4096):
             if state in memo:
                 return memo[state], True
             if nodes >= per_move:
-                return 0, False
+                return (), False
             nodes += 1
             board, deck, head, words = state
             bound = sum(c is not None for c in board) + len(deck)
             options = chain_moves(board, head, words)
-            best, exact = 0, True
+            best, exact = (), True
             for option in options:
-                length, complete = search(chain_step(board, deck, words, option))
-                best = max(best, 1 + length)
+                suffix, complete = search(chain_step(board, deck, words, option))
+                route = (option,) + suffix
+                if len(route) > len(best):
+                    best = route
                 exact = exact and complete
-                if best == bound:
+                if len(best) == bound:
                     memo[state] = best
                     return best, True
                 if nodes >= per_move:
@@ -115,15 +118,17 @@ def longest_chain_move(cards, stock, required, seen, node_budget=4096):
                 memo[state] = best
             return best, exact
 
-        length, exact = search(chain_step(initial[0], initial[1], initial[3], move))
-        length += 1
+        suffix, exact = search(chain_step(initial[0], initial[1], initial[3], move))
+        route = (move,) + suffix
+        length = len(route)
         total_nodes += nodes
         all_exact = all_exact and exact
         if length > best_length:
             best_move, best_length = move, length
+            best_route = route
         if length == remaining:
-            return move, {"length": length, "perfect": True, "exact": True, "nodes": total_nodes}
-    return best_move, {"length": best_length, "perfect": False, "exact": all_exact, "nodes": total_nodes}
+            return move, {"length": length, "perfect": True, "exact": True, "nodes": total_nodes, "route": route}
+    return best_move, {"length": best_length, "perfect": False, "exact": all_exact, "nodes": total_nodes, "route": best_route}
 
 
 class ShiritoriRound:
@@ -158,8 +163,10 @@ class ShiritoriRound:
         self.saved_remaining = 0
         self.revision = 0
         self.cpu_move = None
+        self._chain_advice = {}
 
     def start(self):
+        self._chain_advice.clear()
         # A shuffled complete ring supplies a known 14-move route. Decoys and
         # alternative readings create branches; no start has zero legal moves.
         ring = ["りんご", "ごりら", "らっぱ", "ぱんだ", "だるま", "まつ", "つき",
@@ -222,8 +229,28 @@ class ShiritoriRound:
         if not moves:
             self.finish("you", "ルナがつなげなくなった！")
             return
+        self.cpu_move, self.cpu_plan = self.chain_advice()
+
+    def chain_advice(self):
+        """Share advice with hints; reuse only an exact matching game state.
+
+        Retain proven perfect suffixes so bounded replanning cannot lose them.
+        A player's different choice invalidates the old plan automatically.
+        """
         board = tuple(None if i in self.used else c for i, c in enumerate(self.cards))
-        self.cpu_move, self.cpu_plan = longest_chain_move(board, self.stock, self.required, self.seen)
+        state = (board, tuple(self.stock), self.required, frozenset(self.seen))
+        if state in self._chain_advice:
+            return self._chain_advice[state]
+        self._chain_advice.clear()
+        move, plan = longest_chain_move(board, self.stock, self.required, self.seen)
+        self._chain_advice[state] = (move, plan)
+        if plan['perfect']:
+            for offset, step in enumerate(plan['route']):
+                suffix = plan['route'][offset:]
+                self._chain_advice[state] = (step, {"length": len(suffix), "perfect": True,
+                                                  "exact": True, "nodes": 0, "route": suffix})
+                state = chain_step(state[0], state[1], state[3], step)
+        return move, plan
 
     def take(self, index, word):
         owner = self.turn
@@ -326,8 +353,14 @@ class ShiritoriRound:
                     self.update()
             elif action == "hint" and self.hints and self.moves():
                 self.hints -= 1
-                self.hint = self.moves()[0][0]
-                self.message = "光る絵の読み方を考えてみよう。"
+                started = self.clock()
+                move, plan = self.chain_advice()
+                # Thinking for a hint must not consume the player's turn time.
+                if self.mode == "battle":
+                    self.deadline += max(0, self.clock() - started)
+                self.hint = move[0]
+                self.message = ("完走につながるルートを発見！光る絵をつなごう。" if plan['perfect']
+                                else "長くつながる候補を探したよ。光る絵をつなごう。")
 
     def snapshot(self):
         visible = self.phase in ("playing", "blocked", "finished")
