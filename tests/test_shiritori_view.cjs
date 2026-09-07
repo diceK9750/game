@@ -19,7 +19,7 @@ function harness() {
   const add = (parent, ...children) => { parent.append(...children); return parent; };
   const queue = [];
   const command = (action, value) => queue.push({action, value});
-  const button = (text, action, value, cls) => { const b = E('button', cls, text); b.click = () => command(action, value); return b; };
+  const button = (text, action, value, cls) => { const b = E('button', cls, text); b.click = () => command(typeof action === 'function' ? action() : action, value); return b; };
   const portrait = () => { const image = E('div'); return {wrap: add(E('div'), image), image}; };
   const window = {};
   window.rivalCursor=require('../rival-cursor.js').rivalCursor;
@@ -48,6 +48,21 @@ test('setup shares number-game hero and controls without story exposition', () =
   assert.ok(!intro.querySelectorAll('*').some(e=>/そそのか|コウ/.test(e.textContent)));
   view.update({...state,phase:'playing'});
   assert.equal(intro.hidden,true);
+});
+
+test('leaving an unfinished round for setup requires confirmation',()=>{
+  const {view,state,queue,doc}=harness();
+  view.update({...state,phase:'paused'});
+  const modeButton=view.page.querySelectorAll('button').find(b=>b.textContent==='モード選択へ');
+  modeButton.click();
+  assert.equal(queue.at(-1).action,'sh_pause');
+  view.update({...state,phase:'paused'});
+  const dialog=view.page.querySelectorAll('.nr-dialog').find(d=>d.querySelectorAll('h1').some(h=>h.textContent==='モード選択に戻りますか？'));
+  assert.equal(dialog.hidden,false);
+  assert.equal(doc.activeElement.textContent,'モード選択に戻りますか？');
+  assert.ok(!queue.some(c=>c.action==='sh_setup'));
+  dialog.querySelectorAll('button').find(b=>b.textContent==='戻る').click();
+  assert.equal(queue.at(-1).action,'sh_setup');
 });
 
 test('shiritori delegates navigation to the common header and confirms restart after pausing',()=>{

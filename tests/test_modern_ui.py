@@ -26,6 +26,30 @@ class Root:
 
 
 class ModernUITests(unittest.TestCase):
+    def test_saved_shiritori_settings_restore_and_changes_save_immediately(self):
+        self.app.shiritori_settings={'mode':'battle','total':36,'difficulty':'hard'}
+        self.queue({'action':'shiritori'})
+        self.bridge.consume(self.app)
+        self.assertEqual((self.app.shiritori.mode,self.app.shiritori.total,self.app.shiritori.difficulty),('battle',36,'hard'))
+        game.progress.save.reset_mock()
+        self.queue({'action':'sh_total','value':12})
+        self.bridge.consume(self.app)
+        game.progress.save.assert_called_once_with(self.app)
+        self.assertTrue(self.app.storage_saved)
+        game.progress.save.reset_mock()
+        self.queue({'action':'sh_total','value':13})
+        self.bridge.consume(self.app)
+        game.progress.save.assert_not_called()
+
+    def test_completed_draw_uses_success_music_and_storage_status_is_exposed(self):
+        self.queue({'action':'shiritori'})
+        self.bridge.consume(self.app)
+        self.app.shiritori.history=[{}]*self.app.shiritori.total
+        self.app.shiritori.finish('draw','complete')
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music,'win')
+        self.app.storage_saved=False
+        self.assertFalse(self.bridge.snapshot(self.app)['storage_saved'])
     def setUp(self):
         self.runtime = MagicMock()
         self.runtime.frame_count = 100

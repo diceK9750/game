@@ -10,7 +10,7 @@ def decode(raw):
               "bgm_on": True, "sfx_on": True, "reduced_motion": False}
     try:
         data = json.loads(raw or "{}")
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, RecursionError):
         return result
     if not isinstance(data, dict) or data.get("version") != 1:
         return result
@@ -29,7 +29,7 @@ def decode(raw):
                 continue
             if size == 3 and rest[0] not in ("easy", "normal", "hard"):
                 continue
-            if type(value) not in (float, int) or not math.isfinite(value) or value < 0:
+            if type(value) not in (float, int) or not 0 <= value <= 10**12 or not math.isfinite(value):
                 continue
             if size == 3 and (type(value) is not int or value > count):
                 continue
@@ -48,6 +48,16 @@ def decode(raw):
         value = data.get(field)
         if type(value) is type(allowed[0]) and value in allowed:
             result[field] = value
+    settings = data.get('shiritori_settings')
+    if isinstance(settings, dict):
+        clean = {}
+        for key, allowed in (('mode', ('battle', 'solo')), ('total', (12, 24, 36)),
+                             ('difficulty', ('easy', 'normal', 'hard'))):
+            value = settings.get(key)
+            if type(value) is type(allowed[0]) and value in allowed:
+                clean[key] = value
+        if clean:
+            result['shiritori_settings'] = clean
     return result
 
 
@@ -60,6 +70,10 @@ def encode(app):
     for field in ("selected_max_number", "selected_mode", "play_kind", "difficulty"):
         if hasattr(app, field):
             data[field] = getattr(app, field)
+    if hasattr(app, 'shiritori'):
+        data['shiritori_settings'] = {key: getattr(app.shiritori, key) for key in ('mode', 'total', 'difficulty')}
+    elif hasattr(app, 'shiritori_settings'):
+        data['shiritori_settings'] = app.shiritori_settings
     return json.dumps(data, allow_nan=False)
 
 

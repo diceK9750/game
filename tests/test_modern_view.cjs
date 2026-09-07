@@ -111,6 +111,15 @@ function browserHarness() {
 }
 function walk(element) { return element.children.flatMap(child => [child, ...walk(child)]); }
 
+test('result warns about unavailable storage without claiming a saved record',()=>{
+  const b=browserHarness();
+  b.render('finished',{storage_saved:false});
+  const record=walk(b.app).find(n=>n.className==='nr-record');
+  assert.match(record.textContent,/保存できませんでした/);
+  b.render('finished',{storage_saved:true});
+  assert.doesNotMatch(record.textContent,/保存できませんでした/);
+});
+
 test('both games reuse the same header nodes, positions and game-aware commands',()=>{
   const b=browserHarness();
   const header=walk(b.app).find(n=>n.className==='nr-toolbar');

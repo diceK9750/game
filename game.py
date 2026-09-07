@@ -720,7 +720,13 @@ class NumberRush:
                    "resuming": "countdown", "countdown": "countdown"}.get(self.screen)
         if self.screen == "shiritori":
             phase = self.shiritori.phase
-            desired = ("win" if self.shiritori.winner == "you" else "wait" if self.shiritori.mode == "solo" else "loss") if phase == "finished" else "wait" if phase == "paused" else "menu"
+            if phase == 'finished':
+                # Completing the chain is a shared success, not a CPU defeat.
+                desired = ('win' if self.shiritori.winner == 'you' or
+                           (self.shiritori.winner == 'draw' and len(self.shiritori.history) == self.shiritori.total)
+                           else 'wait' if self.shiritori.winner == 'draw' or self.shiritori.mode == 'solo' else 'loss')
+            else:
+                desired = 'wait' if phase == 'paused' else 'menu'
         if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
             desired = ("perfect" if isinstance(self.round, BattleRound) and self.round.is_perfect
                        else "loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")

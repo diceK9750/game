@@ -54,7 +54,7 @@
     const endSolo = button('ここまでの結果を見る', 'sh_end');
     add(pause, E('h1', '', 'ひと休みしよう'), E('p', '', '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'),
       add(E('div', 'nr-dialog-actions'), button('プレイを続ける', 'sh_resume', undefined, 'nr-primary')),
-      add(E('div', 'nr-pause-extras'), button('新しい配置でやり直す', () => { restartRequested=true; return 'sh_pause'; }), button('モード選択へ', 'sh_setup')), endSolo);
+      add(E('div', 'nr-pause-extras'), button('新しい配置でやり直す', () => { restartRequested='sh_restart'; return 'sh_pause'; }), button('モード選択へ', () => { restartRequested='sh_setup'; return 'sh_pause'; })), endSolo);
     if (settingsControls) pause.append(settingsControls());
     const result = E('div', 'sh-intro nr-surface');
     const resultTitle = E('h1'), reason = E('p'), tally = E('p');
@@ -73,8 +73,9 @@
     const restartPage=E('div','sh-intro nr-dialog nr-surface');
     const cancelRestart=E('button','nr-button nr-secondary','キャンセル'); cancelRestart.type='button';
     cancelRestart.addEventListener('click',()=>{restartRequested=false; command('sh_resume');});
-    add(restartPage,E('h1','','やり直しますか？'),E('p','','現在のプレイを終了し、新しい配置で始めます。'),
-      add(E('div','nr-dialog-actions'),button('やり直す','sh_restart',undefined,'nr-primary'),cancelRestart));
+    const confirmTitle=E('h1','','やり直しますか？'), confirmCopy=E('p');
+    const confirmAction=button('やり直す',()=>restartRequested || 'sh_restart',undefined,'nr-primary');
+    add(restartPage,confirmTitle,confirmCopy,add(E('div','nr-dialog-actions'),confirmAction,cancelRestart));
     helpPage.hidden=restartPage.hidden=true; page.append(helpPage,restartPage);
     let dictionaryOpen = false, catalogLoaded = false, discoveryHistory = '', newFind = '';
     const dictionary = window.createShiritoriDictionary?.({E, add, onClose() {
@@ -98,12 +99,15 @@
     function pose(p, value) { p.image.style.backgroundPosition = value; }
     function pressed(buttons, values, value) { buttons.forEach((b,i) => b.setAttribute('aria-pressed', String(values[i] === value))); }
     page.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      if (helpOpen) { closeHelp.click(); event.preventDefault(); return; }
+      if (restartRequested && latest?.phase==='paused') { cancelRestart.click(); event.preventDefault(); return; }
       if (event.key === 'Escape' && ['playing','blocked'].includes(latest?.phase)) command('sh_pause');
     });
     return {page, isOverlayOpen:()=>dictionaryOpen || helpOpen,
       headerAction(action) {
         if (action==='help' && latest?.phase==='intro' && !dictionaryOpen) { helpOpen=true; intro.hidden=true; helpPage.hidden=false; closeHelp.focus(); }
-        if (action==='retry' && ['playing','blocked'].includes(latest?.phase)) { restartRequested=true; command('sh_pause'); }
+        if (action==='retry' && ['playing','blocked'].includes(latest?.phase)) { restartRequested='sh_restart'; command('sh_pause'); }
       }, update(s) {
       if (!s) return;
       latest = s;
@@ -127,7 +131,12 @@
       if (s.phase!=='intro') helpOpen=false;
       if (!['paused','playing','blocked'].includes(s.phase) || (lastPhase==='paused' && s.phase!=='paused')) restartRequested=false;
       helpPage.hidden=!helpOpen;
+      const wasConfirmHidden=restartPage.hidden;
       restartPage.hidden=!(restartRequested && s.phase==='paused');
+      confirmTitle.textContent=restartRequested==='sh_setup'?'モード選択に戻りますか？':'やり直しますか？';
+      confirmCopy.textContent=restartRequested==='sh_setup'?'現在のプレイを終了します。':'現在のプレイを終了し、新しい配置で始めます。';
+      confirmAction.textContent=restartRequested==='sh_setup'?'戻る':'やり直す';
+      if (wasConfirmHidden && !restartPage.hidden) { confirmTitle.tabIndex=-1; confirmTitle.focus(); }
       if (!restartPage.hidden) pause.hidden=true;
       if (dictionaryOpen || helpOpen) intro.hidden=result.hidden=true;
       pressed(modeButtons, ['battle','solo'], s.mode); pressed(countButtons, [12,24,36], s.total); pressed(levelButtons, ['easy','normal','hard'], s.difficulty);

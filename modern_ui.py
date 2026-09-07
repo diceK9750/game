@@ -7,6 +7,7 @@ CPU timing exists, so the desktop Pyxel renderer remains a complete fallback.
 
 import json
 import math
+import progress
 
 from game_logic import BattleRound
 from shiritori import ShiritoriRound
@@ -64,6 +65,18 @@ class ModernUI:
 
     @staticmethod
     def dispatch(app, command):
+        def settings():
+            sh = getattr(app, 'shiritori', None)
+            return (getattr(app, 'play_kind', None), getattr(app, 'selected_max_number', None),
+                    getattr(app, 'difficulty', None),
+                    tuple(getattr(sh, key, None) for key in ('mode', 'total', 'difficulty')))
+        before = settings()
+        ModernUI._dispatch(app, command)
+        if settings() != before:
+            app.storage_saved = progress.save(app)
+
+    @staticmethod
+    def _dispatch(app, command):
         action = command.get("action")
         value = command.get("value")
         if not isinstance(action, str):
@@ -93,7 +106,9 @@ class ModernUI:
                 app.game_selected = True
             elif action == "shiritori":
                 if not hasattr(app, "shiritori"):
-                    app.shiritori = ShiritoriRound(app.difficulty, mode="solo")
+                    saved = getattr(app, 'shiritori_settings', {})
+                    app.shiritori = ShiritoriRound(saved.get('difficulty', app.difficulty),
+                                                   mode=saved.get('mode', 'solo'), total=saved.get('total', 24))
                 else:
                     app.shiritori.phase = "intro"
                 app.screen = "shiritori"
@@ -201,6 +216,7 @@ class ModernUI:
             "perfect": round_.is_perfect if battle else False,
             "bonus": round_.special_bonus if battle else 0,
             "bonus_bank": app.bonus_bank, "is_new_best": bool(app.is_new_best) if uses_round else False,
+            "storage_saved": bool(getattr(app, 'storage_saved', False)),
             "best_time": app.best_times.get((count, mode)),
             "best_points": app.battle_records.get((count, mode, difficulty)),
             "hint_used": bool(app.hint_used) if uses_round else False,

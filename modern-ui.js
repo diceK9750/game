@@ -356,6 +356,7 @@
     award.hidden = !state.perfect; awardValue.textContent = `+ ${integer(state.bonus).toLocaleString()} pt`;
     resultCard.dataset.perfect = String(!!state.perfect);
     record.textContent = state.hint_used ? 'ヒント使用のため、ベスト記録には保存されません。' : state.is_new_best ? '✦ 自己ベスト更新！' : battle && state.best_points != null ? `自己ベスト ${state.best_points} 点` : state.best_time != null ? `自己ベスト ${formatTime(state.best_time)}` : '';
+    if (state.screen === 'finished' && state.storage_saved === false) record.textContent += ' このブラウザに保存できませんでした。記録はページを閉じると失われる場合があります。';
     reviewButton.hidden = !battle;
     if (state.screen === 'review') {
       const rows = Array.isArray(state.history) ? state.history : [];
