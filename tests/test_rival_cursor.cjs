@@ -20,7 +20,7 @@ test('invalid targets hide the cursor and observations are deterministic',()=>{
   assert.equal(rivalCursor(40,8,17,0.5),rivalCursor(40,8,17,0.5));
 });
 test('both character consumers use the female dark rival atlas',()=>{
-  for(const file of ['modern-ui.css','character-layer.css']) assert.ok(fs.readFileSync(require.resolve('../'+file),'utf8').includes('koh-dark-cutout-atlas.png'));
+  for(const [file,asset] of [['modern-ui.css','luna-portraits-v2.png'],['character-layer.css','koh-dark-cutout-atlas.png']]) assert.ok(fs.readFileSync(require.resolve('../'+file),'utf8').includes(asset));
   const png=fs.readFileSync(require.resolve('../assets/characters/koh-dark-cutout-atlas.png'));
   assert.equal(png[25], 6, 'rival PNG has an alpha channel');
   const fairy=fs.readFileSync(require.resolve('../assets/characters/dark-fairy.png'));

@@ -1,0 +1,21 @@
+# Graphics refresh — 2026-09-10
+
+Built-in image generation was used. The tool does not expose its model identifier; this is not a claim that GPT Image 2.5 was selected. Official reference: https://developers.openai.com/api/docs/models/gpt-image-2.5-sunburst
+
+Production: characters/rin-portraits-v2.png, characters/luna-portraits-v2.png, backgrounds/lantern-forest-v2.png. Original assets remain for the legacy Pyxel overlay. Both modern game modes share the new portraits and forest. No game rules, saves, hit areas or card identities changed.
+
+Portrait order: idle, celebrate, victory / hurt, frustrated, defeat. 3 columns × 2 rows; CSS crops each cell with rounded corners. These are opaque navy-background portraits, not transparent cutouts. Two earlier full-body attempts were rejected because the generated backgrounds were opaque, including a painted checkerboard. They are not shipped.
+
+Final prompts:
+
+## rinPortraitPrompt
+
+Use case: stylized-concept. Create a NEW premium game portrait atlas, landscape 1536x1024, EXACT 3 columns by 2 rows of 512px square cells without gaps or borders. Six views of one original cute cream rabbit explorer called Rin; two-head-tall proportions, huge expressive amber eyes, mint scarf, tailored teal-blue jacket, gold lantern brooch. Each portrait WAIST-UP (not full body), fills most of its cell, rabbit ears fit fully with 24px margin. Consistent pose scale and centered face. Order: friendly idle smile; excited delighted open-mouth celebration; joyous eyes-closed victory with raised paw; surprised wide-eyed mistake; determined frustrated furrowed brows; sadly downcast defeat. Rich expressive polished 3D storybook game illustration, soft fur, clean distinctive shapes readable at 64px, warm amber key light and teal rim light. Background is perfectly uniform solid dark navy #102530 in all cells, no gradients, no checkerboards, NO transparency request. No frames, text, icons, cell dividers or sparkles. This is production portrait artwork, each cell will be cropped to a circle by the game UI. Maintain identity and outfit across all 6.
+
+## lunaPrompt
+
+Use case: stylized-concept. Production portrait atlas for a cozy fantasy puzzle game. EXACT 3 columns x2 rows, 1536x1024, six 512px square cells without gaps. Original character Luna: cute TWO-head-tall anthropomorphic RED PANDA GIRL, warm orange fur, white cheek markings, large violet eyes, stylish purple side-swept hair, small dark amethyst tiara, elegant dark violet high-collared fantasy tunic with moon brooch; friendly mischievous rival not scary. WAIST-UP portraits, identical scale and outfit. Each face big readable at 64px. Reading order: confident idle smile; delighted celebration; eyes-closed triumphant raised paw; wide-eyed surprise; frustrated crossed arms; gently sad defeated expression. Premium storybook 3D rendering with soft fur and restrained rich materials, warm amber key and cool violet rim lights matching a teal forest. Background uniformly solid dark navy #102530. No transparency, checkerboards, text, grid lines, labels, frames, other characters or floating effects. Keep ears and tiara within individual cells. Each cell will appear as a rounded portrait in UI.
+
+## forestPrompt
+
+Use case: stylized-concept. High-quality original background illustration for mobile puzzle game Lantern League. Wide landscape 16:9, 1792x1024 or 1536x864 if supported. An enchanting tranquil forest clearing at blue hour, polished storybook 3D environment, soft sculptural leaves and lush moss, huge welcoming trees framing ONLY outer left/right edges, warm amber lanterns on short wooden posts at bottom corners, a simple wooden platform in bottom fifth. Subtle distant teal mist and very faint blurred fireflies. CENTER 75 percent remains smooth, very dark desaturated teal/navy, extremely low detail and low contrast, reserved for game board and readable text. Focus attractive rich details at outer edges and bottom corners, painterly tactile bark and moss, subtle warm-vs-cool contrast with violet flowers at edges matching a rabbit adventurer and red panda sorceress. No characters, no text, no UI panels, no letters, no frames, no bright central lights. Beautiful cohesive high-end cozy game aesthetic, not realistic photography. Landscape background must also survive center cropping to portrait.

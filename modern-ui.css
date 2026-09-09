@@ -29,7 +29,7 @@ html[data-modern-active='true'] #character-layer { opacity: 0 !important; pointe
   -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   overflow: hidden; padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); }
 #modern-app::before { content: ''; position: absolute; inset: 0; z-index: -2;
-  background: linear-gradient(180deg, #091824d9 0%, #102530d6 45%, #172530a3 100%), url('assets/backgrounds/lantern-forest.png') center / cover; }
+  background: linear-gradient(180deg, #091824c4 0%, #102530d6 45%, #172530a3 100%), url('assets/backgrounds/lantern-forest-v2.png') center / cover; }
 #modern-app::after { content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none;
   background: radial-gradient(ellipse at 18% 12%, #53c4b21a, transparent 55%), radial-gradient(ellipse at 80% 85%, #f2b37410, transparent 45%); }
 #modern-app [hidden], #modern-app[hidden] { display: none !important; }
@@ -70,9 +70,11 @@ html[data-modern-active='true'] #character-layer { opacity: 0 !important; pointe
 .nr-character { position: relative; flex-shrink: 0; width: 110px; text-align: center; align-self: end; }
 .nr-character::before { content: ''; position: absolute; width: 60%; height: 9%; left: 20%; bottom: 20px; border-radius: 50%; background: #00121a55; filter: blur(4px); }
 .nr-character-art { position: relative; width: 100%; aspect-ratio: 1; background-size: 300% 200%; background-repeat: no-repeat;
-  transform-origin: 50% 90%; image-rendering: auto; }
-.nr-rin .nr-character-art { background-image: url('assets/characters/rin-atlas.png'); }
-.nr-koh .nr-character-art { background-image: url('assets/characters/koh-dark-cutout-atlas.png'); }
+  transform-origin: 50% 90%; image-rendering: auto; border-radius: 18%; background-color: #102530;
+  box-shadow: inset 0 0 0 1px #83dec74d, 0 5px 14px #00121a40; }
+.nr-rin .nr-character-art { background-image: url('assets/characters/rin-portraits-v2.png'); }
+.nr-koh .nr-character-art { background-image: url('assets/characters/luna-portraits-v2.png');
+  box-shadow: inset 0 0 0 1px #d1a0ee66, 0 5px 14px #00121a40; }
 .nr-dark-fairy { position: absolute; top: 0; right: 0; width: 35%; aspect-ratio: 1;
   background: url('assets/characters/dark-fairy.png') center / contain no-repeat;
   pointer-events: none; filter: drop-shadow(0 0 3px #bc73ef66);
@@ -209,7 +211,7 @@ html[data-modern-active='true'] #character-layer { opacity: 0 !important; pointe
   .nr-header { min-height: 58px; gap: 8px; } .nr-brand-name { font-size: 12px; letter-spacing: 1.4px; } .nr-brand-sub { font-size: 8px; } .nr-brand-symbol { font-size: 27px; }
   .nr-toolbar { gap: 5px; } .nr-toolbar .nr-button { font-size: 11px !important; padding: 8px 10px; } .nr-play-retry { display: none; }
   .nr-ready { display: block; padding-top: 22px; } .nr-intro { text-align: center; padding: 0 5px; } .nr-intro .nr-eyebrow { font-size: 9px; }
-  .nr-intro h1 { font-size: 24px; } .nr-intro-copy { font-size: 11px; margin-top: 7px !important; } .nr-hero-cast { margin-top: 0; height: 132px; }
+  .nr-intro h1 { font-size: 24px; } .nr-intro-copy { font-size: 11px; margin-top: 7px !important; } .nr-hero-cast { margin-top: 12px; height: auto; min-height: 132px; }
   .nr-hero-cast .nr-character { width: 125px; } .nr-hero-cast .nr-character-name { font-size: 9px; } .nr-setup { margin-top: 14px; padding: 19px; border-radius: 20px; }
   .nr-setup-heading { font-size: 17px; margin-bottom: 13px; } .nr-start-group { margin-top: 18px; }
   .nr-play { gap: 9px; padding-top: 10px; } .nr-hud { gap: 6px; grid-template-columns: 1fr 1.2fr 1fr; min-height: 78px; }

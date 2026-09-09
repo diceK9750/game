@@ -65,7 +65,7 @@ test('view preserves no-cooldown input, local assets, safe text and reduced moti
   assert.match(css, /repeat\(5, minmax\(24px, 1fr\)\)/);
   assert.match(css, /prefers-reduced-motion/); assert.match(css, /safe-area-inset/);
   assert.match(css, /\.nr-cell-effect[^}]*pointer-events: none/);
-  assert.match(css, /assets\/backgrounds\/lantern-forest\.png/);
+  assert.match(css, /assets\/backgrounds\/lantern-forest-v2\.png/);
 });
 
 // A small DOM harness exercises the actual shipped handlers without a framework.
