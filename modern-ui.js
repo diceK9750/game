@@ -274,6 +274,7 @@
     const playing = state.screen === 'playing', battle = state.kind === 'battle';
     headerContext.textContent = state.screen === 'ready' ? 'ひと目で見つける、ひと勝負。' : `1–${state.max_number} · ${state.mode === 'ordered' ? '順番' : 'ランダム'}${battle ? ' · 対戦' : ' · 練習'}`;
     if (state.screen === 'home') headerContext.textContent = 'ゲームを選ぶ';
+    window.chainVoice?.setEnabled(state.sfx && (playing || state.screen === 'finished' || (state.screen === 'shiritori' && ['playing','finished'].includes(state.shiritori?.phase))));
     if (state.screen === 'shiritori') { headerContext.textContent = '絵しりとり'; shiritori.update(state.shiritori); }
     sound.textContent = state.bgm ? '♪ ON' : '♪ OFF'; sound.setAttribute('aria-pressed', String(!!state.bgm));
     help.hidden = !['ready', 'help'].includes(state.screen); help.disabled = state.screen === 'help';
@@ -306,7 +307,7 @@
     cpuHud.hidden = !battle; youHud.dataset.practice = String(!battle);
     elapsed.textContent = formatTime(state.elapsed); completed.textContent = `${integer(state.completed)} / ${state.max_number}`;
     mistakes.textContent = integer(state.mistakes); streak.textContent = `${integer(state.streak)} 連続`;
-    timedChain?.update(state.chain, battle, playing);
+    timedChain?.update(state.chain, battle, playing, state.screen === 'finished');
     progressTrack.setAttribute('aria-valuemin', '0'); progressTrack.setAttribute('aria-valuemax', String(state.max_number)); progressTrack.setAttribute('aria-valuenow', String(integer(state.completed)));
     progressFill.style.width = `${Math.min(100, integer(state.completed) / Math.max(1, state.max_number) * 100)}%`;
     cpuTrack.parentElement.hidden = !battle;

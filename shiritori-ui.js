@@ -161,7 +161,7 @@
       endSolo.hidden = !solo; koh.wrap.hidden = solo; resultKoh.wrap.hidden = solo;
       const last = s.history[s.history.length - 1];
       pose(rin, last?.owner === 'you' ? '50% 0%' : '0% 0%'); pose(koh, last?.owner === 'cpu' ? '50% 0%' : '0% 0%');
-      timedChain?.update(s.chain, !solo, live);
+      timedChain?.update(s.chain, !solo, live, s.phase === 'finished');
       board.dataset.count = String(Math.min(s.total || 24, 24));
       boardSpace.dataset.count = board.dataset.count;
       board.setAttribute('aria-label', `しりとりの絵札 ${Math.min(s.total || 24, 24)}枚`);

@@ -13,7 +13,7 @@
       burst.hidden = true; row.append(burst);
       return {row,label,bar,fill,burst,until:0,event:-1,flip:0};
     });
-    return {root, update(chains, battle, live=true) {
+    return {root, update(chains, battle, live=true, finished=false) {
       root.hidden = !live;
       rows.forEach((r, i) => {
         const c = chains?.[i ? 'cpu' : 'you'] || {};
@@ -26,6 +26,7 @@
         if (r.event !== c.event) {
           const fresh = r.event >= 0 && c.event > r.event;
           r.event=c.event; r.flip=1-r.flip;
+          if (fresh && (live || finished) && count >= 1 && (!i || battle)) window.chainVoice?.play(i ? 'cpu' : 'you', count);
           if (fresh && live && count >= 2) {
             r.burst.textContent = `${i ? 'CPU' : 'YOU'}  ${count}連鎖！${tier===3?' ★ FEVER!!':tier===2?' ✦ SUPER!':''}`;
             r.burst.dataset.pulse = String(r.flip);

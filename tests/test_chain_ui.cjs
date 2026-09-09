@@ -6,7 +6,8 @@ const vm = require('node:vm');
 test('automatic chain gauges and character tiers work for both owners without buttons', () => {
   const E = (tag,cls='') => ({tag,className:cls,children:[],style:{},dataset:{},append(...c){this.children.push(...c);},setAttribute(k,v){this[k]=v;}});
   const add = (p,...c) => {p.append(...c);return p;};
-  const window = {};
+  const calls=[];
+  const window = {chainVoice:{play:(...args)=>calls.push(args)}};
   vm.runInNewContext(fs.readFileSync(require.resolve('../chain-ui.js'),'utf8'),{window});
   const portraits=[{image:E('div')},{image:E('div')}];
   const view=window.createTimedChainView({E,add,portraits});
@@ -34,6 +35,14 @@ test('automatic chain gauges and character tiers work for both owners without bu
   view.update(chains,false,false);
   assert.equal(view.root.hidden,true);
   assert.equal(burst.hidden,true);
+  const baseline=calls.length;
+  view.update({you:{event:0,count:0}},false);
+  view.update({you:{event:1,count:1}},false);
+  assert.deepEqual(calls.at(-1),['you',1]);
+  view.update({you:{event:2,count:2}},false,false,true);
+  assert.deepEqual(calls.at(-1),['you',2]);
+  view.update({you:{event:2,count:2}},false,false,true);
+  assert.equal(calls.length,baseline+2);
   assert.equal(portraits[0].image.dataset.chainTier,'0');
   const html=fs.readFileSync(require.resolve('../player.html'),'utf8');
   assert.ok(html.indexOf('chain-ui.js')<html.indexOf('shiritori-ui.js'));
