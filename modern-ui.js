@@ -202,6 +202,8 @@
   const feedback = E('p', 'nr-feedback', 'お題を見て、落ち着いて。');
   const hint = button('ヒントを見る', 'hint', undefined, 'nr-setting');
   const middle = add(E('div', 'nr-stage-middle'), playStats, add(E('div', 'nr-cpu-row'), cpuClock, cpuTrack), feedback, hint);
+  const timedChain = window.createTimedChainView?.({E, add, portraits:[playRin,playKoh]});
+  if (timedChain) middle.append(timedChain.root);
   add(stage, playRin.wrap, middle, playKoh.wrap); add(play, hud, boardWrap, progressTrack, stage);
 
   const countdown = section('countdown', 'nr-centered');
@@ -234,6 +236,7 @@
   const resultStats = E('div', 'nr-result-stats');
   const resultTime = E('strong'), resultMiss = E('strong'), resultStreak = E('strong');
   add(resultStats, stat('タイム', resultTime), stat('ミス', resultMiss), stat('最大連続正解', resultStreak));
+  const chainSummary = E('p', 'nr-muted'); resultStats.append(chainSummary);
   const award = E('div', 'nr-award'); const awardValue = E('strong');
   add(award, E('span', '', '✦ PERFECT BONUS ✦'), awardValue, E('small', '', '全問先取・ノーミスの特別賞'));
   const record = E('p', 'nr-record');
@@ -303,6 +306,7 @@
     cpuHud.hidden = !battle; youHud.dataset.practice = String(!battle);
     elapsed.textContent = formatTime(state.elapsed); completed.textContent = `${integer(state.completed)} / ${state.max_number}`;
     mistakes.textContent = integer(state.mistakes); streak.textContent = `${integer(state.streak)} 連続`;
+    timedChain?.update(state.chain, battle, playing);
     progressTrack.setAttribute('aria-valuemin', '0'); progressTrack.setAttribute('aria-valuemax', String(state.max_number)); progressTrack.setAttribute('aria-valuenow', String(integer(state.completed)));
     progressFill.style.width = `${Math.min(100, integer(state.completed) / Math.max(1, state.max_number) * 100)}%`;
     cpuTrack.parentElement.hidden = !battle;
@@ -351,6 +355,7 @@
     resultTag.textContent = state.perfect ? 'PERFECT VICTORY' : battle ? state.won ? 'YOU WIN' : 'NEXT CHALLENGE' : 'COMPLETE';
     resultTitle.textContent = state.perfect ? 'パーフェクト！' : battle ? state.won ? 'あなたの勝利！' : 'ナイスチャレンジ！' : 'ぜんぶ見つけた！';
     resultScore.textContent = battle ? `${integer(state.player_points)} : ${integer(state.cpu_points)}` : `${integer(state.completed)} / ${state.max_number}`;
+    chainSummary.textContent = state.chain?.you && state.chain?.cpu ? `最大${state.chain.you.best}連鎖 · ${state.chain.you.bonus}連鎖ボーナス${battle ? ` ／ CPU最大${state.chain.cpu.best}連鎖 · ${state.chain.cpu.bonus}ボーナス` : ''}` : '';
     resultCopy.textContent = battle ? state.won ? '見つける力が、勝利につながった。' : 'ひと呼吸して、次の勝負へ。' : 'ひとつずつの発見が、スピードになる。';
     resultTime.textContent = formatTime(state.elapsed); resultMiss.textContent = `${integer(state.mistakes)} 回`; resultStreak.textContent = `${integer(state.max_streak)} 回`;
     award.hidden = !state.perfect; awardValue.textContent = `+ ${integer(state.bonus).toLocaleString()} pt`;

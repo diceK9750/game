@@ -22,6 +22,7 @@ function harness() {
   const button = (text, action, value, cls) => { const b = E('button', cls, text); b.click = () => command(typeof action === 'function' ? action() : action, value); return b; };
   const portrait = () => { const image = E('div'); return {wrap: add(E('div'), image), image}; };
   const window = {};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../chain-ui.js'), 'utf8'), {window});
   window.rivalCursor=require('../rival-cursor.js').rivalCursor;
   const saved = new Map(); window.localStorage={getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v)};
   vm.runInNewContext(fs.readFileSync(require.resolve('../shiritori-dictionary.js'), 'utf8'), {window});

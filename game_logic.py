@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import time
+from timed_chain import TimedChain
 from collections.abc import Callable
 
 
@@ -60,6 +61,7 @@ class NumberTapRound:
         self.finished_at: float | None = None
         self.paused_at: float | None = None
         self.total_paused = 0.0
+        self.chain = TimedChain()
 
     @property
     def is_playing(self) -> bool:
@@ -114,6 +116,7 @@ class NumberTapRound:
         self.paused_at = None
         self.total_paused = 0.0
         self.started_at = self._clock()
+        self.chain = TimedChain(0.0, ('you', 'cpu'))
 
     def tap(self, number: int | None) -> str:
         """押された数字を判定し、判定結果を文字列で返す。"""
@@ -125,10 +128,13 @@ class NumberTapRound:
 
         if number != self.current_target:
             self.mistakes += 1
+            self.chain.miss('you')
             return "wrong"
 
         self.found_numbers.add(number)
         self.target_index += 1
+        if not isinstance(self, BattleRound):
+            self.chain.hit('you', self.elapsed())
         if self.target_index == self.max_number:
             self.finished_at = self._clock()
             return "finished"
@@ -243,6 +249,7 @@ class BattleRound(NumberTapRound):
 
     def _claim(self, owner):
         number = self.current_target
+        self.chain.hit(owner, self.elapsed(), break_other=True)
         self.history.append({"number": number, "owner": owner,
                              "seconds": max(0.0, self.elapsed() - self.ready_at),
                              "mistakes": self.target_mistakes})
@@ -265,6 +272,7 @@ class BattleRound(NumberTapRound):
             return "empty"
         if number != self.current_target:
             self.mistakes += 1
+            self.chain.miss('you')
             self.target_mistakes += 1
             # One small penalty per target. Repeated misses cannot snowball.
             now = self.elapsed()

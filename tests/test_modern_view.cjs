@@ -113,6 +113,8 @@ function walk(element) { return element.children.flatMap(child => [child, ...wal
 
 test('result warns about unavailable storage without claiming a saved record',()=>{
   const b=browserHarness();
+  b.render('home',{chain:{}});
+  assert.equal(b.app.hidden,false);
   b.render('finished',{storage_saved:false});
   const record=walk(b.app).find(n=>n.className==='nr-record');
   assert.match(record.textContent,/保存できませんでした/);

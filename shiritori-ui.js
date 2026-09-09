@@ -23,7 +23,8 @@
       E('p', '', '絵を1回タップするだけ！必要な頭文字につながる未使用の読み方を自動確定。「ん」終わりは自動で除外します。各絵に頭文字の異なる3〜5種類の読み方があります。'),
       E('p', '', '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。'),
       E('p', '', '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。'),
-      E('p', '', 'ヒントは3回。小さい文字は大きく（ちゃ→や）、長音は直前の文字（ぎたー→た）。濁点は区別。札とことばの再使用はできません。'));
+      E('p', '', 'ヒントは3回。小さい文字は大きく（ちゃ→や）、長音は直前の文字（ぎたー→た）。濁点は区別。札とことばの再使用はできません。'),
+      E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。対戦は相手の手番中、自分のゲージが止まります。CPUも同じ条件で連鎖します。'));
     const start = button('はじめる', 'sh_start', undefined, 'nr-primary');
     add(setup, E('div', 'nr-setup-heading', '絵しりとりのチャレンジ'),
       add(E('div', 'sh-config'), E('h2', 'nr-field-label', '遊び方'), add(E('div', 'nr-segment sh-actions sh-modes'), ...modeButtons), modeHint,
@@ -48,9 +49,11 @@
       add(card, icon, mark, hintLabel); board.append(card); return {card, icon, mark, hintLabel, identity:null};
     });
     const hint = button('ヒント', 'sh_hint');
+    const timedChain = window.createTimedChainView?.({E, add, portraits:[rin,koh]});
     const relink = button('つなぎ直す', 'sh_relink', undefined, 'nr-primary');
     const toolbar = add(E('div', 'sh-actions sh-play-actions'), hint, relink);
     add(stage, hud, add(E('div', 'sh-progress'), completed, stock), status, boardSpace, toolbar);
+    if (timedChain) stage.append(timedChain.root);
     const pause = E('div', 'sh-intro nr-dialog nr-surface');
     const endSolo = button('ここまでの結果を見る', 'sh_end');
     add(pause, E('h1', '', 'ひと休みしよう'), E('p', '', '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'),
@@ -158,6 +161,7 @@
       endSolo.hidden = !solo; koh.wrap.hidden = solo; resultKoh.wrap.hidden = solo;
       const last = s.history[s.history.length - 1];
       pose(rin, last?.owner === 'you' ? '50% 0%' : '0% 0%'); pose(koh, last?.owner === 'cpu' ? '50% 0%' : '0% 0%');
+      timedChain?.update(s.chain, !solo, live);
       board.dataset.count = String(Math.min(s.total || 24, 24));
       boardSpace.dataset.count = board.dataset.count;
       board.setAttribute('aria-label', `しりとりの絵札 ${Math.min(s.total || 24, 24)}枚`);
@@ -185,6 +189,7 @@
       resultTitle.textContent = solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : s.winner === 'you' ? 'あなたの勝利！' : s.winner === 'draw' ? 'ふたりでつなぎきった！' : 'ルナの勝利！';
       reason.textContent = s.message;
       tally.textContent = `${s.history.length} / ${s.total || 24}枚 · ミス${s.mistakes}回 · ヒント${3 - s.hints}回${solo ? ` · つなぎ直し${2 - s.relinks}回` : ''}`;
+      if (s.chain) tally.textContent += ` · 最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス${solo ? '' : ` ／ CPU最大${s.chain.cpu.best}連鎖 · ${s.chain.cpu.bonus}ボーナス`}`;
       pose(resultRin, s.winner === 'cpu' ? '100% 100%' : '100% 0%');
       pose(resultKoh, s.winner === 'you' ? '100% 100%' : '100% 0%');
       const key = JSON.stringify(s.history);

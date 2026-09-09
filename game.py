@@ -258,9 +258,11 @@ class NumberRush:
         """効果音と柔らかなオリジナルBGMを登録する。"""
         pyxel.sounds[0].set("b3e4g4", "t", "454", "nnf", 4)
         pyxel.sounds[1].set("c2g1c1", "n", "432", "fff", 4)
-        pyxel.sounds[2].set("g3b3d4g4", "t", "4454", "nnnf", 5)
-        pyxel.sounds[3].set("g3b3d4g4b4g4", "t", "445554", "nnnnnf", 5)
-        pyxel.sounds[4].set("e3g3b3e4", "t", "3443", "nnnf", 5)
+        # Chain stingers: bright rising attacks, a higher tier and a soft tail.
+        # Use only the SFX channel; BGM and rapid panel input remain uninterrupted.
+        pyxel.sounds[2].set("c3g3c4e4g4c4g4c4", "p", "45666543", "nnnnnnnf", 3)
+        pyxel.sounds[3].set("c3g3c4d4e4g4e4g4c4g4e4c4", "p", "456666665432", "nnnnnnnnnnnf", 3)
+        pyxel.sounds[4].set("c3e3g3c4g4", "p", "45664", "nnnnf", 3)
         pyxel.sounds[5].set("b3g3e3", "p", "443", "nnf", 5)
         pyxel.sounds[6].set("e4b3g3e3b2", "t", "44332", "nnnnf", 9)
         pyxel.sounds[7].set("g3b3d4g4rd4g4a4b4g4", "t", "4455045543", "nnnnnnnnnf", 6)
@@ -306,7 +308,10 @@ class NumberRush:
             if modern is None or not modern.ready:
                 self.screen = "ready"
             else:
+                before = len(self.shiritori.history)
                 self.shiritori.update()
+                if len(self.shiritori.history) > before:
+                    self.play_sfx(self.shiritori.chain.sound(self.shiritori.history[-1]['owner']))
             return
         if modern is not None and modern.ready:
             # HTML owns all input in this renderer. Keep only the existing
@@ -485,7 +490,7 @@ class NumberRush:
                 self.cpu_reaction_until = pyxel.frame_count + 48
                 self.streak = 0
                 self.add_cell_effect("cpu", self.round.board_cells.index(number))
-                self.play_sfx(5)
+                self.play_sfx(self.round.chain.sound('cpu'))
                 self.update_battle_progress()
                 if self.round.is_finished:
                     self.finish_battle()
@@ -621,7 +626,7 @@ class NumberRush:
         elif is_milestone:
             self.play_sfx(2, protect_frames=10)
         else:
-            self.play_sfx(0)
+            self.play_sfx(self.round.chain.sound('you'))
 
         next_stage = music_stage_for_progress(
             self.round.completed_count,

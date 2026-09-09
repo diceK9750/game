@@ -30,6 +30,21 @@ class BgmStructureTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         game.NumberRush.configure_sounds()
 
+    def test_chain_stingers_escalate_with_bounded_volume_and_duration(self):
+        import re
+        lengths = []
+        for slot in (4, 2, 3):
+            notes, tone, volume, effect, speed = fake_pyxel.sounds[slot].spec
+            pitches = re.findall(r'[a-g][#-]?\d|r', notes)
+            self.assertEqual(len(pitches), len(volume))
+            self.assertEqual(len(pitches), len(effect))
+            self.assertEqual(tone, 'p')
+            self.assertLessEqual(max(map(int, volume)), 6)
+            self.assertLessEqual(len(pitches) * speed / 120, .35)
+            self.assertEqual(effect[-1], 'f')
+            lengths.append(len(pitches))
+        self.assertEqual(lengths, sorted(set(lengths)))
+
     def test_loop_is_36_phrases_and_about_eighty_seconds(self) -> None:
         numerator = (
             game.BGM_NOTES_PER_PHRASE * game.BGM_SOUND_SPEED * game.FPS

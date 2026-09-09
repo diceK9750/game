@@ -98,7 +98,7 @@ class ModernUI:
                 if app.shiritori.mistakes > before[1]:
                     app.play_sfx(1)
                 elif len(app.shiritori.history) > before[0]:
-                    app.play_sfx(0)
+                    app.play_sfx(app.shiritori.chain.sound(app.shiritori.history[-1]['owner']))
         elif screen == "ready":
             if action == "home":
                 app.game_selected = False
@@ -199,6 +199,7 @@ class ModernUI:
             history = [{**entry, "seconds": round(entry["seconds"], 2)} for entry in round_.history]
         return {
             "v": 1, "screen": screen, "kind": kind, "difficulty": difficulty,
+            "chain": round_.chain.snapshot(round_.elapsed()) if uses_round else {},
             "max_number": count, "mode": mode, "bgm": bool(app.bgm_on),
             "sfx": bool(app.sfx_on), "reduced": bool(app.reduced_motion),
             "elapsed": round(elapsed, 2 if screen in ("finished", "review") else 1),

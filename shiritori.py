@@ -1,6 +1,7 @@
 """Illustrated word-chain duel. Pure Python rules with an injectable clock/RNG."""
 import random
 import time
+from timed_chain import TimedChain
 
 # Emoji are platform pictograms, not artwork copied from a commercial game.
 # Finite picture names, categories and visible features; one reading per head.
@@ -233,8 +234,10 @@ class ShiritoriRound:
         self.revision = 0
         self.cpu_move = None
         self._chain_advice = {}
+        self.chain = TimedChain(self.clock())
 
     def start(self):
+        self.chain = TimedChain(self.clock())
         self._chain_advice.clear()
         by_id = {card[0]: card for card in CARDS}
         offset = self.rng.randrange(len(PERFECT_RING))
@@ -285,12 +288,14 @@ class ShiritoriRound:
     def finish(self, winner, reason):
         self.phase, self.winner, self.message = "finished", winner, reason
         self.selected = self.hint = None
+        self.chain.sync(self.clock(), ())
         self.revision += 1
 
     def remaining(self):
         return max(0, self.saved_remaining if self.phase == "paused" else self.deadline - self.clock())
 
     def update(self):
+        self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
         if self.phase != "playing":
             return
         if self.mode == "solo":
@@ -333,6 +338,7 @@ class ShiritoriRound:
 
     def take(self, index, word):
         owner = self.turn
+        self.chain.hit(owner, self.clock())
         self.cpu_move = None
         if owner == "you":
             self.discoveries.add((self.cards[index][0], word))
@@ -373,6 +379,8 @@ class ShiritoriRound:
             if self.turn == "cpu":
                 self.prepare_cpu()
 
+        self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
+
     def check_solo_blocked(self):
         if self.relinks and any(tail(w) != "ん" and w not in self.seen
                                 for i, c in enumerate(self.cards) if i not in self.used for w in c[2]):
@@ -399,16 +407,20 @@ class ShiritoriRound:
             self.saved_remaining = self.remaining()
             self.resume_phase = self.phase
             self.phase = "paused"
+            self.chain.sync(self.clock(), ())
             self.selected = None
         elif action == "resume" and self.phase == "paused":
             self.deadline = self.clock() + self.saved_remaining
             self.phase = self.resume_phase
+            self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
         elif action == "restart" and self.phase == "paused":
             self.start()
         elif action == "relink" and self.phase == "blocked" and self.mode == "solo" and self.relinks:
             choices = [(i, w) for i, c in enumerate(self.cards) if i not in self.used
                        for w in c[2] if tail(w) != "ん" and w not in self.seen]
             if choices:
+                self.chain.miss('you')
+                self.chain.sync(self.clock(), ('you',))
                 self.relinks -= 1
                 self.required = choices[0][1][0]
                 self.last_word = "つなぎ直し"
@@ -424,6 +436,7 @@ class ShiritoriRound:
                 if move is not None:
                     self.take(*move)
                 else:
+                    self.chain.miss('you')
                     self.mistakes += 1
                     if self.mode != "solo":
                         self.deadline -= 3
@@ -433,7 +446,9 @@ class ShiritoriRound:
             elif action == "hint" and self.hints and self.moves():
                 self.hints -= 1
                 started = self.clock()
+                self.chain.sync(started, ())
                 move, plan = self.chain_advice()
+                self.chain.sync(self.clock(), (self.turn,))
                 # Thinking for a hint must not consume the player's turn time.
                 if self.mode == "battle":
                     self.deadline += max(0, self.clock() - started)
@@ -444,6 +459,7 @@ class ShiritoriRound:
     def snapshot(self):
         visible = self.phase in ("playing", "blocked", "finished")
         return {"phase": self.phase, "turn": self.turn, "required": self.required,
+                "chain": self.chain.snapshot(self.clock(), (self.turn,) if self.phase == "playing" else ()),
                 "cpu_target": self.cpu_move[0] if self.cpu_move is not None and self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else None,
                 "cpu_progress": max(0, min(1, 1-self.remaining()/2.2)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
                 "last_word": self.last_word, "remaining": round(self.remaining(), 1) if self.phase in ("playing", "paused") else 0,
