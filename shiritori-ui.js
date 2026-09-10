@@ -60,7 +60,7 @@
       add(E('div', 'nr-dialog-actions'), button('プレイを続ける', 'sh_resume', undefined, 'nr-primary')),
       add(E('div', 'nr-pause-extras'), button('新しい配置でやり直す', () => { restartRequested='sh_restart'; return 'sh_pause'; }), button('モード選択へ', () => { restartRequested='sh_setup'; return 'sh_pause'; })), endSolo);
     if (settingsControls) pause.append(settingsControls());
-    const result = E('div', 'sh-intro nr-surface');
+    const result = E('div', 'sh-intro sh-result nr-surface');
     const resultTitle = E('h1'), reason = E('p'), tally = E('p');
     const resultRin = portrait('rin', 'RIN'), resultKoh = portrait('koh', 'LUNA');
     const log = E('ol', 'sh-log');
@@ -130,7 +130,8 @@
         if (dictionaryOpen) dictionary.refresh();
       }
       const solo = s.mode === 'solo', live = ['playing','blocked'].includes(s.phase);
-      page.dataset.layout = live ? 'play' : (s.phase === 'intro' && !dictionaryOpen && !helpOpen ? 'setup' : 'document');
+      page.dataset.layout = dictionaryOpen || helpOpen ? 'document' : live ? 'play' :
+        s.phase === 'intro' ? 'setup' : s.phase === 'finished' ? 'result' : 'dialog';
       intro.hidden = s.phase !== 'intro'; stage.hidden = !live;
       pause.hidden = s.phase !== 'paused'; result.hidden = s.phase !== 'finished';
       if (s.phase!=='intro') helpOpen=false;

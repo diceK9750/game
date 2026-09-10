@@ -28,6 +28,16 @@ test('playing surfaces cannot scroll and board tracks can shrink to remaining he
   assert.ok(!/\.nr-play\s*\{[^}]*overflow: auto/.test(css));
   assert.ok(!/\.nr-board-wrap\s*\{[^}]*min-height: (134|180|244)px/.test(css));
   const view=fs.readFileSync(require.resolve('../shiritori-ui.js'),'utf8');
-  assert.match(view,/page\.dataset\.layout = live \? 'play'/);
-  assert.match(view,/!dictionaryOpen && !helpOpen/);
+  assert.match(view,/dictionaryOpen \|\| helpOpen \? 'document' : live \? 'play'/);
+  assert.match(view,/s\.phase === 'finished' \? 'result' : 'dialog'/);
+});
+
+test('countdown and results are fitted surfaces, not scrolling documents',()=>{
+  const css=fs.readFileSync(require.resolve('../mobile-layout.css'),'utf8');
+  assert.match(css,/\.nr-count-card, \.nr-result-card \{ max-height: 100%; overflow: clip/);
+  assert.match(css,/\.sh-page\[data-layout='result'\], \.sh-page\[data-layout='dialog'\] \{ overflow: clip/);
+  assert.match(css,/\.sh-result details\[open\] \{ overflow: auto/);
+  assert.match(css,/\.nr-result-card \{ grid-template-columns: 1fr 1fr/);
+  assert.match(css,/\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
+  assert.match(css,/\.nr-instructions, \.nr-history, \.nr-help-card \.sh-guide \{ flex: 1 1 auto; min-height: 0; overflow: auto/);
 });
