@@ -17,7 +17,8 @@
     main {
       position: fixed;
       left: var(--view-left, 0px); top: var(--view-top, 0px);
-      width: var(--view-width, 100%); height: var(--view-height, 100dvh);
+      width: var(--view-width, 100%); height: var(--view-height, 100%);
+      height: var(--view-height, 100svh); height: var(--view-height, 100dvh);
       padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right))
                max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
       display: flex; flex-direction: column; gap: 4px;
@@ -57,7 +58,7 @@
       main { gap: 2px; }
     }
   </style>
-  <script src="viewport.js?v=3" defer></script>
+  <script src="viewport.js?v=4" defer></script>
 </head>
 <body>
   <main>
@@ -73,7 +74,7 @@
     </header>
     <p class="hint" id="orientation-hint">画面の開始ボタンを押すと起動します。音が出ます。スマートフォンは横向きがおすすめです。</p>
     <section id="stage" aria-label="絵しりとり・数字さがしゲーム">
-      <div id="game-box"><iframe id="game-frame" title="NUMBER RUSH ゲーム画面" src="player.html?v=cute-voice-2" width="640" height="360" allow="autoplay; fullscreen" allowfullscreen></iframe></div>
+      <div id="game-box"><iframe id="game-frame" title="NUMBER RUSH ゲーム画面" src="player.html?v=mobile-layout-1" width="640" height="360" allow="autoplay; fullscreen" allowfullscreen></iframe></div>
     </section>
     <footer class="hint">起動後に「絵しりとり」「数字さがし」を選びます。<br>数字さがしの記録はこのブラウザに保存されます（保存が許可されている場合）。</footer>
   </main>

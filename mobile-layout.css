@@ -1,0 +1,189 @@
+/* Shared compact layout. The host already removes browser chrome and safe areas;
+   iframe dvh therefore means the actual remaining game height, not screen height.
+   Desktop rules remain in modern-ui.css / shiritori-ui.css. */
+@media (max-width: 600px), (max-height: 500px) {
+  #modern-app { padding: 0 6px; }
+  .nr-header { min-height: 48px; gap: 4px; }
+  .nr-brand { min-width: 0; flex-shrink: 1; gap: 4px; }
+  .nr-brand-name { font-size: 10px; letter-spacing: .5px; }
+  .nr-brand-symbol { font-size: 18px; }
+  .nr-brand-sub, .nr-header-context { display: none; }
+  .nr-toolbar { gap: 4px; flex-shrink: 0; }
+  #modern-app .nr-toolbar .nr-button { min-height: 44px; min-width: 44px; padding: 6px; font-size: 11px !important; }
+  .nr-screen, .sh-page { min-height: 0; padding: 4px 0; overscroll-behavior: contain; }
+  .nr-ready, .sh-ready { min-height: 0; align-content: start; align-items: start; gap: 8px; }
+  .sh-ready { padding: 0; }
+  .nr-intro, .sh-ready .nr-intro { position: static; padding: 0; text-align: center; }
+  .nr-intro h1 { font-size: clamp(17px, 3vw, 23px); line-height: 1.25; }
+  .nr-intro .nr-eyebrow, .nr-intro-copy, .nr-ready-record { display: none; }
+  .nr-hero-cast { display: flex; height: auto; min-height: 0; margin-top: 4px; gap: 6px; }
+  .nr-hero-cast .nr-character { width: clamp(40px, 10dvh, 82px); }
+  .nr-hero-cast .nr-character-name { font-size: 8px; letter-spacing: 0; }
+  .nr-setup { padding: 8px; margin: 0; border-radius: 14px; }
+  .nr-setup-heading { display: none; }
+  .nr-field-label, .sh-ready-settings .nr-field-label { margin: 4px 0 !important; font-size: 11px; }
+  .nr-field-hint, .sh-setting-note { font-size: 11px; line-height: 1.3; margin-top: 3px !important; }
+  .nr-segment { padding: 2px; gap: 3px; }
+  #modern-app .nr-segment .nr-button, .sh-config .sh-actions button { min-height: 44px; padding: 5px; font-size: 12px !important; }
+  .nr-range-grid { gap: 4px; }
+  .nr-range { min-height: 44px; padding: 4px; }
+  .nr-range strong { font-size: 22px; }
+  .nr-start-group { gap: 4px; margin-top: 6px; }
+  .nr-start-group .nr-button { min-height: 44px; padding: 8px; }
+  .nr-start-group strong { font-size: 14px; }
+  .nr-start-group span { display: none; }
+  .nr-settings { margin-top: 4px; gap: 4px; }
+  .nr-setting { min-height: 44px; padding: 6px 8px; }
+  .sh-ready-settings { gap: 4px; max-height: none; overflow: visible; }
+  .sh-ready-settings .nr-field-label { margin: 0 !important; }
+  .sh-ready-settings > .nr-settings { flex-wrap: nowrap; }
+  .sh-ready-settings > .nr-settings .nr-button { min-width: 0; padding: 5px; font-size: 10px !important; }
+  .sh-ready-settings .sh-config, .sh-ready-settings .sh-level-settings { gap: 3px; }
+  .sh-ready-settings .sh-start-actions { position: static; margin: 0; padding: 0; background: transparent; }
+  .sh-start-actions button { min-height: 44px; }
+  /* Confine exceptional overflow to content, never clip the bottom controls. */
+  .nr-centered { align-items: safe center; overflow: hidden; }
+  .nr-dialog, .nr-help-card, .nr-review-card, .nr-count-card, .nr-result-card,
+  .sh-page > .nr-dialog { max-height: calc(100dvh - 60px); overflow: auto; overscroll-behavior: contain; padding: 12px; }
+  .nr-dialog .nr-eyebrow { display: none; }
+  .nr-centered h1 { font-size: 22px; }
+  .nr-dialog-actions { gap: 6px; margin-top: 10px; }
+  .nr-pause-extras { gap: 6px; margin-top: 6px; }
+  .nr-dialog .nr-muted { margin-top: 6px !important; line-height: 1.4; }
+  .nr-home { justify-content: safe center; gap: 8px; padding: 4px 0; }
+  .nr-home .nr-game-card { min-height: 140px; padding: 12px; gap: 6px; }
+  .nr-home > .nr-eyebrow { display: none; }
+  /* Play uses remaining flex space, not a second independent vh allocation. */
+  .nr-play { gap: 4px; padding: 4px 0; overflow: auto; }
+  .nr-hud { min-height: 44px; gap: 4px; }
+  .nr-score-card { padding: 3px 5px; gap: 2px; }
+  .nr-score-card > strong { font-size: 24px; }
+  .nr-score-note { display: none; }
+  .nr-target { gap: 3px; }
+  .nr-target-number { font-size: 30px; }
+  .nr-board-wrap { flex: 1 0 244px; min-height: 244px; height: auto; }
+  .nr-board { padding: 3px; gap: 4px; grid-template-rows: repeat(5, minmax(44px, 1fr)); }
+  .nr-cell { min-height: 44px; border-radius: 6px; }
+  .nr-cell-number { font-size: clamp(19px, 4dvh, 30px); }
+  .nr-play-stage { flex: 0 0 auto; min-height: 0; gap: 4px; padding: 0; align-items: center; }
+  .nr-play-stage .nr-character { position: relative; width: clamp(32px, 7dvh, 60px); margin: 0; z-index: auto; }
+  .nr-play-stage .nr-character-name { display: none; }
+  .nr-stage-middle { padding: 0; }
+  .nr-play-stats { gap: 4px; }
+  .nr-stat { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+  .nr-stat > span { font-size: 9px; letter-spacing: 0; margin: 0; }
+  .nr-stat > strong { font-size: 11px; }
+  .nr-cpu-row { margin-top: 2px; }
+  .nr-feedback { display: none; }
+  .nr-stage-middle > .nr-setting { position: static; min-height: 44px; margin: 2px 0; }
+  .sh-stage { height: 100%; min-height: 0; gap: 4px; }
+  .sh-hud { flex-shrink: 0; padding: 2px 4px; gap: 4px; }
+  .sh-hud .nr-character, .sh-hud .nr-character-art { width: clamp(28px, 7dvh, 42px); height: auto; flex-basis: auto; }
+  .sh-prompt { font-size: clamp(15px, 3vw, 20px); }
+  .sh-task span { font-size: 10px; }
+  .sh-progress { flex-shrink: 0; font-size: 11px; line-height: 16px; }
+  .sh-status { flex-shrink: 0; min-height: 16px; font-size: 11px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sh-play-actions { flex-shrink: 0; }
+  .sh-play-actions button { min-height: 44px; padding: 5px; }
+  .sh-board-space { flex: 1 0 auto; min-height: calc(var(--sh-rows) * 44px + (var(--sh-rows) - 1) * 4px); }
+  .sh-board-space .sh-board { max-height: 100%; }
+  .sh-card .sh-icon { font-size: min(88cqw, 86cqh); }
+}
+@media (max-width: 600px) {
+  .nr-ready { display: grid; grid-template-columns: 1fr; }
+  .sh-board-space { --sh-cols: 3; --sh-rows: 4; }
+  .sh-board-space[data-count='24'] { --sh-cols: 4; --sh-rows: 6; }
+}
+@media (max-width: 600px) and (max-height: 700px) {
+  .nr-hero-cast .nr-character { width: clamp(32px, 7dvh, 48px); }
+  .nr-hero-cast .nr-character-name { display: none; }
+  .nr-ready, .sh-ready { gap: 4px; }
+  .nr-intro h1 { font-size: 17px; }
+  .sh-setting-note { display: none; }
+  /* Reflow only picture cards. Number search intentionally retains 5 x 8. */
+  .sh-board-space[data-count='24'] { --sh-cols: 6; --sh-rows: 4; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .nr-ready { grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr); gap: 8px; }
+  .nr-hero-cast .nr-character { width: clamp(36px, 18dvh, 80px); }
+  .nr-hero-cast .nr-character-name { display: none; }
+  .nr-intro h1 { font-size: 18px; }
+  .nr-setup:not(.sh-ready-settings) { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; align-content: start; grid-template-areas: 'kind label' 'difficulty range' 'start settings'; }
+  .nr-setup > .nr-kind-group { grid-area: kind; }
+  .nr-setup > .nr-field-label { grid-area: label; }
+  .nr-setup > .nr-range-grid { grid-area: range; align-self: center; }
+  .nr-range-prefix { display: none; }
+  .nr-setup > .nr-difficulty-wrap { grid-area: difficulty; }
+  .nr-setup > .nr-start-group { grid-area: start; }
+  .nr-setup > .nr-settings { grid-area: settings; align-items: center; }
+  .nr-setup > .nr-field-label { align-self: center; }
+  .nr-field-hint, .sh-setting-note { display: none; }
+  .nr-start-group, .nr-settings { margin-top: 0; }
+  .sh-ready-settings { display: grid; grid-template-columns: 1fr 1fr; }
+  .sh-ready-settings > .sh-config:nth-child(2) { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; }
+  .sh-ready-settings > .sh-config:nth-child(2) > h2:first-child { grid-column: 1; grid-row: 1; }
+  .sh-ready-settings > .sh-config:nth-child(2) > h2:nth-of-type(2) { grid-column: 2; grid-row: 1; }
+  .sh-ready-settings .sh-modes { grid-column: 1; grid-row: 2; }
+  .sh-ready-settings .sh-counts { grid-column: 2; grid-row: 2; }
+  .sh-ready-settings > .sh-config:nth-child(3) { grid-column: 1; grid-row: 2; }
+  .sh-ready-settings > .sh-dict-open { grid-column: 2; grid-row: 2; align-self: end; }
+  .sh-ready-settings > .sh-start-actions { grid-column: 1; grid-row: 3; }
+  .sh-ready-settings > .nr-settings { grid-area: auto; grid-column: 2; grid-row: 3; }
+  .sh-board-space { --sh-cols: 4; --sh-rows: 3; }
+  .sh-board-space[data-count='24'] { --sh-cols: 8; --sh-rows: 3; }
+  .nr-dialog { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .nr-dialog > h1, .nr-dialog > p, .nr-dialog-actions { grid-column: 1 / -1; }
+  .nr-dialog-actions, .nr-pause-extras, .nr-dialog .nr-settings { margin: 0; }
+  .nr-board-wrap { flex-basis: 180px; min-height: 180px; }
+  .nr-board { grid-template-rows: repeat(5, minmax(30px, 1fr)); }
+  .nr-cell { min-height: 30px; }
+  .nr-stage-middle { display: grid; grid-template-columns: 1fr auto; gap: 2px 6px; }
+  .nr-play-stats, .nr-cpu-row { grid-column: 1; }
+  .nr-stage-middle > .nr-setting { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; }
+  .nr-stage-middle > .timed-chains { grid-column: 1; }
+}
+/* Eight numeric columns cannot each be 44px on a 320px phone. Retain the
+   requested board and readable digits; do not shrink height as well. */
+@media (max-height: 360px) {
+  .nr-play-stage .nr-character, .sh-hud .nr-character { display: none; }
+  .sh-task span, .sh-status { display: none; }
+  .nr-header { min-height: 46px; }
+  .nr-play { gap: 2px; padding: 2px 0; }
+  .nr-hud { min-height: 30px; }
+  .nr-target-number { font-size: 26px; }
+  .nr-board-wrap { flex-basis: 134px; min-height: 134px; }
+  .nr-board { padding: 2px; gap: 2px; grid-template-rows: repeat(5, minmax(24px, 1fr)); }
+  .nr-round-progress { display: none; }
+  .nr-cell { min-height: 24px; }
+  .nr-cell-number { font-size: 20px; }
+  .nr-play-stats .nr-stat > span { display: none; }
+  .nr-setup:not(.sh-ready-settings) { font-size: 12px; }
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  #modern-app[data-kind='battle'] .nr-stage-middle { grid-template-columns: 1fr 1fr; }
+  #modern-app[data-kind='battle'] .nr-play-stats { grid-column: 1; grid-row: 1; }
+  #modern-app[data-kind='battle'] .nr-cpu-row { grid-column: 2; grid-row: 1; }
+  #modern-app[data-kind='battle'] .nr-stage-middle > .timed-chains { grid-column: 1 / -1; grid-row: 2; }
+  .sh-stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 32px minmax(128px, 1fr) 44px; gap: 2px 6px; }
+  .sh-hud { grid-column: 1; grid-row: 1; padding: 0 4px; }
+  .sh-progress { grid-column: 2; grid-row: 1; align-self: center; font-size: 10px; }
+  .sh-board-space { grid-column: 1 / -1; grid-row: 2; min-height: 128px; }
+  .sh-board-space .sh-card { min-height: 40px; }
+  .sh-play-actions { grid-column: 1; grid-row: 3; }
+  .sh-stage > .timed-chains { grid-column: 2; grid-row: 3; align-self: center; }
+  .sh-prompt { font-size: 15px; }
+  .sh-clock { font-size: 11px; }
+}
+@media (orientation: portrait) and (max-width: 600px) and (max-height: 520px) {
+  .sh-ready .nr-hero-cast { display: none; }
+  .sh-ready-settings { grid-template-columns: 1fr 1fr; }
+  .sh-ready-settings > .sh-config, .sh-ready-settings > .sh-start-actions { grid-column: 1 / -1; }
+  .sh-ready-settings > .nr-settings { grid-column: 1; }
+  .sh-ready-settings > .sh-dict-open { grid-column: 2; }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .sh-page > .nr-dialog { max-width: 780px; gap: 6px; margin: 0 auto; }
+  .sh-page > .nr-dialog p { font-size: 11px; line-height: 1.3; }
+  .sh-page > .nr-dialog .nr-dialog-actions { grid-column: 1; }
+  .sh-page > .nr-dialog .nr-pause-extras { grid-column: 2; }
+}

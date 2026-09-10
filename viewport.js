@@ -5,6 +5,18 @@ function fitGame(width, height) {
   return { width: 640 * scale, height: 360 * scale };
 }
 
+// Some embedded browsers briefly expose an empty visualViewport on rotation.
+// Use the layout viewport until a valid visual size arrives, without reloading.
+function availableViewport(view, width, height) {
+  const valid = value => Number.isFinite(value) && value > 0;
+  return {
+    width: valid(view?.width) ? view.width : width,
+    height: valid(view?.height) ? view.height : height,
+    left: Number.isFinite(view?.offsetLeft) ? Math.max(0, view.offsetLeft) : 0,
+    top: Number.isFinite(view?.offsetTop) ? Math.max(0, view.offsetTop) : 0,
+  };
+}
+
 function isTrustedGameMessage(event, source, origin, type) {
   return Boolean(source && origin && origin !== "null" && event &&
     event.source === source && event.origin === origin &&
@@ -15,7 +27,7 @@ function isModernReadyMessage(event, source, origin) {
   return isTrustedGameMessage(event, source, origin, "number-rush-modern-ready");
 }
 
-if (typeof module !== "undefined") module.exports = { fitGame, isModernReadyMessage };
+if (typeof module !== "undefined") module.exports = { fitGame, isModernReadyMessage, availableViewport };
 
 if (typeof window !== "undefined") {
   const stage = document.getElementById("stage");
@@ -32,11 +44,11 @@ if (typeof window !== "undefined") {
 
   function update() {
     scheduled = false;
-    const view = window.visualViewport;
-    root.style.setProperty("--view-width", `${view ? view.width : window.innerWidth}px`);
-    root.style.setProperty("--view-height", `${view ? view.height : window.innerHeight}px`);
-    root.style.setProperty("--view-left", `${view ? view.offsetLeft : 0}px`);
-    root.style.setProperty("--view-top", `${view ? view.offsetTop : 0}px`);
+    const view = availableViewport(window.visualViewport, window.innerWidth, window.innerHeight);
+    root.style.setProperty("--view-width", `${view.width}px`);
+    root.style.setProperty("--view-height", `${view.height}px`);
+    root.style.setProperty("--view-left", `${view.left}px`);
+    root.style.setProperty("--view-top", `${view.top}px`);
     const size = modernReady
       ? { width: Math.max(0, stage.clientWidth), height: Math.max(0, stage.clientHeight) }
       : fitGame(stage.clientWidth, stage.clientHeight);
