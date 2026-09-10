@@ -130,6 +130,7 @@
         if (dictionaryOpen) dictionary.refresh();
       }
       const solo = s.mode === 'solo', live = ['playing','blocked'].includes(s.phase);
+      page.dataset.layout = live ? 'play' : (s.phase === 'intro' && !dictionaryOpen && !helpOpen ? 'setup' : 'document');
       intro.hidden = s.phase !== 'intro'; stage.hidden = !live;
       pause.hidden = s.phase !== 'paused'; result.hidden = s.phase !== 'finished';
       if (s.phase!=='intro') helpOpen=false;

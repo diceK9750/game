@@ -19,3 +19,15 @@ test('shared mobile stylesheet is deployed last and handles height, dialogs and 
   assert.match(css,/overflow: auto/);
   assert.match(css,/min-height: 44px/);
 });
+
+test('playing surfaces cannot scroll and board tracks can shrink to remaining height',()=>{
+  const css=fs.readFileSync(require.resolve('../mobile-layout.css'),'utf8');
+  assert.match(css,/\.nr-play, \.sh-page\[data-layout='play'\].*overflow: clip/);
+  assert.match(css,/\.nr-board-wrap \{ flex: 1 1 0; min-height: 0/);
+  assert.match(css,/grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.ok(!/\.nr-play\s*\{[^}]*overflow: auto/.test(css));
+  assert.ok(!/\.nr-board-wrap\s*\{[^}]*min-height: (134|180|244)px/.test(css));
+  const view=fs.readFileSync(require.resolve('../shiritori-ui.js'),'utf8');
+  assert.match(view,/page\.dataset\.layout = live \? 'play'/);
+  assert.match(view,/!dictionaryOpen && !helpOpen/);
+});

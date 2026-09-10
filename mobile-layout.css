@@ -1,7 +1,7 @@
 /* Shared compact layout. The host already removes browser chrome and safe areas;
    iframe dvh therefore means the actual remaining game height, not screen height.
    Desktop rules remain in modern-ui.css / shiritori-ui.css. */
-@media (max-width: 600px), (max-height: 500px) {
+@media (max-width: 700px), (max-height: 650px) {
   #modern-app { padding: 0 6px; }
   .nr-header { min-height: 48px; gap: 4px; }
   .nr-brand { min-width: 0; flex-shrink: 1; gap: 4px; }
@@ -54,16 +54,16 @@
   .nr-home .nr-game-card { min-height: 140px; padding: 12px; gap: 6px; }
   .nr-home > .nr-eyebrow { display: none; }
   /* Play uses remaining flex space, not a second independent vh allocation. */
-  .nr-play { gap: 4px; padding: 4px 0; overflow: auto; }
+  .nr-play { gap: 4px; padding: 4px 0; overflow: clip; }
   .nr-hud { min-height: 44px; gap: 4px; }
   .nr-score-card { padding: 3px 5px; gap: 2px; }
   .nr-score-card > strong { font-size: 24px; }
   .nr-score-note { display: none; }
   .nr-target { gap: 3px; }
   .nr-target-number { font-size: 30px; }
-  .nr-board-wrap { flex: 1 0 244px; min-height: 244px; height: auto; }
-  .nr-board { padding: 3px; gap: 4px; grid-template-rows: repeat(5, minmax(44px, 1fr)); }
-  .nr-cell { min-height: 44px; border-radius: 6px; }
+  .nr-board-wrap { flex: 1 1 0; min-height: 0; height: auto; }
+  .nr-board { padding: 3px; gap: 4px; grid-template-rows: repeat(5, minmax(0, 1fr)); }
+  .nr-cell { min-height: 0; border-radius: 6px; }
   .nr-cell-number { font-size: clamp(19px, 4dvh, 30px); }
   .nr-play-stage { flex: 0 0 auto; min-height: 0; gap: 4px; padding: 0; align-items: center; }
   .nr-play-stage .nr-character { position: relative; width: clamp(32px, 7dvh, 60px); margin: 0; z-index: auto; }
@@ -85,7 +85,7 @@
   .sh-status { flex-shrink: 0; min-height: 16px; font-size: 11px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .sh-play-actions { flex-shrink: 0; }
   .sh-play-actions button { min-height: 44px; padding: 5px; }
-  .sh-board-space { flex: 1 0 auto; min-height: calc(var(--sh-rows) * 44px + (var(--sh-rows) - 1) * 4px); }
+  .sh-board-space { flex: 1 1 0; min-height: 0; }
   .sh-board-space .sh-board { max-height: 100%; }
   .sh-card .sh-icon { font-size: min(88cqw, 86cqh); }
 }
@@ -134,9 +134,6 @@
   .nr-dialog { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .nr-dialog > h1, .nr-dialog > p, .nr-dialog-actions { grid-column: 1 / -1; }
   .nr-dialog-actions, .nr-pause-extras, .nr-dialog .nr-settings { margin: 0; }
-  .nr-board-wrap { flex-basis: 180px; min-height: 180px; }
-  .nr-board { grid-template-rows: repeat(5, minmax(30px, 1fr)); }
-  .nr-cell { min-height: 30px; }
   .nr-stage-middle { display: grid; grid-template-columns: 1fr auto; gap: 2px 6px; }
   .nr-play-stats, .nr-cpu-row { grid-column: 1; }
   .nr-stage-middle > .nr-setting { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; }
@@ -151,10 +148,8 @@
   .nr-play { gap: 2px; padding: 2px 0; }
   .nr-hud { min-height: 30px; }
   .nr-target-number { font-size: 26px; }
-  .nr-board-wrap { flex-basis: 134px; min-height: 134px; }
-  .nr-board { padding: 2px; gap: 2px; grid-template-rows: repeat(5, minmax(24px, 1fr)); }
+  .nr-board { padding: 2px; gap: 2px; }
   .nr-round-progress { display: none; }
-  .nr-cell { min-height: 24px; }
   .nr-cell-number { font-size: 20px; }
   .nr-play-stats .nr-stat > span { display: none; }
   .nr-setup:not(.sh-ready-settings) { font-size: 12px; }
@@ -164,22 +159,55 @@
   #modern-app[data-kind='battle'] .nr-play-stats { grid-column: 1; grid-row: 1; }
   #modern-app[data-kind='battle'] .nr-cpu-row { grid-column: 2; grid-row: 1; }
   #modern-app[data-kind='battle'] .nr-stage-middle > .timed-chains { grid-column: 1 / -1; grid-row: 2; }
-  .sh-stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 32px minmax(128px, 1fr) 44px; gap: 2px 6px; }
+  .sh-stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 32px minmax(0, 1fr) 44px; gap: 2px 6px; }
   .sh-hud { grid-column: 1; grid-row: 1; padding: 0 4px; }
   .sh-progress { grid-column: 2; grid-row: 1; align-self: center; font-size: 10px; }
-  .sh-board-space { grid-column: 1 / -1; grid-row: 2; min-height: 128px; }
-  .sh-board-space .sh-card { min-height: 40px; }
+  .sh-board-space { grid-column: 1 / -1; grid-row: 2; min-height: 0; }
   .sh-play-actions { grid-column: 1; grid-row: 3; }
   .sh-stage > .timed-chains { grid-column: 2; grid-row: 3; align-self: center; }
   .sh-prompt { font-size: 15px; }
   .sh-clock { font-size: 11px; }
 }
-@media (orientation: portrait) and (max-width: 600px) and (max-height: 520px) {
+@media (orientation: portrait) and (max-width: 700px) and (max-height: 600px) {
   .sh-ready .nr-hero-cast { display: none; }
   .sh-ready-settings { grid-template-columns: 1fr 1fr; }
   .sh-ready-settings > .sh-config, .sh-ready-settings > .sh-start-actions { grid-column: 1 / -1; }
   .sh-ready-settings > .nr-settings { grid-column: 1; }
   .sh-ready-settings > .sh-dict-open { grid-column: 2; }
+}
+/* A play surface is not a scroll container, including during chain/character
+   animations. Grid tracks consume the remaining space instead of forcing it. */
+.nr-play, .sh-page[data-layout='play'] { overflow: hidden; overflow: clip; overscroll-behavior: none; }
+.sh-page[data-layout='play'] .sh-stage { min-height: 0; }
+.sh-page[data-layout='play'] .sh-board-space { min-height: 0; }
+.sh-board-space .sh-card { min-height: 0; }
+@media (max-width: 700px), (max-height: 650px) {
+  .nr-ready, .sh-page[data-layout='setup'] { overflow: hidden; overflow: clip; }
+  .sh-page[data-layout='setup'] .sh-ready { min-height: 0; }
+  .nr-ready { align-content: start; }
+  .nr-hero-cast, .nr-play-stage .nr-character { contain: paint; }
+}
+@media (max-width: 700px) and (max-height: 600px) {
+  .nr-ready .nr-hero-cast, .nr-ready .nr-field-hint { display: none; }
+  .nr-ready .nr-intro h1 { font-size: 16px; line-height: 1.2; }
+  .nr-ready .nr-settings { flex-wrap: nowrap; }
+  .nr-ready .nr-field-label { margin: 2px 0 !important; }
+}
+@media (orientation: portrait) and (max-width: 700px) and (max-height: 600px) {
+  .sh-ready-settings > .sh-config:nth-child(2) { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; }
+  .sh-ready-settings > .sh-config:nth-child(2) > h2:first-child { grid-column: 1; grid-row: 1; }
+  .sh-ready-settings > .sh-config:nth-child(2) > h2:nth-of-type(2) { grid-column: 1; grid-row: 2; }
+  .sh-ready-settings .sh-modes { grid-column: 2; grid-row: 1; }
+  .sh-ready-settings .sh-counts { grid-column: 2; grid-row: 2; }
+  .sh-ready-settings .sh-level-settings { display: grid; grid-template-columns: 62px minmax(0, 1fr); align-items: center; }
+  #modern-app .sh-ready-settings .nr-segment .nr-button { padding: 4px 2px; font-size: 11px !important; }
+}
+@media (orientation: landscape) and (max-height: 320px) {
+  .sh-ready-settings { padding: 6px; gap: 2px; }
+  .sh-ready-settings .sh-level-settings { display: flex; align-items: center; }
+  .sh-ready-settings .sh-level-settings h2 { width: 40px; flex-shrink: 0; font-size: 9px; }
+  .sh-ready-settings .sh-levels { flex: 1; min-width: 0; }
+  #modern-app .sh-ready-settings .sh-levels .nr-button { padding: 3px 1px; font-size: 10px !important; }
 }
 @media (orientation: landscape) and (max-height: 500px) {
   .sh-page > .nr-dialog { max-width: 780px; gap: 6px; margin: 0 auto; }
