@@ -37,7 +37,7 @@
     const rin = portrait('rin', 'RIN / あなた'), koh = portrait('koh', 'LUNA / CPU');
     const hud = E('div', 'sh-hud nr-surface');
     const prompt = E('strong', 'sh-prompt'), turn = E('span'), clock = E('strong', 'sh-clock');
-    add(hud, rin.wrap, add(E('div', 'sh-task'), turn, prompt), clock, koh.wrap);
+    add(hud, add(E('div', 'sh-task'), turn, prompt), clock);
     const status = E('p', 'sh-status'); status.setAttribute('role', 'status');
     const stock = E('span', 'sh-stock'), completed = E('span');
     const board = E('div', 'sh-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', 'しりとりの絵札');
@@ -52,7 +52,8 @@
     const timedChain = window.createTimedChainView?.({E, add, portraits:[rin,koh]});
     const relink = button('つなぎ直す', 'sh_relink', undefined, 'nr-primary');
     const toolbar = add(E('div', 'sh-actions sh-play-actions'), hint, relink);
-    add(stage, hud, add(E('div', 'sh-progress'), completed, stock), status, boardSpace, toolbar);
+    const arena = add(E('div', 'sh-arena'), rin.wrap, boardSpace, koh.wrap);
+    add(stage, hud, add(E('div', 'sh-progress'), completed, stock), status, arena, toolbar);
     if (timedChain) stage.append(timedChain.root);
     const pause = E('div', 'sh-intro nr-dialog nr-surface');
     const endSolo = button('ここまでの結果を見る', 'sh_end');

@@ -1,0 +1,62 @@
+/* Characters and celebrations get their own space, never the touch board. */
+.timed-chain { overflow: clip; contain: paint; min-height: 24px; }
+.chain-burst { inset: 0 0 5px; width: 100%; max-width: 100%; transform: none; padding: 0 3px; border: 1px solid currentColor; border-radius: 5px; font-size: clamp(10px, 1.6vw, 16px); line-height: 1.1; display: grid; place-items: center; box-shadow: inset 0 0 8px currentColor; }
+.chain-burst::before { display: none; }
+.chain-burst[data-pulse='0'], .chain-burst[data-pulse='1'] { animation: chain-safe-flash 1s ease-out both; }
+.timed-chain[data-tier='3'] .chain-burst { border-width: 1px; box-shadow: inset 0 0 8px #ffd35d; }
+@keyframes chain-safe-flash { 0%, 100% { opacity: 0; } 15%, 75% { opacity: 1; } }
+
+/* Reuse the full-body pose atlases; retain expressive portrait art elsewhere. */
+.nr-hero-cast .nr-rin .nr-character-art, .sh-arena > .nr-rin .nr-character-art { background-image: url('assets/characters/rin-atlas.png'); }
+.nr-hero-cast .nr-koh .nr-character-art, .sh-arena > .nr-koh .nr-character-art { background-image: url('assets/characters/koh-dark-cutout-atlas.png'); }
+.nr-ready { height: 100%; min-height: 0; overflow: clip; align-items: stretch; }
+.nr-ready > .nr-intro { position: static; min-height: 0; display: flex; flex-direction: column; padding: 0; }
+.nr-ready .nr-intro-copy, .nr-ready .nr-intro > .nr-eyebrow { display: none; }
+.nr-ready .nr-hero-cast { display: flex; flex: 1; min-height: 0; height: auto; margin: 0; container-type: size; align-items: center; }
+.nr-ready .nr-hero-cast .nr-character { display: block; width: min(43cqw, calc(100cqh - 18px), 280px); align-self: center; }
+.nr-ready .nr-hero-cast .nr-character-name { display: block; font-size: 9px; }
+.nr-ready .nr-hero-cast::before { display: none; }
+.sh-page[data-layout='setup'] { overflow: clip; }
+@media (orientation: portrait) {
+  .nr-ready { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 4px; }
+  .nr-ready > .nr-setup { grid-column: 1; grid-row: 1; }
+  .nr-ready > .nr-intro { grid-column: 1; grid-row: 2; }
+  .nr-ready > .nr-intro h1 { display: none; }
+}
+@media (orientation: landscape) {
+  .nr-ready { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
+}
+
+/* An independently sized arena reserves character lanes before sizing cards. */
+.sh-stage { display: flex; flex-direction: column; min-height: 0; }
+.sh-arena { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: clamp(40px, 15vw, 180px) minmax(0, 1fr) clamp(40px, 15vw, 180px); gap: 4px; align-items: center; }
+.sh-arena > .nr-character { display: block; width: 100%; min-height: 0; align-self: center; }
+.sh-arena > .nr-character .nr-character-name { display: none; }
+.sh-arena .sh-board-space { width: 100%; height: 100%; min-height: 0; justify-content: center; }
+.sh-arena .sh-board-space .sh-board {
+  --cell: min(calc((100cqw - (var(--sh-cols) - 1) * 4px) / var(--sh-cols)), calc((100cqh - (var(--sh-rows) - 1) * 4px) / var(--sh-rows)));
+  width: calc(var(--cell) * var(--sh-cols) + (var(--sh-cols) - 1) * 4px);
+  height: calc(var(--cell) * var(--sh-rows) + (var(--sh-rows) - 1) * 4px);
+  min-height: 0; max-height: 100%;
+}
+.sh-arena .sh-card { aspect-ratio: 1; width: 100%; height: 100%; min-height: 0; }
+@media (orientation: portrait) {
+  .sh-arena { --cast-height: clamp(32px, 11dvh, 100px); grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--cast-height) minmax(0, 1fr) var(--cast-height); gap: 2px; }
+  .sh-arena > .nr-character { width: var(--cast-height); justify-self: center; }
+  .sh-arena:has(> .nr-koh[hidden]) { grid-template-rows: var(--cast-height) minmax(0, 1fr); }
+}
+@media (orientation: portrait) and (max-height: 600px) {
+  .sh-arena { --cast-height: 28px; }
+  .sh-status, .sh-task > span { display: none; }
+}
+@media (min-width: 701px) and (max-height: 850px) {
+  .sh-ready-settings { padding: 12px; gap: 6px; }
+  .sh-ready-settings .sh-setting-note, .sh-ready-settings .nr-setup-heading { display: none; }
+  .sh-ready-settings .sh-config, .sh-ready-settings .sh-level-settings { gap: 5px; }
+}
+@media (orientation: landscape) and (max-height: 360px) {
+  .sh-stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 32px minmax(0, 1fr) 44px; }
+  .sh-arena { grid-column: 1 / -1; grid-row: 2; height: 100%; }
+  .sh-arena .sh-board-space { grid-column: auto; grid-row: auto; }
+  .sh-arena > .nr-character { width: min(100%, calc(100dvh - 142px)); justify-self: center; }
+}
