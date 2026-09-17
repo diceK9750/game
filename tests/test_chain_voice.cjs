@@ -6,11 +6,29 @@ test('all seven local callouts, capped level, CPU, mute and no overlapping queue
   const handlers={}, played=[]; let stopped=0;
   const document={hidden:false,addEventListener:(k,v)=>handlers[k]=v};
   class AudioContext {
-    state='running'; destination={};
+    state='running'; destination={}; currentTime=0;
     resume(){return Promise.resolve();}
     decodeAudioData(b){return Promise.resolve(b);}
-    createGain(){return {gain:{},connect(){}};}
-    createBufferSource(){return {connect(){},start(){played.push(this.buffer);},stop(){stopped++;}};}
+    createGain(){
+      return {
+        gain:{
+          value:0,
+          setValueAtTime(v){ this.value=v; return this; },
+          linearRampToValueAtTime(v){ this.value=v; return this; },
+          cancelScheduledValues(){ return this; },
+        },
+        connect(){},
+        disconnect(){},
+      };
+    }
+    createBufferSource(){
+      return {
+        connect(){},
+        disconnect(){},
+        start(){played.push(this.buffer);},
+        stop(){stopped++;},
+      };
+    }
   }
   const window={AudioContext};
   vm.runInNewContext(fs.readFileSync(require.resolve('../chain-voice.js'),'utf8'),{window,document,fetch:async url=>({ok:true,arrayBuffer:async()=>url})});
