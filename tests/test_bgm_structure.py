@@ -34,6 +34,7 @@ class BgmStructureTests(unittest.TestCase):
         import re
         lengths = []
         peaks = []
+        fade_counts = []
         for slot in (4, 2, 3):
             notes, tone, volume, effect, speed = fake_pyxel.sounds[slot].spec
             pitches = re.findall(r'[a-g][#-]?\d|r', notes)
@@ -42,6 +43,7 @@ class BgmStructureTests(unittest.TestCase):
             self.assertEqual(tone, 'p')
             peak = max(map(int, volume))
             peaks.append(peak)
+            fade_counts.append(effect.count('f'))
             self.assertLessEqual(peak, 6)
             self.assertLessEqual(len(pitches) * speed / 120, .35)
             self.assertEqual(effect[-1], 'f')
@@ -51,6 +53,16 @@ class BgmStructureTests(unittest.TestCase):
         self.assertLessEqual(peaks[0], 4)
         self.assertGreaterEqual(peaks[1], peaks[0])
         self.assertGreaterEqual(peaks[2], peaks[1])
+        # Mid/high keep longer fades than early-chain, and stay above hit/miss peaks.
+        self.assertGreaterEqual(fade_counts[1], 3)
+        self.assertGreaterEqual(fade_counts[2], 3)
+        self.assertGreaterEqual(fade_counts[1], fade_counts[0])
+        self.assertGreaterEqual(fade_counts[2], fade_counts[0])
+        hit_peak = max(map(int, fake_pyxel.sounds[0].spec[2]))
+        miss_peak = max(map(int, fake_pyxel.sounds[1].spec[2]))
+        self.assertGreater(peaks[1], hit_peak)
+        self.assertGreater(peaks[1], miss_peak)
+        self.assertGreater(peaks[2], peaks[0])
 
     def test_correct_miss_and_soft_hit_sfx_use_gentle_attack(self):
         """Base correct, miss, low-tier, and early-chain hits stay soft under rapid play."""

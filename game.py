@@ -267,12 +267,12 @@ class NumberRush:
         pyxel.sounds[0].set("b3e4g4", "t", "232", "nff", 4)
         # Softer miss: lower peak and a fade instead of a hard noise burst.
         pyxel.sounds[1].set("c2g1c1", "n", "321", "nff", 5)
-        # Chain stingers: bright rising attacks, a higher tier and a soft tail.
+        # Softer mid/high chain stingers: same rising attacks, gentler peaks + longer fades.
+        # Still brighter than early-chain (4) and hit/miss (0/1) so escalation still reads.
         # Use only the SFX channel; BGM and rapid panel input remain uninterrupted.
-        pyxel.sounds[2].set("c3g3c4e4g4c4g4c4", "p", "45666543", "nnnnnnnf", 3)
-        pyxel.sounds[3].set("c3g3c4d4e4g4e4g4c4g4e4c4", "p", "456666665432", "nnnnnnnnnnnf", 3)
+        pyxel.sounds[2].set("c3g3c4e4g4c4g4c4", "p", "45554321", "nnnnffff", 3)
+        pyxel.sounds[3].set("c3g3c4d4e4g4e4g4c4g4e4c4", "p", "456555543210", "nnnnnnnnffff", 3)
         # Softer round-start / early-chain: same rising fifths, lower peak + fade tail.
-        # Mid/high chain stingers (2/3) stay brighter so escalation still reads.
         pyxel.sounds[4].set("c3e3g3c4g4", "p", "34432", "nnnff", 3)
         # Soft low-tier / CPU reply: gentler attack so rapid hits stay pleasant.
         pyxel.sounds[5].set("b3g3e3", "p", "332", "nff", 5)
