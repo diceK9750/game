@@ -7,7 +7,7 @@
   <title>NUMBER RUSH | 数字さがし・絵しりとり対戦</title>
   <style>
     * { box-sizing: border-box; }
-    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #090e19; color: #f1f6ed; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #090e19; color: #f1f6ed; touch-action: manipulation; }
     body { font-family: system-ui, sans-serif; }
     body::before {
       content: ""; position: fixed; inset: 0; pointer-events: none;
@@ -38,7 +38,8 @@
     button:focus-visible { outline: 3px solid #f8d88f; outline-offset: 3px; }
     #fullscreen-button { font-size: 11px; }
     #reload-button { margin: 5px 0 0; font-size: 12px; }
-    #stage { flex: 1; min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; }
+    #stage { flex: 1; min-width: 0; min-height: 0; display: grid; place-items: center; overflow: hidden; touch-action: manipulation; }
+    main, #game-box, #game-frame { touch-action: manipulation; }
     #game-box { position: relative; width: 640px; height: 360px; }
     #game-frame { position: absolute; left: 0; top: 0; display: block; width: 640px; height: 360px; transform-origin: top left; border: 0; background: #090e19; }
     footer { flex: none; padding: 4px 10px 6px; }

@@ -55,3 +55,22 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   assert.match(html, /mobile-layout\.css\?v=4-hit-targets/);
 });
+
+test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(css, /#modern-app \{[^}]*touch-action: manipulation/);
+  assert.match(css, /\.nr-screen, \.nr-play, \.nr-board-wrap, \.nr-board, \.sh-page, \.sh-board, \.sh-board-space \{\s*touch-action: manipulation/);
+  assert.match(css, /#modern-app button \{[^}]*touch-action: manipulation/);
+  assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
+  assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
+  assert.match(player, /canvas \{ touch-action: none;/);
+  assert.match(player, /modern-ui\.css\?v=touch-manip-1/);
+  assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
+  assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
+  // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
+  const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  assert.match(mobile, /\.nr-instructions, \.nr-history, \.nr-help-card \.sh-guide \{[^}]*overflow: auto/);
+  assert.ok(!/touch-action:\s*none/.test(mobile));
+});
