@@ -142,7 +142,7 @@
   .nr-dialog-actions, .nr-pause-extras, .nr-dialog .nr-settings { margin: 0; }
   /* Park hint/stage beside the HUD so the 5×8 board reclaims a full row.
      Pause/hint stay ≥44px; common landscape (844×390) cells reach ~44px tall.
-     Extreme short heights (<360) remain a documented exception. */
+     Extreme short (landscape ≤360) further compresses chrome below. */
   .nr-play {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -259,6 +259,22 @@
   .sh-result > .nr-button { grid-column: 2; grid-row: 2 / 4; }
 }
 @media (orientation: landscape) and (max-height: 360px) {
+  /* Extreme-short landscape: reclaim 5×8 cell height after #21's side-park.
+     844×390 (h=390) keeps the 500px ≥44px chrome path; only ≤360 compresses.
+     Pause/hint dip to 32px here — documented tradeoff vs ~7px taller cells. */
+  .nr-header { min-height: 32px; gap: 2px; }
+  #modern-app .nr-toolbar .nr-button { min-height: 32px; min-width: 32px; padding: 4px; }
+  .nr-brand-symbol { font-size: 16px; }
+  .nr-play { gap: 2px; padding: 0; }
+  .nr-hud { min-height: 32px; gap: 2px; }
+  .nr-play-stage { min-height: 32px; }
+  .nr-stage-middle > .nr-setting {
+    flex: 0 0 auto; min-height: 32px; min-width: 32px; margin: 0; padding: 4px 6px;
+  }
+  .nr-board { padding: 1px; gap: 1px; }
+  .nr-target-number { font-size: 22px; }
+  .nr-score-card > strong { font-size: 18px; }
+  .nr-cell-number { font-size: 18px; }
   #modern-app[data-kind='battle'] .nr-stage-middle { grid-template-columns: 1fr 1fr; }
   #modern-app[data-kind='battle'] .nr-play-stats { grid-column: 1; grid-row: 1; }
   #modern-app[data-kind='battle'] .nr-cpu-row { grid-column: 2; grid-row: 1; }

@@ -53,7 +53,7 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=4-hit-targets/);
+  assert.match(html, /mobile-layout\.css\?v=5-extreme-short/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -73,4 +73,21 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
   assert.match(mobile, /\.nr-instructions, \.nr-history, \.nr-help-card \.sh-guide \{[^}]*overflow: auto/);
   assert.ok(!/touch-action:\s*none/.test(mobile));
+});
+
+test('extreme-short landscape compresses chrome to reclaim board cell height', () => {
+  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
+  assert.match(css, /\.nr-header \{ min-height: 32px/);
+  assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 32px; min-width: 32px/);
+  assert.match(css, /\.nr-hud \{ min-height: 32px/);
+  assert.match(css, /\.nr-play-stage \{ min-height: 32px/);
+  assert.match(css, /\.nr-stage-middle > \.nr-setting \{[\s\S]*?min-height: 32px; min-width: 32px/);
+  assert.match(css, /\.nr-board \{ padding: 1px; gap: 1px/);
+  // #21 path for common 844×390 (h=390 > 360) still keeps ≥44px chrome.
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
+  assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
+  assert.match(css, /\.nr-stage-middle > \.nr-setting \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
+  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(html, /mobile-layout\.css\?v=5-extreme-short/);
 });
