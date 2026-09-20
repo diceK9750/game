@@ -36,6 +36,7 @@ class StopBgmSceneSoftHandoffTests(unittest.TestCase):
         app.bgm_paused = False
         app.bgm_has_started = True
         app.bgm_audible_at = 0
+        app.bgm_channel_stop_at = 0
         app.pending_bgm_stage = None
         app.bgm_origin_frame = 0
         app.bgm_paused_position_frames = 0
@@ -54,13 +55,18 @@ class StopBgmSceneSoftHandoffTests(unittest.TestCase):
         """Direct mode-select return already soft-switches via sync_scene_music."""
         self.app.screen = "ready"
         self.plays.clear()
+        self.stops.clear()
+        release = self.game.PAUSE_BGM_RELEASE_FRAMES
+        audible_at = 100 + release + 8
         self.app.sync_scene_music()
         self.assertEqual(self.app.scene_music, "menu")
         self.assertEqual(self.app.scene_music_pending, "menu")
-        self.assertEqual(self.app.scene_music_switch_at, 108)
+        self.assertEqual(self.app.bgm_channel_stop_at, 100 + release)
+        self.assertEqual(self.app.scene_music_switch_at, audible_at)
         self.assertEqual(self.plays, [])
+        self.assertEqual(self.stops, [])
 
-        self.pyxel.frame_count = 108
+        self.pyxel.frame_count = audible_at
         self.app.sync_scene_music()
         self.assertIsNone(self.app.scene_music_pending)
         self.assertTrue(self.plays)
@@ -69,18 +75,24 @@ class StopBgmSceneSoftHandoffTests(unittest.TestCase):
         """Replay used to hard-cut because stop_bgm cleared scene_music."""
         self.plays.clear()
         self.stops.clear()
+        release = self.game.PAUSE_BGM_RELEASE_FRAMES
+        audible_at = 100 + release + 8
         self.app.begin_countdown("random")
         self.assertEqual(self.app.screen, "countdown")
         # Gameplay BGM flags cleared; scene identity preserved for soft switch.
         self.assertFalse(self.app.bgm_has_started)
         self.assertEqual(self.app.scene_music, "win")
+        # stop_bgm already silenced channels; soft switch must not cut again.
+        self.stops.clear()
         self.app.sync_scene_music()
         self.assertEqual(self.app.scene_music, "countdown")
         self.assertEqual(self.app.scene_music_pending, "countdown")
-        self.assertEqual(self.app.scene_music_switch_at, 108)
+        self.assertEqual(self.app.bgm_channel_stop_at, 100 + release)
+        self.assertEqual(self.app.scene_music_switch_at, audible_at)
         self.assertEqual(self.plays, [])
+        self.assertEqual(self.stops, [])
 
-        self.pyxel.frame_count = 108
+        self.pyxel.frame_count = audible_at
         self.app.sync_scene_music()
         self.assertIsNone(self.app.scene_music_pending)
         self.assertTrue(self.plays)
