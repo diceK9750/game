@@ -41,3 +41,17 @@ test('countdown and results are fitted surfaces, not scrolling documents',()=>{
   assert.match(css,/\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
   assert.match(css,/\.nr-instructions, \.nr-history, \.nr-help-card \.sh-guide \{ flex: 1 1 auto; min-height: 0; overflow: auto/);
 });
+
+test('short landscape parks hint beside HUD so board cells can keep ~44px taps', () => {
+  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
+  assert.match(css, /\.nr-play \{\s*display: grid;/);
+  assert.match(css, /grid-template-columns: minmax\(0, 1fr\) auto/);
+  assert.match(css, /\.nr-play-stage \{\s*grid-column: 2; grid-row: 1/);
+  assert.match(css, /\.nr-board-wrap \{ grid-column: 1 \/ -1; grid-row: 2/);
+  assert.match(css, /\.nr-stage-middle > \.nr-setting \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
+  assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
+  assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
+  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(html, /mobile-layout\.css\?v=4-hit-targets/);
+});
