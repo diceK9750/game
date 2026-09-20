@@ -226,6 +226,8 @@ class NumberRush:
         self.max_streak = 0
         self.bgm_on = True
         self.scene_music = None
+        self.scene_music_pending = None
+        self.scene_music_switch_at = 0
         self.cursor_cell = 0
         self.keyboard_cursor = False
         self.auto_suspended = False
@@ -256,8 +258,9 @@ class NumberRush:
     @staticmethod
     def configure_sounds() -> None:
         """効果音と柔らかなオリジナルBGMを登録する。"""
-        pyxel.sounds[0].set("b3e4g4", "t", "454", "nnf", 4)
-        pyxel.sounds[1].set("c2g1c1", "n", "432", "fff", 4)
+        pyxel.sounds[0].set("b3e4g4", "t", "343", "nnf", 4)
+        # Softer miss: lower peak and a fade instead of a hard noise burst.
+        pyxel.sounds[1].set("c2g1c1", "n", "321", "nff", 5)
         # Chain stingers: bright rising attacks, a higher tier and a soft tail.
         # Use only the SFX channel; BGM and rapid panel input remain uninterrupted.
         pyxel.sounds[2].set("c3g3c4e4g4c4g4c4", "p", "45666543", "nnnnnnnf", 3)
@@ -710,10 +713,12 @@ class NumberRush:
                 )
 
     def stop_scene_music(self):
-        if self.scene_music is not None:
+        if self.scene_music is not None or self.scene_music_pending is not None:
             for channel in range(3):
                 pyxel.stop(channel)
             self.scene_music = None
+            self.scene_music_pending = None
+            self.scene_music_switch_at = 0
 
     def sync_scene_music(self):
         """Select once per transition, never restart a loop on every frame."""
@@ -735,14 +740,34 @@ class NumberRush:
         if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
             desired = ("perfect" if isinstance(self.round, BattleRound) and self.round.is_perfect
                        else "loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")
+        # Finish a pending soft handoff after a short quiet gap (avoids hard cuts).
+        if self.scene_music_pending is not None:
+            if desired != self.scene_music_pending:
+                self.scene_music_pending = desired
+                self.scene_music_switch_at = pyxel.frame_count + 8
+                for channel in range(3):
+                    pyxel.stop(channel)
+                self.scene_music = None
+            elif pyxel.frame_count >= self.scene_music_switch_at:
+                pending = self.scene_music_pending
+                self.scene_music_pending = None
+                self.scene_music_switch_at = 0
+                if pending is not None:
+                    for channel, sound in enumerate(SCENE_TRACKS[pending]):
+                        pyxel.play(channel, sound, loop=True)
+                    pyxel.stop(2)
+                self.scene_music = pending
+            return
         if desired == self.scene_music:
             return
-        self.stop_scene_music()
-        if desired is not None:
-            for channel, sound in enumerate(SCENE_TRACKS[desired]):
-                pyxel.play(channel, sound, loop=True)
-            pyxel.stop(2)
-            self.scene_music = desired
+        for channel in range(3):
+            pyxel.stop(channel)
+        self.scene_music = None
+        self.scene_music_pending = desired
+        self.scene_music_switch_at = pyxel.frame_count + (0 if desired is None else 8)
+        if desired is None:
+            self.scene_music_pending = None
+            self.scene_music_switch_at = 0
 
     def toggle_sfx(self) -> None:
         self.sfx_on = not self.sfx_on
@@ -844,6 +869,8 @@ class NumberRush:
 
     def stop_bgm(self) -> None:
         self.scene_music = None
+        self.scene_music_pending = None
+        self.scene_music_switch_at = 0
         pyxel.stop(0)
         pyxel.stop(1)
         pyxel.stop(2)
