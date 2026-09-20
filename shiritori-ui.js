@@ -65,8 +65,10 @@
     const resultTitle = E('h1'), reason = E('p'), tally = E('p');
     const resultRin = portrait('rin', 'RIN'), resultKoh = portrait('koh', 'LUNA');
     const log = E('ol', 'sh-log');
+    const resultRetry = button('もう一度遊ぶ', 'sh_start', undefined, 'nr-primary');
+    const resultSetup = button('モード選択', 'sh_setup', undefined, 'nr-secondary');
     add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultKoh.wrap), reason, tally,
-      add(E('div', 'nr-result-actions'), button('もう一度遊ぶ', 'sh_start', undefined, 'nr-primary'), button('モード選択', 'sh_setup', undefined, 'nr-secondary')),
+      add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
     add(page, intro, stage, pause, result);
     let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false;
@@ -104,10 +106,18 @@
     function pose(p, value) { p.image.style.backgroundPosition = value; }
     function pressed(buttons, values, value) { buttons.forEach((b,i) => b.setAttribute('aria-pressed', String(values[i] === value))); }
     page.addEventListener('keydown', event => {
-      if (event.key !== 'Escape') return;
-      if (helpOpen) { closeHelp.click(); event.preventDefault(); return; }
-      if (restartRequested && latest?.phase==='paused') { cancelRestart.click(); event.preventDefault(); return; }
-      if (event.key === 'Escape' && ['playing','blocked'].includes(latest?.phase)) command('sh_pause');
+      if (event.key === 'Escape') {
+        if (helpOpen) { closeHelp.click(); event.preventDefault(); return; }
+        if (restartRequested && latest?.phase==='paused') { cancelRestart.click(); event.preventDefault(); return; }
+        if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');
+        return;
+      }
+      if (latest?.phase === 'finished' && (event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+        // Match number-rush #17: primary replay path; keep mode/dict/header on native activation.
+        const active = document.activeElement;
+        const onVisibleButton = active?.tagName === 'BUTTON' && page.contains(active) && !active.closest('[hidden]');
+        if (!onVisibleButton) { event.preventDefault(); command('sh_start'); }
+      }
     });
     return {page, isOverlayOpen:()=>dictionaryOpen || helpOpen,
       headerAction(action) {
@@ -201,8 +211,13 @@
         log.replaceChildren(...s.history.map(row => add(E('li'), E('strong', '', `${row.relinked ? '↪ つなぎ直し · ' : ''}${row.owner === 'you' ? 'リン' : 'ルナ'}：${row.icon} ${row.word}`), E('small', '', `読み方：${(row.readings || [row.word]).join(' ／ ')}`))));
       }
       if (lastPhase !== s.phase) {
-        const heading = (s.phase === 'intro' ? intro : s.phase === 'paused' ? (restartRequested ? restartPage : pause) : s.phase === 'finished' ? result : hud).querySelector('h1, strong');
-        if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
+        // Result→replay: land on primary もう一度遊ぶ so Enter/Space restarts without Tab hunting.
+        if (s.phase === 'finished') {
+          resultRetry.focus({preventScroll: true});
+        } else {
+          const heading = (s.phase === 'intro' ? intro : s.phase === 'paused' ? (restartRequested ? restartPage : pause) : hud).querySelector('h1, strong');
+          if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
+        }
         page.scrollTop = 0;
       }
       lastPhase = s.phase;
