@@ -799,6 +799,14 @@ class NumberRush:
                 self.scene_music_pending = desired
                 self.scene_music_switch_at = pyxel.frame_count + 8
                 return
+            # Finished win/loss/perfect: scene_music was cleared while playing,
+            # so previous is None after the jingle window even though gameplay
+            # + fanfare just ended. Soft-gap like other handoffs; identity is
+            # already set above so mute/tests that assert scene_music stay green.
+            if desired in ("win", "loss", "perfect"):
+                self.scene_music_pending = desired
+                self.scene_music_switch_at = pyxel.frame_count + 8
+                return
             # True cold silence: start immediately.
             self.scene_music_pending = None
             self.scene_music_switch_at = 0
