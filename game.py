@@ -790,7 +790,16 @@ class NumberRush:
             self.scene_music_switch_at = 0
             return
         if previous is None:
-            # From silence: start immediately.
+            # Gameplay pause hard-stops channels while scene_music is already
+            # cleared during play. Treat that as a soft handoff into wait/
+            # confirm (and other scene tracks), matching the ~8-frame quiet
+            # gap used for scene switches and countdown→gameplay. getattr
+            # keeps __new__ stubs safe.
+            if getattr(self, "bgm_paused", False):
+                self.scene_music_pending = desired
+                self.scene_music_switch_at = pyxel.frame_count + 8
+                return
+            # True cold silence: start immediately.
             self.scene_music_pending = None
             self.scene_music_switch_at = 0
             self._play_scene_track(desired)
