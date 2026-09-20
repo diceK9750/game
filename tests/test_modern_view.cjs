@@ -90,7 +90,24 @@ function browserHarness() {
     replaceChildren(...children) { this.children = []; this.append(...children); }
     contains(element) { return this === element || this.children.some(child => child.contains(element)); }
     closest() { for (let node = this; node; node = node.parentElement) if (node.hidden) return node; return null; }
-    querySelector() { return walk(this).find(node => node.tagName === 'H1' || node.className === 'nr-target' || (node.tagName === 'BUTTON' && !node.disabled)) || null; }
+    querySelector(selector = '') {
+      const nodes = walk(this);
+      const parts = String(selector).split(',').map(part => part.trim()).filter(Boolean);
+      const match = (part) => {
+        if (part.includes('button.nr-primary') || (part.includes('.nr-primary') && part.includes('button'))) {
+          return nodes.find(node => node.tagName === 'BUTTON' && String(node.className).includes('nr-primary') && !node.disabled) || null;
+        }
+        if (part === 'h1' || part.startsWith('h1')) return nodes.find(node => node.tagName === 'H1') || null;
+        if (part.includes('.nr-target')) return nodes.find(node => node.className === 'nr-target') || null;
+        if (part.includes('button')) return nodes.find(node => node.tagName === 'BUTTON' && !node.disabled) || null;
+        return null;
+      };
+      if (parts.length) {
+        for (const part of parts) { const found = match(part); if (found) return found; }
+        return null;
+      }
+      return nodes.find(node => node.tagName === 'H1' || node.className === 'nr-target' || (node.tagName === 'BUTTON' && !node.disabled)) || null;
+    }
     focus() { document.activeElement = this; }
   }
   const root = new Element('html'), app = new Element('div'); app.hidden = true; root.append(app);
@@ -230,6 +247,48 @@ test('keyboard focus survives correct selection and Enter is not queued twice', 
   const target = walk(browser.app).find(node => node.className === 'nr-target'); target.focus();
   browser.app.emit('keydown', {key: 'ArrowRight'});
   assert.equal(browser.document.activeElement, cells[2]);
+});
+
+test('finished screen focuses replay and Enter retries without breaking title/review', () => {
+  const b = browserHarness();
+  b.render('playing');
+  const cells = b.cells();
+  cells[0].focus();
+  assert.equal(b.document.activeElement, cells[0]);
+
+  b.render('finished', {kind: 'battle', perfect: true, bonus: 1000, won: true});
+  const retry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
+  const title = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'モード選択');
+  const review = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === '対戦を振り返る');
+  const award = walk(b.app).find(n => n.className === 'nr-award');
+  assert.ok(retry && title && review, 'result actions stay available');
+  assert.equal(review.hidden, false, 'battle review remains reachable');
+  assert.equal(award.hidden, false, 'perfect award stays visible');
+  assert.equal(b.document.activeElement, retry, 'result entry focuses primary replay');
+
+  const before = b.queue().length;
+  b.app.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(b.queue().length, before, 'focused replay button keeps native activation (no double command)');
+
+  // Non-button focus (e.g. title heading) still offers a one-key retry path.
+  const finishedScreen = walk(b.app).find(n => n.dataset.screen === 'finished');
+  const heading = walk(finishedScreen).find(n => n.tagName === 'H1');
+  heading.focus();
+  b.app.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(b.queue().at(-1).action, 'retry');
+
+  const afterRetry = b.queue().length;
+  title.focus();
+  b.app.emit('keydown', {key: ' ', repeat: false});
+  assert.equal(b.queue().length, afterRetry, 'title/review buttons keep their own activation path');
+
+  review.emit('click');
+  assert.equal(b.queue().at(-1).action, 'review');
+  b.render('review', {kind: 'battle', history: [{number: 1, owner: 'you', seconds: 1.25}]});
+  const back = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === '結果へ戻る');
+  back.focus();
+  b.render('finished', {kind: 'battle', perfect: true, bonus: 1000, won: true});
+  assert.equal(b.document.activeElement, retry, 'review→result also restores replay focus');
 });
 
 test('Escape toggles pause confirm and dismisses retry/title without quitting', () => {

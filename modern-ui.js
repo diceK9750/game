@@ -227,7 +227,7 @@
     ['ミスしても、すぐ次へ', 'まちがいは爆弾の演出でお知らせ。同じマスはすぐ押し直せます。正解後も待ち時間はありません。'],
     ['練習と休憩も、気軽に', 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。'],
   ]) add(instructions, add(E('li'), E('h2', '', heading), E('p', '', text)));
-  add(helpScreen, add(E('div', 'nr-help-card nr-surface'), E('span', 'nr-eyebrow', 'HOW TO PLAY'), E('h1', '', '遊び方'), instructions, E('p', 'nr-muted', 'PC：クリック、または矢印キー＋Enter。Escで一時停止。スマートフォンは横持ちがおすすめ。'), button('戻る', 'back', undefined, 'nr-primary')));
+  add(helpScreen, add(E('div', 'nr-help-card nr-surface'), E('span', 'nr-eyebrow', 'HOW TO PLAY'), E('h1', '', '遊び方'), instructions, E('p', 'nr-muted', 'PC：クリック、または矢印キー＋Enter。Escで一時停止。結果画面はEnter／Spaceでもう一度。スマートフォンは横持ちがおすすめ。'), button('戻る', 'back', undefined, 'nr-primary')));
 
   const finished = section('finished', 'nr-centered');
   const resultRin = portrait('rin', 'RIN / YOU'), resultKoh = portrait('koh', 'LUNA / CPU');
@@ -241,9 +241,11 @@
   add(award, E('span', '', '✦ PERFECT BONUS ✦'), awardValue, E('small', '', '全問先取・ノーミスの特別賞'));
   const record = E('p', 'nr-record');
   const reviewButton = button('対戦を振り返る', 'review', undefined, 'nr-quiet');
+  const resultRetry = button('もう一度遊ぶ', 'retry', undefined, 'nr-primary');
+  const resultTitleButton = button('モード選択', 'title', undefined, 'nr-secondary');
   const resultCard = add(E('div', 'nr-result-card nr-surface'), resultTag, resultTitle,
     add(E('div', 'nr-result-duo'), resultRin.wrap, resultScore, resultKoh.wrap), resultCopy, resultStats, award, record,
-    add(E('div', 'nr-result-actions'), button('もう一度遊ぶ', 'retry', undefined, 'nr-primary'), button('モード選択', 'title', undefined, 'nr-secondary')), reviewButton);
+    add(E('div', 'nr-result-actions'), resultRetry, resultTitleButton), reviewButton);
   finished.append(resultCard);
 
   const review = section('review', 'nr-centered');
@@ -384,8 +386,11 @@
     if (nextAnnouncement !== announcement) { announcement = nextAnnouncement; live.textContent = announcement; }
     if (changedScreen) {
       screenMap[state.screen].scrollTop = 0;
-      if (previousScreen && document.activeElement && app.contains(document.activeElement) && document.activeElement.closest('[hidden]')) {
-        const focusTarget = screenMap[state.screen].querySelector('h1, .nr-target, button:not(:disabled)');
+      // Result→replay: land on primary retry so Enter/Space restarts without Tab hunting.
+      if (state.screen === 'finished' && previousScreen) {
+        resultRetry.focus({preventScroll: true});
+      } else if (previousScreen && document.activeElement && app.contains(document.activeElement) && document.activeElement.closest('[hidden]')) {
+        const focusTarget = screenMap[state.screen].querySelector('button.nr-primary:not(:disabled), h1, .nr-target, button:not(:disabled)');
         if (focusTarget) { if (focusTarget.tagName !== 'BUTTON') focusTarget.tabIndex = -1; focusTarget.focus({preventScroll: true}); }
       }
     }
@@ -424,6 +429,11 @@
         const index = !cells[keyboardCell].cell.disabled ? keyboardCell : cells.findIndex(item => !item.cell.disabled);
         if (index >= 0 && !event.repeat) { keyboardCell = index; cells[index].cell.focus({preventScroll: true}); command('cell', undefined, index); }
       }
+    } else if (state?.screen === 'finished' && (event.key === 'Enter' || event.key === ' ') && !event.repeat) {
+      // Primary path is retry; leave title/review/header buttons on their native click.
+      const active = document.activeElement;
+      const onVisibleButton = active?.tagName === 'BUTTON' && app.contains(active) && !active.closest('[hidden]');
+      if (!onVisibleButton) { event.preventDefault(); command('retry'); }
     }
     // Prevent Pyxel's legacy key handlers from processing the same event.
     event.stopPropagation();
