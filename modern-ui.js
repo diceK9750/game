@@ -319,6 +319,7 @@
     cpuTrack.dataset.urgent = String(cpuProgress > .75);
     hint.hidden = battle; hint.textContent = state.hint_used ? 'ヒント（記録対象外）' : 'ヒントを見る';
     let recent = '';
+    let recentStarted = -1;
     const cpuCursor = playing && battle ? window.rivalCursor?.(40,8,state.cells.findIndex(c=>c.n===state.target),cpuProgress) : null;
     if (!playing) cells.forEach(item=>{ item.cell.dataset.cpuSelecting='false'; });
     state.cells.forEach((data, index) => {
@@ -339,10 +340,20 @@
         else if (type === 'cpu') add(effect, E('i', 'nr-ring nr-ring-cpu'), E('span', 'nr-cpu-claim', 'CPU'));
         else add(effect, E('i', 'nr-ring'), E('i', 'nr-spark', '✦'));
         item.effect.replaceChildren(effect);
+      } else if (!data.effect && item.effectId) {
+        // Drop finished FX nodes so a later miss can remount cleanly without flicker.
+        item.effectId = null;
+        item.effect.replaceChildren();
       }
-      if (data.effect === 'wrong') recent = 'ちがう数字！お題を確認して、すぐ押し直そう。';
-      else if (data.effect === 'cpu') recent = 'CPUが先に見つけた！次のお題を狙おう。';
-      else if (data.effect === 'correct' && !recent) recent = 'ナイス！次のお題も、すぐに見つけよう。';
+      if (data.effect) {
+        const started = Number(String(data.effect_id || '').split(':')[1] || -1);
+        if (started >= recentStarted) {
+          recentStarted = started;
+          if (data.effect === 'wrong') recent = 'ちがう数字！お題を確認して、すぐ押し直そう。';
+          else if (data.effect === 'cpu') recent = 'CPUが先に見つけた！次のお題を狙おう。';
+          else if (data.effect === 'correct') recent = 'ナイス！次のお題も、すぐに見つけよう。';
+        }
+      }
     });
     feedback.textContent = recent || (state.streak >= 3 ? `${state.streak}連続正解！いいリズム。` : battle ? '青はあなた、ピンクはCPU。先に見つけよう。' : 'あわてず、ひとつずつ。');
     if (playing && focusedIndex >= 0 && cells[focusedIndex].cell.disabled) {

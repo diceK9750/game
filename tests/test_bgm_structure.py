@@ -656,6 +656,60 @@ class VisualFeedbackTests(unittest.TestCase):
         self.assertEqual(self.app.round.current_target, 3)
         self.assertEqual(self.app.cell_effects[-1][0], "correct")
 
+    def test_miss_outline_persists_after_correct_clears_wrong_cell(self) -> None:
+        """Pose uses wrong_cell; durable fill follows cell_effects so correct taps do not flicker miss away."""
+        self.app.round = NumberTapRound(max_number=3)
+        self.app.round.start("ordered")
+        self.app.streak = 0
+        self.app.max_streak = 0
+        self.app.score = 0
+        self.app.bgm_stage = 0
+        self.app.pending_bgm_stage = None
+        self.app.selected_mode = "ordered"
+        self.app.best_times = {}
+        self.app.play_sfx = lambda *args, **kwargs: None
+
+        wrong_index = self.app.round.board_cells.index(2)
+        first_target_index = self.app.round.board_cells.index(1)
+        self.app.handle_tap(wrong_index)
+        self.assertEqual(self.app.wrong_cell, wrong_index)
+        self.assertIn(wrong_index, self.app.wrong_outline_indices())
+
+        self.app.handle_tap(first_target_index)
+        self.assertIsNone(self.app.wrong_cell)
+        self.assertIn(wrong_index, self.app.wrong_outline_indices())
+        self.assertEqual(self.app.correct_cell, first_target_index)
+        kinds = {index: kind for kind, index, _ in self.app.cell_effects}
+        self.assertEqual(kinds[wrong_index], "wrong")
+        self.assertEqual(kinds[first_target_index], "correct")
+        self.assertGreaterEqual(game.WRONG_EFFECT_FRAMES, 72)
+
+    def test_cpu_claim_preserves_active_miss_outline(self) -> None:
+        self.app.round = BattleRound(max_number=3, difficulty="easy")
+        self.app.round.start("ordered")
+        self.app.streak = 2
+        self.app.max_streak = 2
+        self.app.score = 0
+        self.app.play_sfx = lambda *args, **kwargs: None
+        self.app.update_battle_progress = lambda: None
+        self.app.finish_battle = lambda: None
+        wrong_index = 0
+        self.app.cell_effects = [("wrong", wrong_index, 90), ("correct", 1, 95)]
+        self.app.wrong_cell = wrong_index
+        self.app.correct_cell = 1
+
+        claimed = self.app.round.current_target
+        # Force a CPU claim on the live target without waiting on the clock.
+        self.app.round.update_cpu = lambda: claimed
+        self.app.update_cpu_turn()
+
+        kinds = {index: kind for kind, index, _ in self.app.cell_effects}
+        self.assertEqual(kinds[wrong_index], "wrong")
+        self.assertIn("cpu", kinds.values())
+        self.assertNotIn("correct", kinds.values())
+        self.assertIsNone(self.app.wrong_cell)
+        self.assertIn(wrong_index, self.app.wrong_outline_indices())
+
 
 if __name__ == "__main__":
     unittest.main()
