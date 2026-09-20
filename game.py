@@ -930,10 +930,17 @@ class NumberRush:
             )
 
     def stop_bgm(self) -> None:
-        self.scene_music = None
-        self.scene_music_pending = None
-        self.scene_music_switch_at = 0
-        self.bgm_audible_at = 0
+        """Stop gameplay BGM state and mute music channels.
+
+        Do not clear scene_music identity here. Callers such as
+        begin_countdown and accept_confirmation→ready change screen next;
+        sync_scene_music needs the previous scene track to apply the same
+        ~8-frame quiet gap used for other scene soft switches. Scene fields
+        may be missing on __new__ test stubs — only touch gameplay attrs.
+        """
+        # Cancel a deferred gameplay audible start if one was pending.
+        if hasattr(self, "bgm_audible_at"):
+            self.bgm_audible_at = 0
         pyxel.stop(0)
         pyxel.stop(1)
         pyxel.stop(2)
