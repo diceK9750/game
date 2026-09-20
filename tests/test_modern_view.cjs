@@ -239,6 +239,61 @@ test('miss feedback stays mounted beside a later correct and clears FX nodes whe
   assert.ok(!walk(cells[1]).some(n => String(n.className || '').includes('nr-fx')));
 });
 
+test('HUD miss copy does not regress when older miss outline outlasts correct/CPU', () => {
+  const browser = browserHarness();
+  const round = browser.render('playing');
+  const feedback = walk(browser.app).find(n => n.className === 'nr-feedback');
+  // Miss first — stage copy matches the durable outline.
+  round.cells[1].effect = 'wrong';
+  round.cells[1].effect_id = 'wrong:40';
+  browser.render('playing', round);
+  assert.match(feedback.textContent, /ちがう数字/);
+  assert.equal(browser.cells()[1].dataset.feedback, 'wrong');
+  // Later correct wins the HUD while the miss outline stays mounted (#18).
+  round.cells[2].effect = 'correct';
+  round.cells[2].effect_id = 'correct:50';
+  browser.render('playing', round);
+  assert.match(feedback.textContent, /ナイス/);
+  assert.equal(browser.cells()[1].dataset.feedback, 'wrong');
+  // Correct FX ends first; lingering miss outline must NOT revive stale miss copy.
+  round.cells[2].effect = null;
+  round.cells[2].effect_id = null;
+  browser.render('playing', round);
+  assert.equal(browser.cells()[1].dataset.feedback, 'wrong');
+  assert.doesNotMatch(feedback.textContent, /ちがう数字/);
+  assert.match(feedback.textContent, /あわてず|連続正解|青はあなた/);
+  // Fresh miss after the floor clears still updates HUD.
+  round.cells[1].effect = null;
+  round.cells[1].effect_id = null;
+  browser.render('playing', round);
+  assert.doesNotMatch(feedback.textContent, /ちがう数字/);
+  round.cells[3].effect = 'wrong';
+  round.cells[3].effect_id = 'wrong:80';
+  browser.render('playing', round);
+  assert.match(feedback.textContent, /ちがう数字/);
+});
+
+test('HUD miss copy does not regress when older miss outline outlasts CPU claim', () => {
+  const browser = browserHarness();
+  const round = browser.render('playing', {kind: 'battle', target: 7, streak: 0});
+  const feedback = walk(browser.app).find(n => n.className === 'nr-feedback');
+  round.cells[1].effect = 'wrong';
+  round.cells[1].effect_id = 'wrong:20';
+  browser.render('playing', round);
+  assert.match(feedback.textContent, /ちがう数字/);
+  round.cells[6].owner = 'cpu';
+  round.cells[6].effect = 'cpu';
+  round.cells[6].effect_id = 'cpu:30';
+  browser.render('playing', round);
+  assert.match(feedback.textContent, /CPUが先に/);
+  round.cells[6].effect = null;
+  round.cells[6].effect_id = null;
+  browser.render('playing', round);
+  assert.equal(browser.cells()[1].dataset.feedback, 'wrong');
+  assert.doesNotMatch(feedback.textContent, /ちがう数字/);
+  assert.doesNotMatch(feedback.textContent, /CPUが先に/);
+});
+
 test('CPU claim feedback is distinct from player-correct sparkles', () => {
   const browser = browserHarness();
   const round = browser.render('playing', {kind: 'battle', target: 7});
