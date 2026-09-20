@@ -288,6 +288,23 @@
   .sh-prompt { font-size: 15px; }
   .sh-clock { font-size: 11px; }
 }
+@media (orientation: portrait) and (max-width: 400px) {
+  /* Narrow portrait: reclaim horizontal chrome so 5×8 cells approach ~44px taps.
+     8×44=352 > 320 so absolute 44px is impossible; maximize width instead.
+     Landscape #21/#23 paths are orientation:landscape — untouched here.
+     Host safe-area stays on the parent; iframe does not re-stack insets. */
+  #modern-app { padding: 0 2px; }
+  .nr-board { padding: 2px; gap: 2px; }
+  .nr-cell { border-radius: 5px; }
+  .nr-cell-number { letter-spacing: -1.2px; }
+}
+@media (orientation: portrait) and (max-width: 360px) {
+  /* Extreme-narrow portrait (QA 320×460): squeeze remaining gutters (~+4–5px/cell vs baseline). */
+  #modern-app { padding: 0; }
+  .nr-board { padding: 1px; gap: 1px; }
+  .nr-cell { border-radius: 4px; }
+}
+
 @media (orientation: portrait) and (max-width: 700px) and (max-height: 600px) {
   .sh-ready .nr-hero-cast { display: none; }
   .sh-ready-settings { grid-template-columns: 1fr 1fr; }

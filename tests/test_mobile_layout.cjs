@@ -53,7 +53,7 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=5-extreme-short/);
+  assert.match(html, /mobile-layout\.css\?v=6-portrait-narrow/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -89,5 +89,26 @@ test('extreme-short landscape compresses chrome to reclaim board cell height', (
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-stage-middle > \.nr-setting \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=5-extreme-short/);
+  assert.match(html, /mobile-layout\.css\?v=6-portrait-narrow/);
+});
+
+test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
+  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const narrow = css.match(/@media \(orientation: portrait\) and \(max-width: 400px\) \{[\s\S]*?\n\}/);
+  const extreme = css.match(/@media \(orientation: portrait\) and \(max-width: 360px\) \{[\s\S]*?\n\}/);
+  assert.ok(narrow, 'portrait ≤400 media block');
+  assert.ok(extreme, 'portrait ≤360 media block');
+  // 400px path: app + board gutters shrink; cells gain ~3px width on 375 phones.
+  assert.match(narrow[0], /#modern-app \{ padding: 0 2px/);
+  assert.match(narrow[0], /\.nr-board \{ padding: 2px; gap: 2px/);
+  // 360px path: remaining gutters for QA 320×460 (~+4–5px/cell vs baseline 34px).
+  assert.match(extreme[0], /#modern-app \{ padding: 0;/);
+  assert.match(extreme[0], /\.nr-board \{ padding: 1px; gap: 1px/);
+  // Landscape #21/#23 must remain orientation-scoped (not overridden by portrait).
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
+  assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
+  assert.match(css, /\.nr-header \{ min-height: 32px/);
+  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(html, /mobile-layout\.css\?v=6-portrait-narrow/);
 });
