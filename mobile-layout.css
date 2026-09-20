@@ -140,10 +140,33 @@
   .nr-dialog { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .nr-dialog > h1, .nr-dialog > p, .nr-dialog-actions { grid-column: 1 / -1; }
   .nr-dialog-actions, .nr-pause-extras, .nr-dialog .nr-settings { margin: 0; }
-  .nr-stage-middle { display: grid; grid-template-columns: 1fr auto; gap: 2px 6px; }
-  .nr-play-stats, .nr-cpu-row { grid-column: 1; }
-  .nr-stage-middle > .nr-setting { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; }
-  .nr-stage-middle > .timed-chains { grid-column: 1; }
+  /* Park hint/stage beside the HUD so the 5×8 board reclaims a full row.
+     Pause/hint stay ≥44px; common landscape (844×390) cells reach ~44px tall.
+     Extreme short heights (<360) remain a documented exception. */
+  .nr-play {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 4px;
+    align-items: stretch;
+  }
+  .nr-header { min-height: 44px; }
+  .nr-hud { grid-column: 1; grid-row: 1; min-height: 44px; }
+  .nr-play-stage {
+    grid-column: 2; grid-row: 1; align-self: stretch;
+    min-height: 44px; gap: 0; padding: 0;
+  }
+  .nr-play-stage .nr-character { display: none; }
+  .nr-board-wrap { grid-column: 1 / -1; grid-row: 2; }
+  .nr-board { padding: 2px; gap: 2px; }
+  .nr-stage-middle {
+    display: flex; flex-direction: row; align-items: center; gap: 4px; height: 100%;
+  }
+  .nr-play-stats, .nr-cpu-row { margin: 0; }
+  .nr-stage-middle > .nr-setting {
+    flex: 0 0 auto; min-height: 44px; min-width: 44px; margin: 0;
+  }
+  .nr-stage-middle > .timed-chains { flex: 1; min-width: 0; }
 }
 /* Preserve the numeric grid while reducing nonessential decoration. */
 @media (max-height: 360px) {
