@@ -66,6 +66,9 @@ test('view preserves no-cooldown input, local assets, safe text and reduced moti
   assert.match(css, /prefers-reduced-motion/); assert.match(css, /safe-area-inset/);
   assert.match(css, /\.nr-cell-effect[^}]*pointer-events: none/);
   assert.match(css, /assets\/backgrounds\/lantern-forest-v2\.png/);
+  assert.match(css, /data-feedback='cpu'/);
+  assert.match(css, /\.nr-cpu-claim/);
+  assert.match(js, /data\.effect === 'cpu'/);
 });
 
 // A small DOM harness exercises the actual shipped handlers without a framework.
@@ -183,6 +186,37 @@ test('real cell handlers enqueue fast taps once and a mistake does not disable t
   cells[1].emit('pointerdown', {button: 0, isPrimary: true});
   assert.deepEqual(browser.queue().map(item => item.index), [0, 1, 1]);
   assert.equal(browser.cells()[1], cells[1], 'board elements retain identity across snapshots');
+});
+
+test('CPU claim feedback is distinct from player-correct sparkles', () => {
+  const browser = browserHarness();
+  const round = browser.render('playing', {kind: 'battle', target: 7});
+  const cells = browser.cells();
+  round.cells[6].owner = 'cpu';
+  round.cells[6].effect = 'cpu';
+  round.cells[6].effect_id = 'cpu:99';
+  browser.render('playing', round);
+  assert.equal(cells[6].dataset.feedback, 'cpu');
+  assert.equal(cells[6].dataset.owner, 'cpu');
+  assert.match(cells[6].getAttribute('aria-label') || '', /CPU/);
+  const fx = walk(cells[6]).find(n => String(n.className || '').includes('nr-fx'));
+  assert.ok(fx, 'CPU claim mounts an effect overlay');
+  assert.match(String(fx.className), /nr-fx-cpu/);
+  assert.doesNotMatch(String(fx.className), /nr-fx-correct/);
+  const badge = walk(fx).find(n => n.className === 'nr-cpu-claim');
+  assert.equal(badge && badge.textContent, 'CPU');
+  const feedback = walk(browser.app).find(n => n.className === 'nr-feedback');
+  assert.match(feedback.textContent, /CPUが先に/);
+  // Player-correct still uses mint sparkles, not the CPU badge.
+  round.cells[0].owner = 'you';
+  round.cells[0].effect = 'correct';
+  round.cells[0].effect_id = 'correct:100';
+  round.cells[6].effect = null;
+  round.cells[6].effect_id = null;
+  browser.render('playing', round);
+  const youFx = walk(cells[0]).find(n => String(n.className || '').includes('nr-fx'));
+  assert.match(String(youFx.className), /nr-fx-correct/);
+  assert.doesNotMatch(feedback.textContent, /CPUが先に/);
 });
 
 test('keyboard focus survives correct selection and Enter is not queued twice', () => {

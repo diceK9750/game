@@ -1339,6 +1339,9 @@ class NumberRush:
                 y = GRID_Y + row * (CELL_HEIGHT + CELL_GAP)
                 if kind == "wrong":
                     self.draw_bomb_explosion(x, y, 16)
+                elif kind == "cpu":
+                    pyxel.rectb(x - 1, y - 1, CELL_WIDTH + 2, CELL_HEIGHT + 2, PINK)
+                    ui_text(pyxel, x + 15, y + 14, "CPU +1", CARD)
                 else:
                     self.draw_success_effect(x, y, 8)
             return
