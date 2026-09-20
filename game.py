@@ -426,7 +426,9 @@ class NumberRush:
 
         if self.screen == "confirm":
             if self.confirm_action == "pause":
-                if pyxel.btnp(pyxel.KEY_RETURN) or clicked and point_in_rect(*mouse, YES_BUTTON):
+                # Esc toggles resume (same as RESUME/Enter); never quits the runtime.
+                if (pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_RETURN)
+                        or clicked and point_in_rect(*mouse, YES_BUTTON)):
                     self.cancel_confirmation()
                 elif pyxel.btnp(pyxel.KEY_T) or clicked and point_in_rect(*mouse, NO_BUTTON):
                     self.confirm_action = "title"
@@ -435,9 +437,9 @@ class NumberRush:
                 clicked and point_in_rect(*mouse, YES_BUTTON)
             ):
                 self.accept_confirmation()
-            elif pyxel.btnp(pyxel.KEY_N) or (
-                clicked and point_in_rect(*mouse, NO_BUTTON)
-            ):
+            elif (pyxel.btnp(pyxel.KEY_ESCAPE) or pyxel.btnp(pyxel.KEY_N)
+                    or clicked and point_in_rect(*mouse, NO_BUTTON)):
+                # Esc cancels retry/title confirm instead of accepting a quit path.
                 self.cancel_confirmation()
             return
 

@@ -406,9 +406,15 @@
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
   app.addEventListener('keydown', event => {
-    if (state?.screen === 'playing') {
-      if (event.key === 'Escape') { event.preventDefault(); command('pause'); }
-      else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+    if (event.key === 'Escape') {
+      // Toggle pause while playing; dismiss confirm without accepting quit/retry.
+      if (state?.screen === 'playing') { event.preventDefault(); command('pause'); }
+      else if (state?.screen === 'confirm') {
+        event.preventDefault();
+        command(state?.confirm_action === 'pause' ? 'yes' : 'no');
+      }
+    } else if (state?.screen === 'playing') {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
         event.preventDefault();
         const focused = cells.findIndex(item => item.cell === document.activeElement);
         const next = nextPlayable(cells.map(item => !item.cell.disabled), focused >= 0 ? focused : keyboardCell, event.key);

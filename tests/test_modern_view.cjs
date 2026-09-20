@@ -231,3 +231,31 @@ test('keyboard focus survives correct selection and Enter is not queued twice', 
   browser.app.emit('keydown', {key: 'ArrowRight'});
   assert.equal(browser.document.activeElement, cells[2]);
 });
+
+test('Escape toggles pause confirm and dismisses retry/title without quitting', () => {
+  const b = browserHarness();
+  b.render('playing');
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().at(-1).action, 'pause');
+  const afterPause = b.queue().length;
+
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().length, afterPause + 1);
+  assert.equal(b.queue().at(-1).action, 'yes', 'pause confirm Esc resumes via yes');
+
+  b.render('confirm', {confirm_action: 'retry', cells: []});
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().at(-1).action, 'no', 'retry confirm Esc cancels instead of accepting');
+
+  b.render('confirm', {confirm_action: 'title', cells: []});
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().at(-1).action, 'no', 'title confirm Esc cancels instead of accepting');
+
+  const beforeSafe = b.queue().length;
+  for (const screen of ['home', 'ready', 'help', 'finished', 'review', 'countdown', 'resuming']) {
+    b.render(screen, screen === 'finished' || screen === 'review' ? {} : {cells: []});
+    b.app.emit('keydown', {key: 'Escape'});
+    assert.equal(b.queue().length, beforeSafe, `Esc stays inert on ${screen}`);
+  }
+});

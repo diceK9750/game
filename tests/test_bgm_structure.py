@@ -450,6 +450,28 @@ class BattleUiTests(unittest.TestCase):
         self.assertEqual(self.app.confirm_action, "pause")
         self.assertTrue(self.app.round.is_paused)
 
+    def test_escape_on_pause_confirm_resumes_and_cancels_quit_confirms(self):
+        self.app.start_round("ordered")
+        self.app.open_confirmation("pause")
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_ESCAPE
+        self.app.update()
+        self.assertEqual(self.app.screen, "resuming")
+        self.assertIsNone(self.app.confirm_action)
+        self.assertTrue(self.app.round.is_paused)
+
+        self.app.open_confirmation("retry")
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_ESCAPE
+        self.app.update()
+        self.assertEqual(self.app.screen, "resuming")
+        self.assertIsNone(self.app.confirm_action)
+
+        self.app.open_confirmation("title")
+        self.runtime.btnp.side_effect = lambda key, *args: key == self.runtime.KEY_ESCAPE
+        self.app.update()
+        self.assertEqual(self.app.screen, "resuming")
+        self.assertNotEqual(self.app.screen, "ready")
+        self.assertIsNone(self.app.confirm_action)
+
     def test_pause_can_request_title_without_resuming_cpu(self):
         self.app.start_round("ordered")
         self.app.open_confirmation("pause")
