@@ -292,6 +292,36 @@ class ModernUITests(unittest.TestCase):
         self.assertFalse(self.app.round.is_paused)
         self.assertEqual(self.app.round.elapsed(), 0)
 
+    def test_pause_confirm_yes_and_retry_no_resume_without_accepting_quit(self):
+        """Modern Esc maps pause→yes and retry/title→no; both resume safely."""
+        self.start()
+        self.queue({"action": "pause"})
+        self.app.update()
+        self.assertEqual((self.app.screen, self.app.confirm_action), ("confirm", "pause"))
+        self.queue({"action": "yes"})
+        self.app.update()
+        self.assertEqual(self.app.screen, "resuming")
+        self.assertTrue(self.app.round.is_paused)
+
+        self.start()
+        self.queue({"action": "pause"}, {"action": "retry"})
+        self.app.update()
+        self.assertEqual(self.app.confirm_action, "retry")
+        self.queue({"action": "no"})
+        self.app.update()
+        self.assertEqual(self.app.screen, "resuming")
+        self.assertNotEqual(self.app.screen, "countdown")
+        self.assertTrue(self.app.round.is_paused)
+
+        self.start()
+        self.queue({"action": "pause"}, {"action": "title"})
+        self.app.update()
+        self.assertEqual(self.app.confirm_action, "title")
+        self.queue({"action": "no"})
+        self.app.update()
+        self.assertEqual(self.app.screen, "resuming")
+        self.assertNotEqual(self.app.screen, "ready")
+
     def test_paused_retry_and_title_require_confirmation(self):
         for action, screen in (("retry", "countdown"), ("title", "ready")):
             self.start()
