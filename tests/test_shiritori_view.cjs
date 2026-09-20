@@ -257,3 +257,9 @@ test('blocked solo exposes rescue without any reading choices', () => {
   assert.equal(rescue.hidden, false);
   assert.ok(view.page.querySelectorAll('.sh-card').every(b => b.disabled));
 });
+
+test('shiritori deal motion respects reduced-motion and data-reduced', () => {
+  const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.sh-icon \{ animation: none/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.sh-card\[data-dealt\] \.sh-icon \{ animation: none/);
+});

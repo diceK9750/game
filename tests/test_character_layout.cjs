@@ -8,6 +8,11 @@ test('chain celebrations stay inside a paint-contained meter lane',()=>{
   assert.match(css,/\.chain-burst::before \{ display: none/);
   assert.match(css,/animation: chain-safe-flash/);
 });
+test('reduced motion keeps a static readable chain banner without opacity pulse',()=>{
+  assert.match(css,/#modern-app\[data-reduced='true'\] \.chain-burst\[data-pulse/);
+  assert.match(css,/@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css,/animation: none !important; opacity: 1/);
+});
 test('square cards and separate character lanes share the remaining arena',()=>{
   assert.match(css,/--cell: min\(calc\(\(100cqw/);
   assert.match(css,/100cqh - \(var\(--sh-rows\)/);
