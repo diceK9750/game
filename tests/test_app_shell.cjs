@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
-const { isModernReadyMessage } = require('../viewport.js');
+const { isModernReadyMessage, isScrollLockMessage } = require('../viewport.js');
 
 function shell({ fullscreenSupported = false } = {}) {
   const listeners = {};
@@ -11,7 +11,7 @@ function shell({ fullscreenSupported = false } = {}) {
   const buttons = {};
   let reloads = 0;
   let fullscreenRequests = 0;
-  const root = { style: { setProperty() {} }, setAttribute: (key, value) => { attrs[key] = value; } };
+  const root = { style: { setProperty() {} }, setAttribute: (key, value) => { attrs[key] = value; }, removeAttribute: (key) => { delete attrs[key]; } };
   if (fullscreenSupported) root.requestFullscreen = () => { fullscreenRequests += 1; };
   const stage = { clientWidth: 382, clientHeight: 560 };
   const frame = { style: {}, src: 'player.html', contentWindow: {} };
@@ -130,4 +130,28 @@ test('startup information does not overlay the iframe or advertise offline suppo
   assert.match(html, /safe-area-inset-bottom/);
   assert.ok(html.indexOf('id="loading-status"') < html.indexOf('<section id="stage"'));
   assert.doesNotMatch(html, /serviceWorker|オフラインで/);
+});
+
+test('trusted play scroll-lock messages toggle host data-scroll-lock', () => {
+  const source = {};
+  const origin = 'https://example.com';
+  const data = { type: 'number-rush-scroll-lock', locked: true };
+  assert.equal(isScrollLockMessage({ source, origin, data }, source, origin), true);
+  assert.equal(isScrollLockMessage({ source, origin, data: { type: 'ready' } }, source, origin), false);
+  const app = shell();
+  app.listeners.message({ source: app.frame.contentWindow, origin: app.origin,
+    data: { type: 'number-rush-scroll-lock', locked: true } });
+  assert.equal(app.attrs['data-scroll-lock'], 'true');
+  app.listeners.message({ source: app.frame.contentWindow, origin: app.origin,
+    data: { type: 'number-rush-scroll-lock', locked: false } });
+  assert.equal(app.attrs['data-scroll-lock'], undefined);
+  // Fallback clears a lingering lock attribute.
+  app.listeners.message({ source: app.frame.contentWindow, origin: app.origin,
+    data: { type: 'number-rush-modern-ready' } });
+  app.listeners.message({ source: app.frame.contentWindow, origin: app.origin,
+    data: { type: 'number-rush-scroll-lock', locked: true } });
+  assert.equal(app.attrs['data-scroll-lock'], 'true');
+  app.listeners.message({ source: app.frame.contentWindow, origin: app.origin,
+    data: { type: 'number-rush-modern-fallback' } });
+  assert.equal(app.attrs['data-scroll-lock'], undefined);
 });

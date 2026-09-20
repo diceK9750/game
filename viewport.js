@@ -27,7 +27,11 @@ function isModernReadyMessage(event, source, origin) {
   return isTrustedGameMessage(event, source, origin, "number-rush-modern-ready");
 }
 
-if (typeof module !== "undefined") module.exports = { fitGame, isModernReadyMessage, availableViewport };
+function isScrollLockMessage(event, source, origin) {
+  return isTrustedGameMessage(event, source, origin, "number-rush-scroll-lock");
+}
+
+if (typeof module !== "undefined") module.exports = { fitGame, isModernReadyMessage, isScrollLockMessage, availableViewport };
 
 if (typeof window !== "undefined") {
   const stage = document.getElementById("stage");
@@ -78,12 +82,18 @@ if (typeof window !== "undefined") {
       "number-rush-modern-fallback")) {
       modernReady = false;
       root.setAttribute("data-app-ready", "false");
+      root.removeAttribute("data-scroll-lock");
       frame.style.width = "640px";
       frame.style.height = "360px";
       if (loadingTimer !== undefined) window.clearTimeout?.(loadingTimer);
       if (help) help.hidden = true;
       if (status) status.textContent = "軽量表示に切り替えました";
       schedule();
+      return;
+    }
+    if (isScrollLockMessage(event, frame.contentWindow, window.location?.origin)) {
+      if (event.data && event.data.locked) root.setAttribute("data-scroll-lock", "true");
+      else root.removeAttribute("data-scroll-lock");
       return;
     }
     if (modernReady || !isModernReadyMessage(event, frame.contentWindow, window.location?.origin)) return;
