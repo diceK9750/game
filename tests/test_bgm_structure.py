@@ -76,6 +76,33 @@ class BgmStructureTests(unittest.TestCase):
             self.assertGreaterEqual(effect.count('f'), 1)
             self.assertEqual(effect[-1], 'f')
 
+    def test_loss_and_win_result_sfx_use_gentle_peaks(self):
+        """Finished loss/win jingles keep chiptune pitches with softer peaks; win brighter than loss."""
+        import re
+        loss_notes, loss_tone, loss_vol, loss_fx, _ = fake_pyxel.sounds[6].spec
+        win_notes, win_tone, win_vol, win_fx, _ = fake_pyxel.sounds[7].spec
+        for notes, volume, effect, tone in (
+            (loss_notes, loss_vol, loss_fx, loss_tone),
+            (win_notes, win_vol, win_fx, win_tone),
+        ):
+            pitches = re.findall(r'[a-g][#-]?\d|r', notes)
+            self.assertEqual(len(pitches), len(volume))
+            self.assertEqual(len(pitches), len(effect))
+            self.assertEqual(tone, 't')
+            self.assertEqual(effect[-1], 'f')
+        loss_peak = max(map(int, loss_vol))
+        win_peak = max(map(int, win_vol))
+        self.assertLessEqual(loss_peak, 3)
+        self.assertLessEqual(win_peak, 4)
+        self.assertGreater(win_peak, loss_peak)
+        self.assertGreaterEqual(loss_fx.count('f'), 2)
+        self.assertGreaterEqual(win_fx.count('f'), 2)
+        # Exact envelopes: gentler peaks + longer fades than pre-#14 hard plateaus.
+        self.assertEqual(loss_vol, '33221')
+        self.assertEqual(loss_fx, 'nnfff')
+        self.assertEqual(win_vol, '3344034432')
+        self.assertEqual(win_fx, 'nnnnnnnnff')
+
     def test_loop_is_36_phrases_and_about_eighty_seconds(self) -> None:
         numerator = (
             game.BGM_NOTES_PER_PHRASE * game.BGM_SOUND_SPEED * game.FPS
