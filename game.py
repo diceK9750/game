@@ -276,8 +276,10 @@ class NumberRush:
         pyxel.sounds[4].set("c3e3g3c4g4", "p", "34432", "nnnff", 3)
         # Soft low-tier / CPU reply: gentler attack so rapid hits stay pleasant.
         pyxel.sounds[5].set("b3g3e3", "p", "332", "nff", 5)
-        pyxel.sounds[6].set("e4b3g3e3b2", "t", "44332", "nnnnf", 9)
-        pyxel.sounds[7].set("g3b3d4g4rd4g4a4b4g4", "t", "4455045543", "nnnnnnnnnf", 6)
+        # Softer loss/win result SFX: gentler peaks + longer fades; win stays brighter than loss.
+        # Chiptune pitches unchanged — celebration contour kept, not dulled into mush.
+        pyxel.sounds[6].set("e4b3g3e3b2", "t", "33221", "nnfff", 9)
+        pyxel.sounds[7].set("g3b3d4g4rd4g4a4b4g4", "t", "3344034432", "nnnnnnnnff", 6)
 
         configure_bgm(pyxel.sounds)
         configure_scene_bgm(pyxel.sounds)
