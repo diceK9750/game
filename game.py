@@ -86,6 +86,8 @@ BATTLE_BGM_PHRASE_FRAMES = (
     BGM_NOTES_PER_PHRASE * BATTLE_SPEED * FPS // PYXEL_AUDIO_TICKS_PER_SECOND
 )
 BATTLE_BGM_LOOP_FRAMES = BATTLE_BGM_PHRASE_FRAMES * BATTLE_PHRASE_COUNT
+# Soft pause: brief deferred channel stop before the ~8-frame quiet gap into wait.
+PAUSE_BGM_RELEASE_FRAMES = 3
 
 # Pyxel標準16色パレット。
 BACKGROUND = 0
@@ -240,6 +242,7 @@ class NumberRush:
         self.bgm_next_phrase_frame = 0
         self.bgm_paused_position_frames = 0
         self.bgm_audible_at = 0
+        self.bgm_channel_stop_at = 0
         self.sfx_on = True
         self.sfx_priority_until_frame = 0
         self.is_new_best = False
@@ -679,7 +682,7 @@ class NumberRush:
 
     def open_confirmation(self, action: str) -> None:
         self.round.pause()
-        self.pause_bgm()
+        self.pause_bgm(soft=True)
         self.confirm_action = action
         self.screen = "confirm"
 
@@ -737,6 +740,7 @@ class NumberRush:
 
     def sync_scene_music(self):
         """Select once per transition, never restart a loop on every frame."""
+        self._flush_bgm_channel_stop()
         if not hasattr(self, "scene_music_pending"):
             self.scene_music_pending = None
             self.scene_music_switch_at = 0
@@ -781,23 +785,34 @@ class NumberRush:
             return
         if desired == self.scene_music:
             return
-        for channel in range(3):
-            pyxel.stop(channel)
         previous = self.scene_music
+        # Soft pause may still be releasing gameplay on channels 0–2. Do not
+        # hard-cut here; _flush_bgm_channel_stop owns that deferred stop so
+        # the quiet gap into wait stays intact.
+        pending_soft_stop = bool(getattr(self, "bgm_channel_stop_at", 0) or 0)
+        if not (
+            previous is None
+            and pending_soft_stop
+            and getattr(self, "bgm_paused", False)
+        ):
+            for channel in range(3):
+                pyxel.stop(channel)
         self.scene_music = desired
         if desired is None:
             self.scene_music_pending = None
             self.scene_music_switch_at = 0
             return
         if previous is None:
-            # Gameplay pause hard-stops channels while scene_music is already
-            # cleared during play. Treat that as a soft handoff into wait/
-            # confirm (and other scene tracks), matching the ~8-frame quiet
-            # gap used for scene switches and countdown→gameplay. getattr
-            # keeps __new__ stubs safe.
+            # Gameplay pause: scene_music is already cleared during play.
+            # Soft handoff into wait/confirm with ~8-frame quiet after any
+            # soft-pause release. getattr keeps __new__ stubs safe.
             if getattr(self, "bgm_paused", False):
+                # Quiet gap begins after any soft pause release so ~8 silent
+                # frames remain before wait is audible.
+                stop_at = getattr(self, "bgm_channel_stop_at", 0) or 0
+                quiet_from = stop_at if stop_at else pyxel.frame_count
                 self.scene_music_pending = desired
-                self.scene_music_switch_at = pyxel.frame_count + 8
+                self.scene_music_switch_at = quiet_from + 8
                 return
             # Finished win/loss/perfect: scene_music was cleared while playing,
             # so previous is None after the jingle window even though gameplay
@@ -850,6 +865,8 @@ class NumberRush:
     ) -> None:
         """指定した曲位置から3パートを同期して開始する。"""
         # Soft handoff when leaving countdown/scene BGM: stop now, audible later.
+        # Cancel any soft-pause bleed so resume cannot double-play channels.
+        self._cancel_bgm_channel_stop(stop_now=True)
         had_scene = (
             getattr(self, "scene_music", None) is not None
             or getattr(self, "scene_music_pending", None) is not None
@@ -920,14 +937,43 @@ class NumberRush:
             pyxel.frame_count + phrase_frames - phrase_offset
         )
 
-    def pause_bgm(self) -> None:
+    def _stop_gameplay_channels(self) -> None:
+        pyxel.stop(0)
+        pyxel.stop(1)
+        pyxel.stop(2)
+
+    def _flush_bgm_channel_stop(self) -> None:
+        """Finish a deferred soft-pause channel stop when due."""
+        stop_at = getattr(self, "bgm_channel_stop_at", 0) or 0
+        if not stop_at or pyxel.frame_count < stop_at:
+            return
+        self.bgm_channel_stop_at = 0
+        self._stop_gameplay_channels()
+
+    def _cancel_bgm_channel_stop(self, *, stop_now: bool = False) -> None:
+        """Drop a pending soft-pause stop; optionally silence channels now."""
+        stop_at = getattr(self, "bgm_channel_stop_at", 0) or 0
+        if hasattr(self, "bgm_channel_stop_at"):
+            self.bgm_channel_stop_at = 0
+        if stop_now and stop_at:
+            self._stop_gameplay_channels()
+
+    def pause_bgm(self, *, soft: bool = False) -> None:
         if self.screen == "playing" and self.bgm_has_started and not self.bgm_paused:
             self.bgm_paused_position_frames = self.current_bgm_position_frames()
-            pyxel.stop(0)
-            pyxel.stop(1)
-            pyxel.stop(2)
             self.bgm_paused = True
             self.bgm_audible_at = 0
+            if soft:
+                # Defer the hard cut a few frames; wait scene still gets ~8
+                # silent frames after channels actually stop (#7 interaction).
+                self.bgm_channel_stop_at = (
+                    pyxel.frame_count + PAUSE_BGM_RELEASE_FRAMES
+                )
+            else:
+                # Mute / visibility / clock paths: instant silence.
+                if hasattr(self, "bgm_channel_stop_at"):
+                    self.bgm_channel_stop_at = 0
+                self._stop_gameplay_channels()
 
     def resume_bgm(self) -> None:
         if not self.bgm_on or self.screen != "playing":
@@ -958,6 +1004,7 @@ class NumberRush:
         # Cancel a deferred gameplay audible start if one was pending.
         if hasattr(self, "bgm_audible_at"):
             self.bgm_audible_at = 0
+        self._cancel_bgm_channel_stop(stop_now=False)
         pyxel.stop(0)
         pyxel.stop(1)
         pyxel.stop(2)

@@ -45,6 +45,7 @@ class PauseWaitBgmSoftHandoffTests(unittest.TestCase):
         app.bgm_has_started = True
         app.bgm_stage = 0
         app.bgm_audible_at = 0
+        app.bgm_channel_stop_at = 0
         app.pending_bgm_stage = None
         app.bgm_origin_frame = 50
         app.bgm_next_phrase_frame = 178
@@ -58,21 +59,42 @@ class PauseWaitBgmSoftHandoffTests(unittest.TestCase):
         self.assertEqual(self.app.screen, "confirm")
         self.assertTrue(self.app.bgm_paused)
         self.assertEqual(self.app.bgm_paused_position_frames, 50)
+        # Soft pause defers channel stop; position already frozen.
+        release = self.game.PAUSE_BGM_RELEASE_FRAMES
+        self.assertEqual(self.app.bgm_channel_stop_at, 100 + release)
+        self.assertEqual(self.stops, [])
         self.plays.clear()
         self.stops.clear()
 
         self.app.sync_scene_music()
         self.assertEqual(self.app.scene_music, "wait")
         self.assertEqual(self.app.scene_music_pending, "wait")
-        self.assertEqual(self.app.scene_music_switch_at, 108)
+        # Quiet gap starts after deferred stop so ~8 silent frames remain.
+        self.assertEqual(self.app.scene_music_switch_at, 100 + release + 8)
+        self.assertEqual(self.plays, [])
+        self.assertEqual(self.stops, [])
+
+        # Still releasing: channels not stopped yet.
+        self.pyxel.frame_count = 100 + release - 1
+        self.app.sync_scene_music()
+        self.assertEqual(self.stops, [])
         self.assertEqual(self.plays, [])
 
-        self.pyxel.frame_count = 107
+        # Deferred stop fires; wait still pending through quiet gap.
+        self.pyxel.frame_count = 100 + release
+        self.app.sync_scene_music()
+        self.assertEqual(self.stops, [0, 1, 2])
+        self.assertEqual(self.app.bgm_channel_stop_at, 0)
+        self.assertEqual(self.plays, [])
+        self.assertEqual(self.app.scene_music_pending, "wait")
+
+        self.stops.clear()
+        self.pyxel.frame_count = 100 + release + 7
         self.app.sync_scene_music()
         self.assertEqual(self.plays, [])
         self.assertEqual(self.app.scene_music_pending, "wait")
 
-        self.pyxel.frame_count = 108
+        self.pyxel.frame_count = 100 + release + 8
         self.app.sync_scene_music()
         self.assertIsNone(self.app.scene_music_pending)
         self.assertEqual(self.app.scene_music, "wait")
