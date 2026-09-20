@@ -45,6 +45,18 @@ class BgmStructureTests(unittest.TestCase):
             lengths.append(len(pitches))
         self.assertEqual(lengths, sorted(set(lengths)))
 
+    def test_correct_miss_and_soft_hit_sfx_use_gentle_attack(self):
+        """Base correct, miss, and low-tier hits stay soft under rapid play."""
+        import re
+        for slot, max_peak in ((0, 3), (1, 3), (5, 3)):
+            notes, _tone, volume, effect, _speed = fake_pyxel.sounds[slot].spec
+            pitches = re.findall(r'[a-g][#-]?\d|r', notes)
+            self.assertEqual(len(pitches), len(volume))
+            self.assertEqual(len(pitches), len(effect))
+            self.assertLessEqual(max(map(int, volume)), max_peak)
+            self.assertGreaterEqual(effect.count('f'), 1)
+            self.assertEqual(effect[-1], 'f')
+
     def test_loop_is_36_phrases_and_about_eighty_seconds(self) -> None:
         numerator = (
             game.BGM_NOTES_PER_PHRASE * game.BGM_SOUND_SPEED * game.FPS
