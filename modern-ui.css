@@ -361,6 +361,34 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-award { animation: nr-award-in 750ms ease-out both; }
 @keyframes nr-award-in { 0% { transform: translateY(12px) scale(.92); opacity: 0; }
   65% { transform: translateY(-2px) scale(1.02); opacity: 1; } 100% { transform: none; opacity: 1; } }
+/* High-contrast / forced-colors: keep miss/CPU/correct durable outlines readable
+   when soft pastels and glow shadows are remapped or dropped. */
+@media (prefers-contrast: more) {
+  .nr-cell[data-feedback='wrong'] {
+    outline: 4px solid #d0181c; outline-offset: -3px; background: #ffd0d0;
+    box-shadow: inset 0 0 0 2px #8a1010; z-index: 2;
+  }
+  .nr-cell[data-feedback='correct'] {
+    outline: 4px solid #0a8f55; outline-offset: -3px;
+    box-shadow: inset 0 0 0 2px #066b40;
+  }
+  .nr-cell[data-feedback='cpu'] {
+    outline: 4px solid #b01878; outline-offset: -3px;
+    box-shadow: inset 0 0 0 2px #6a1048;
+  }
+}
+@media (forced-colors: active) {
+  .nr-cell[data-feedback='wrong'] {
+    outline: 4px solid LinkText; outline-offset: -3px; background: Canvas;
+    box-shadow: none; z-index: 2;
+  }
+  .nr-cell[data-feedback='correct'] {
+    outline: 4px solid Highlight; outline-offset: -3px; box-shadow: none;
+  }
+  .nr-cell[data-feedback='cpu'] {
+    outline: 4px solid ButtonText; outline-offset: -3px; box-shadow: none;
+  }
+}
 /* Effects remain understandable when animations are turned off.
    Honor OS prefers-reduced-motion even before JS sets data-reduced. */
 #modern-app[data-reduced='true'] .nr-cell[data-feedback='wrong'] {
