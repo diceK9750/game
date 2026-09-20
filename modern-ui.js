@@ -52,6 +52,8 @@
   if (!app) return;
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let state = null, sequence = 0, active = false, previousScreen = '', announcement = '', historyKey = '';
+  // Highest effect start frame already presented in HUD — blocks older lingering miss outlines from regressing copy.
+  let stageCopyFloor = -1;
   let keyboardCell = 0;
   const E = (tag, className, text) => {
     const element = document.createElement(tag);
@@ -320,6 +322,7 @@
     hint.hidden = battle; hint.textContent = state.hint_used ? 'ヒント（記録対象外）' : 'ヒントを見る';
     let recent = '';
     let recentStarted = -1;
+    if (!playing) stageCopyFloor = -1;
     const cpuCursor = playing && battle ? window.rivalCursor?.(40,8,state.cells.findIndex(c=>c.n===state.target),cpuProgress) : null;
     if (!playing) cells.forEach(item=>{ item.cell.dataset.cpuSelecting='false'; });
     state.cells.forEach((data, index) => {
@@ -355,7 +358,18 @@
         }
       }
     });
-    feedback.textContent = recent || (state.streak >= 3 ? `${state.streak}連続正解！いいリズム。` : battle ? '青はあなた、ピンクはCPU。先に見つけよう。' : 'あわてず、ひとつずつ。');
+    // Durable miss outlines outlast correct/CPU FX (#18). Keep latest-wins HUD from regressing
+    // to an older lingering miss once a newer correct/CPU copy has already been shown.
+    const idleCopy = state.streak >= 3 ? `${state.streak}連続正解！いいリズム。` : battle ? '青はあなた、ピンクはCPU。先に見つけよう。' : 'あわてず、ひとつずつ。';
+    if (recentStarted < 0) {
+      stageCopyFloor = -1;
+      feedback.textContent = idleCopy;
+    } else if (recentStarted >= stageCopyFloor) {
+      stageCopyFloor = recentStarted;
+      feedback.textContent = recent;
+    } else {
+      feedback.textContent = idleCopy;
+    }
     if (playing && focusedIndex >= 0 && cells[focusedIndex].cell.disabled) {
       const next = nextPlayable(cells.map(item => !item.cell.disabled), focusedIndex, 'ArrowRight');
       if (next >= 0) { keyboardCell = next; cells[next].cell.focus({preventScroll: true}); }
