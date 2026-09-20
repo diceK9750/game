@@ -6,12 +6,18 @@ const vm = require('node:vm');
 function harness() {
   const doc = {activeElement: null};
   class Element {
-    constructor(tag, cls = '', text = '') { this.tagName = tag.toUpperCase(); this.className = cls; this.textContent = text; this.children = []; this.style = {}; this.dataset = {}; this.events = {}; }
-    append(...nodes) { this.children.push(...nodes); }
-    replaceChildren(...nodes) { this.children = nodes; }
+    constructor(tag, cls = '', text = '') {
+      this.tagName = tag.toUpperCase(); this.className = cls; this.textContent = text; this.children = [];
+      this.style = {}; this.dataset = {}; this.events = {}; this.hidden = false; this.parentElement = null;
+    }
+    append(...nodes) { for (const n of nodes) { n.parentElement = this; this.children.push(n); } }
+    replaceChildren(...nodes) { this.children = []; this.append(...nodes); }
     setAttribute(key, val) { this[key] = val; }
     addEventListener(key, fn) { this.events[key] = fn; }
+    emit(key, event = {}) { (this.events[key] || (() => {}))({preventDefault() {}, stopPropagation() {}, ...event}); }
     focus() { doc.activeElement = this; }
+    contains(el) { return this === el || this.children.some(child => child.contains(el)); }
+    closest() { for (let node = this; node; node = node.parentElement) if (node.hidden) return node; return null; }
     querySelectorAll(selector) { const all = this.children.flatMap(n => [n, ...n.querySelectorAll('*')]); return all.filter(n => selector === '*' || selector.split(',').some(s => s.trim().startsWith('.') ? n.className.split(' ').includes(s.trim().slice(1)) : n.tagName === s.trim().toUpperCase())); }
     querySelector(selector) { return this.querySelectorAll(selector)[0]; }
   }
@@ -174,6 +180,46 @@ test('pause conceals cards, CPU turn disables input, result exposes replay and h
   view.update({...state, phase:'finished', winner:'you', history:[{word:'りんご', icon:'🍎', owner:'you'}]});
   assert.equal(view.page.querySelector('.sh-log').children.length, 1);
   assert.ok(view.page.querySelectorAll('button').some(b => b.textContent === 'もう一度遊ぶ'));
+});
+
+test('finished focuses replay and Enter retries without breaking mode/dict', () => {
+  const {view, state, queue, doc} = harness();
+  view.update(state);
+  const cards = view.page.querySelectorAll('.sh-card');
+  cards[0].focus();
+  assert.equal(doc.activeElement, cards[0]);
+
+  view.update({...state, phase:'finished', winner:'you', history:[{word:'りんご', icon:'🍎', owner:'you', readings:['りんご']}]});
+  const retry = view.page.querySelectorAll('button').find(b => b.textContent === 'もう一度遊ぶ');
+  const setup = view.page.querySelectorAll('button').find(b => b.textContent === 'モード選択');
+  const dict = view.page.querySelectorAll('.sh-dict-open')[1];
+  assert.ok(retry && setup && dict, 'result actions stay available');
+  assert.equal(doc.activeElement, retry, 'result entry focuses primary replay');
+
+  const before = queue.length;
+  view.page.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(queue.length, before, 'focused replay button keeps native activation (no double command)');
+
+  // Non-button focus still offers a one-key retry path (parity with number-rush #17).
+  const resultHeading = view.page.querySelectorAll('h1').find(h => h.textContent === 'あなたの勝利！');
+  assert.ok(resultHeading, 'finished result title is present');
+  resultHeading.focus();
+  view.page.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(queue.at(-1).action, 'sh_start');
+
+  const afterRetry = queue.length;
+  setup.focus();
+  view.page.emit('keydown', {key: ' ', repeat: false});
+  assert.equal(queue.length, afterRetry, 'mode-select button keeps its own activation path');
+
+  dict.focus();
+  view.page.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(queue.length, afterRetry, 'dictionary button keeps native activation');
+
+  // Re-entering finished from intro also restores replay focus.
+  view.update({...state, phase:'intro', cards:[]});
+  view.update({...state, phase:'finished', winner:'draw', history:[{word:'りんご', icon:'🍎', owner:'you', readings:['りんご']}]});
+  assert.equal(doc.activeElement, retry, 'intro→result also restores replay focus');
 });
 
 test('new mode is shipped in Pages and loaded before its host renderer', () => {
