@@ -90,6 +90,7 @@
 @keyframes sh-deal-a { from { opacity: .2; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @keyframes sh-deal-b { from { opacity: .2; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 #modern-app[data-reduced='true'] .sh-icon { animation: none; }
+@media (prefers-reduced-motion: reduce) { .sh-card[data-dealt] .sh-icon { animation: none; } }
 @media (max-height: 500px) {
   .sh-page { padding: 4px 0; }
   .sh-hud { flex-shrink: 0; }

@@ -5,6 +5,16 @@
 .chain-burst[data-pulse='0'], .chain-burst[data-pulse='1'] { animation: chain-safe-flash 1s ease-out both; }
 .timed-chain[data-tier='3'] .chain-burst { border-width: 1px; box-shadow: inset 0 0 8px #ffd35d; }
 @keyframes chain-safe-flash { 0%, 100% { opacity: 0; } 15%, 75% { opacity: 1; } }
+/* Opacity-pulse is decorative; keep a readable static banner under reduced motion. */
+#modern-app[data-reduced='true'] .chain-burst[data-pulse='0'],
+#modern-app[data-reduced='true'] .chain-burst[data-pulse='1'] {
+  animation: none !important; opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-burst[data-pulse='0'], .chain-burst[data-pulse='1'] {
+    animation: none !important; opacity: 1;
+  }
+}
 
 /* Reuse the full-body pose atlases; retain expressive portrait art elsewhere. */
 .nr-hero-cast .nr-rin .nr-character-art, .sh-arena > .nr-rin .nr-character-art { background-image: url('assets/characters/rin-atlas.png'); }
