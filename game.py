@@ -70,7 +70,7 @@ PAUSE_BUTTON = (308, 9, 56, 32)
 HINT_BUTTON = (182, 301, 110, 32)
 
 COUNTDOWN_FRAMES = 180
-WRONG_EFFECT_FRAMES = 48
+WRONG_EFFECT_FRAMES = 72  # ~1.2s at 60fps: readable miss outline without sticky block
 BOMB_FUSE_FRAMES = 10
 EXPLOSION_END_FRAME = 30
 CORRECT_EFFECT_FRAMES = 34
@@ -502,7 +502,12 @@ class NumberRush:
         if self.screen == "playing" and isinstance(self.round, BattleRound):
             number = self.round.update_cpu()
             if number is not None:
+                # Keep active miss outlines; only reset pose/correct FX so CPU claim stays distinct.
+                preserved_wrong = [
+                    effect for effect in self.cell_effects if effect[0] == "wrong"
+                ]
                 self.clear_feedback()
+                self.cell_effects = preserved_wrong
                 self.cpu_reaction_until = pyxel.frame_count + 48
                 self.streak = 0
                 self.add_cell_effect("cpu", self.round.board_cells.index(number))
@@ -557,6 +562,13 @@ class NumberRush:
         self.cell_effects = [effect for effect in self.cell_effects if effect[1] != cell_index]
         self.cell_effects.append((kind, cell_index, pyxel.frame_count))
         self.cell_effects = self.cell_effects[-12:]
+
+    def wrong_outline_indices(self) -> set[int]:
+        """Miss fill/outline follows cell_effects so a later correct/CPU pose clear does not flicker it away."""
+        indices = {index for kind, index, _ in self.cell_effects if kind == "wrong"}
+        if self.wrong_cell is not None:
+            indices.add(self.wrong_cell)
+        return indices
 
     def begin_countdown(self, mode: str) -> None:
         """盤面を伏せたまま3秒カウントし、同時スタートを準備する。"""
@@ -1238,6 +1250,7 @@ class NumberRush:
                 pyxel.rect(x + dot_x, y + 18, 4, 4, MUTED)
 
     def draw_game_board(self) -> None:
+        wrong_indices = self.wrong_outline_indices()
         for index, number in enumerate(self.round.board_cells):
             row, column = divmod(index, GRID_COLUMNS)
             x = GRID_X + column * (CELL_WIDTH + CELL_GAP)
@@ -1247,7 +1260,7 @@ class NumberRush:
                 continue
 
             already_found = number in self.round.found_numbers
-            is_wrong = index == self.wrong_cell
+            is_wrong = index in wrong_indices
             is_correct = index == self.correct_cell
             is_hovered = point_in_rect(
                 pyxel.mouse_x,

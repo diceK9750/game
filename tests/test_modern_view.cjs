@@ -205,6 +205,40 @@ test('real cell handlers enqueue fast taps once and a mistake does not disable t
   assert.equal(browser.cells()[1], cells[1], 'board elements retain identity across snapshots');
 });
 
+test('miss outline CSS outlasts the bomb burst and stays distinct from CPU/correct', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  assert.match(css, /data-feedback='wrong'[^}]*box-shadow/);
+  assert.match(css, /nr-fx-fade 1100ms/);
+  assert.match(css, /nr-burst 720ms/);
+  assert.match(css, /data-feedback='cpu'/);
+});
+
+test('miss feedback stays mounted beside a later correct and clears FX nodes when done', () => {
+  const browser = browserHarness();
+  const round = browser.render('playing');
+  const cells = browser.cells();
+  round.cells[1].effect = 'wrong';
+  round.cells[1].effect_id = 'wrong:40';
+  round.cells[2].effect = 'correct';
+  round.cells[2].effect_id = 'correct:50';
+  browser.render('playing', round);
+  assert.equal(cells[1].dataset.feedback, 'wrong');
+  assert.equal(cells[2].dataset.feedback, 'correct');
+  assert.equal(cells[1].disabled, false, 'miss outline must not disable the next tap');
+  const feedback = walk(browser.app).find(n => n.className === 'nr-feedback');
+  // Latest effect wins the stage copy so miss/correct/CPU do not fight confusingly.
+  assert.match(feedback.textContent, /ナイス/);
+  assert.ok(walk(cells[1]).some(n => String(n.className || '').includes('nr-fx-wrong')));
+  round.cells[1].effect_id = 'wrong:60';
+  browser.render('playing', round);
+  assert.match(feedback.textContent, /ちがう数字/);
+  round.cells[1].effect = null;
+  round.cells[1].effect_id = null;
+  browser.render('playing', round);
+  assert.equal(cells[1].dataset.feedback, '');
+  assert.ok(!walk(cells[1]).some(n => String(n.className || '').includes('nr-fx')));
+});
+
 test('CPU claim feedback is distinct from player-correct sparkles', () => {
   const browser = browserHarness();
   const round = browser.render('playing', {kind: 'battle', target: 7});
