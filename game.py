@@ -771,19 +771,27 @@ class NumberRush:
         # Finish a deferred audible start after a short quiet gap.
         if self.scene_music_pending is not None:
             if desired != self.scene_music_pending:
-                # Retarget during a soft gap: hard-cut remaining release, then
-                # restart the quiet timer. Mute/stop paths stay hard elsewhere.
-                for channel in range(3):
-                    pyxel.stop(channel)
-                if hasattr(self, "bgm_channel_stop_at"):
-                    self.bgm_channel_stop_at = 0
+                # Mid-gap retarget (countdown/resuming while release/quiet pending):
+                # identity flips immediately; mute/None stays hard; otherwise keep
+                # release-then-quiet like #9/#10 instead of hard-cutting release.
                 self.scene_music = desired
                 if desired is None:
+                    for channel in range(3):
+                        pyxel.stop(channel)
+                    if hasattr(self, "bgm_channel_stop_at"):
+                        self.bgm_channel_stop_at = 0
                     self.scene_music_pending = None
                     self.scene_music_switch_at = 0
                 else:
                     self.scene_music_pending = desired
-                    self.scene_music_switch_at = pyxel.frame_count + 8
+                    stop_at = getattr(self, "bgm_channel_stop_at", 0) or 0
+                    if stop_at:
+                        # Still releasing: quiet begins after the deferred stop.
+                        self.scene_music_switch_at = stop_at + 8
+                    elif self.scene_music_switch_at <= pyxel.frame_count:
+                        # Quiet already elapsed / absent: start a fresh gap.
+                        self.scene_music_switch_at = pyxel.frame_count + 8
+                    # else keep remaining quiet frames before the new track.
                 return
             if pyxel.frame_count >= self.scene_music_switch_at:
                 pending = self.scene_music_pending
