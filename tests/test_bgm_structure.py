@@ -33,22 +33,29 @@ class BgmStructureTests(unittest.TestCase):
     def test_chain_stingers_escalate_with_bounded_volume_and_duration(self):
         import re
         lengths = []
+        peaks = []
         for slot in (4, 2, 3):
             notes, tone, volume, effect, speed = fake_pyxel.sounds[slot].spec
             pitches = re.findall(r'[a-g][#-]?\d|r', notes)
             self.assertEqual(len(pitches), len(volume))
             self.assertEqual(len(pitches), len(effect))
             self.assertEqual(tone, 'p')
-            self.assertLessEqual(max(map(int, volume)), 6)
+            peak = max(map(int, volume))
+            peaks.append(peak)
+            self.assertLessEqual(peak, 6)
             self.assertLessEqual(len(pitches) * speed / 120, .35)
             self.assertEqual(effect[-1], 'f')
             lengths.append(len(pitches))
         self.assertEqual(lengths, sorted(set(lengths)))
+        # Early-chain / round-start stays below mid and high celebration peaks.
+        self.assertLessEqual(peaks[0], 4)
+        self.assertGreaterEqual(peaks[1], peaks[0])
+        self.assertGreaterEqual(peaks[2], peaks[1])
 
     def test_correct_miss_and_soft_hit_sfx_use_gentle_attack(self):
-        """Base correct, miss, and low-tier hits stay soft under rapid play."""
+        """Base correct, miss, low-tier, and early-chain hits stay soft under rapid play."""
         import re
-        for slot, max_peak in ((0, 3), (1, 3), (5, 3)):
+        for slot, max_peak in ((0, 3), (1, 3), (5, 3), (4, 4)):
             notes, _tone, volume, effect, _speed = fake_pyxel.sounds[slot].spec
             pitches = re.findall(r'[a-g][#-]?\d|r', notes)
             self.assertEqual(len(pitches), len(volume))
