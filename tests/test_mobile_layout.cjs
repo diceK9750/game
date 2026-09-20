@@ -66,7 +66,7 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
   assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(player, /canvas \{ touch-action: none;/);
-  assert.match(player, /modern-ui\.css\?v=reduced-feedback-1/);
+  assert.match(player, /modern-ui\.css\?v=contrast-outlines-1/);
   assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
   // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
@@ -154,7 +154,7 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.match(js, /markHostInsets/);
   assert.match(js, /data-host-insets/);
   assert.match(mobile, /Host owns device insets/);
-  assert.match(player, /modern-ui\.css\?v=reduced-feedback-1/);
+  assert.match(player, /modern-ui\.css\?v=contrast-outlines-1/);
   assert.match(player, /modern-ui\.js\?v=host-safe-1/);
   assert.match(player, /mobile-layout\.css\?v=7-host-safe/);
 });
