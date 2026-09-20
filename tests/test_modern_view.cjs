@@ -73,6 +73,22 @@ test('view preserves no-cooldown input, local assets, safe text and reduced moti
   assert.match(js, /markHostInsets/);
 });
 
+test('prefers-reduced-motion keeps static cpu-claim and award without waiting for data-reduced', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  // OS preference alone (before JS data-reduced) must freeze animated feedback into readable static states.
+  assert.match(css, /#modern-app \.nr-cpu-claim,\s*#modern-app \.nr-award \{ opacity: 1; animation: none !important; \}/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cpu-claim,\s*#modern-app\[data-reduced='true'\] \.nr-award \{ opacity: 1; animation: none !important; \}/);
+  // Final media block (not earlier fairy/character rules) carries cell outline + fx parity.
+  const idx = css.lastIndexOf('@media (prefers-reduced-motion: reduce)');
+  assert.ok(idx > 0, 'feedback reduced-motion media query present');
+  const media = css.slice(idx);
+  assert.match(media, /data-feedback='wrong'/);
+  assert.match(media, /data-feedback='cpu'/);
+  assert.match(media, /\.nr-cpu-claim/);
+  assert.match(media, /\.nr-award/);
+  assert.match(media, /\.nr-fx \{ opacity: 0; \}/);
+});
+
 test('markHostInsets tags embedded iframe and clears standalone', () => {
   const root = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, removeAttribute(k) { delete this.attrs[k]; } };
   const winEmbedded = {}; winEmbedded.parent = {};
