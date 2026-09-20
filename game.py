@@ -239,6 +239,7 @@ class NumberRush:
         self.bgm_origin_frame = 0
         self.bgm_next_phrase_frame = 0
         self.bgm_paused_position_frames = 0
+        self.bgm_audible_at = 0
         self.sfx_on = True
         self.sfx_priority_until_frame = 0
         self.is_new_best = False
@@ -831,32 +832,63 @@ class NumberRush:
         clear_pending: bool = True,
     ) -> None:
         """指定した曲位置から3パートを同期して開始する。"""
+        # Soft handoff when leaving countdown/scene BGM: stop now, audible later.
+        had_scene = (
+            getattr(self, "scene_music", None) is not None
+            or getattr(self, "scene_music_pending", None) is not None
+        )
         self.stop_scene_music()
         phrase_frames, loop_frames = self.bgm_timing()
         position_frames %= loop_frames
         self.bgm_stage = stage
         if clear_pending:
             self.pending_bgm_stage = None
+        self.bgm_paused_position_frames = position_frames
+        self.bgm_paused = False
+        self.bgm_has_started = True
+        if had_scene:
+            # Same order of magnitude as scene_music_switch_at quiet gap.
+            start_at = pyxel.frame_count + 8
+            self.bgm_audible_at = start_at
+            self.bgm_origin_frame = start_at - position_frames
+            phrase_offset = position_frames % phrase_frames
+            self.bgm_next_phrase_frame = start_at + (phrase_frames - phrase_offset)
+            return
+        self.bgm_audible_at = 0
         self.play_bgm_channels(stage, position_frames)
         self.bgm_origin_frame = pyxel.frame_count - position_frames
         phrase_offset = position_frames % phrase_frames
         frames_to_boundary = phrase_frames - phrase_offset
         self.bgm_next_phrase_frame = pyxel.frame_count + frames_to_boundary
-        self.bgm_paused_position_frames = position_frames
-        self.bgm_paused = False
-        self.bgm_has_started = True
 
     def current_bgm_position_frames(self) -> int:
         if self.bgm_paused:
+            return self.bgm_paused_position_frames
+        audible_at = getattr(self, "bgm_audible_at", 0) or 0
+        if audible_at and pyxel.frame_count < audible_at:
+            # Hold the intended start position during the quiet handoff gap.
             return self.bgm_paused_position_frames
         if not self.bgm_has_started:
             return 0
         _phrase_frames, loop_frames = self.bgm_timing()
         return (pyxel.frame_count - self.bgm_origin_frame) % loop_frames
 
+    def _flush_bgm_audible_start(self) -> None:
+        """Finish a deferred gameplay BGM start after the quiet handoff gap."""
+        audible_at = getattr(self, "bgm_audible_at", 0) or 0
+        if not audible_at or pyxel.frame_count < audible_at:
+            return
+        self.bgm_audible_at = 0
+        if not self.bgm_on or self.bgm_paused or not self.bgm_has_started:
+            return
+        self.play_bgm_channels(self.bgm_stage, self.current_bgm_position_frames())
+
     def update_bgm_transition(self) -> None:
         """進行度による編曲変更を、次の句境界まで待って適用する。"""
+        self._flush_bgm_audible_start()
         if not self.bgm_on or self.bgm_paused or not self.bgm_has_started:
+            return
+        if getattr(self, "bgm_audible_at", 0):
             return
         if pyxel.frame_count < self.bgm_next_phrase_frame:
             return
@@ -878,6 +910,7 @@ class NumberRush:
             pyxel.stop(1)
             pyxel.stop(2)
             self.bgm_paused = True
+            self.bgm_audible_at = 0
 
     def resume_bgm(self) -> None:
         if not self.bgm_on or self.screen != "playing":
@@ -900,6 +933,7 @@ class NumberRush:
         self.scene_music = None
         self.scene_music_pending = None
         self.scene_music_switch_at = 0
+        self.bgm_audible_at = 0
         pyxel.stop(0)
         pyxel.stop(1)
         pyxel.stop(2)
