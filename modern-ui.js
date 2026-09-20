@@ -46,12 +46,36 @@
     // A whole row/column can be cleared; still provide a way back into the board.
     return available.findIndex(Boolean);
   }
-  if (typeof module !== 'undefined') module.exports = {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable};
+  // Play surfaces must not rubber-band the document; reading panes stay scrollable.
+  const PLAY_SCROLL_ALLOW = '.nr-instructions, .nr-history, .nr-help-card .sh-guide, .sh-log, .sh-dictionary, .nr-dialog, .sh-dialog, details';
+  function shouldLockPlayScroll(screen, shPhase) {
+    return screen === 'playing' || (screen === 'shiritori' && ['playing', 'blocked'].includes(shPhase));
+  }
+  function isPlayScrollAllowed(target) {
+    return Boolean(target && typeof target.closest === 'function' && target.closest(PLAY_SCROLL_ALLOW));
+  }
+  if (typeof module !== 'undefined') module.exports = {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable, shouldLockPlayScroll, isPlayScrollAllowed};
   if (typeof document === 'undefined') return;
   const root = document.documentElement, app = document.getElementById('modern-app');
   if (!app) return;
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let state = null, sequence = 0, active = false, previousScreen = '', announcement = '', historyKey = '';
+  let scrollLocked = false;
+  function setScrollLock(locked) {
+    locked = Boolean(locked);
+    app.dataset.scrollLock = String(locked);
+    root.dataset.scrollLock = String(locked);
+    if (scrollLocked === locked) return;
+    scrollLocked = locked;
+    if (window.parent !== window) {
+      try { window.parent.postMessage({type: 'number-rush-scroll-lock', locked}, location.origin); }
+      catch { /* cross-origin or detached parent */ }
+    }
+  }
+  document.addEventListener('touchmove', event => {
+    if (!scrollLocked || isPlayScrollAllowed(event.target)) return;
+    event.preventDefault();
+  }, {passive: false, capture: true});
   // Highest effect start frame already presented in HUD — blocks older lingering miss outlines from regressing copy.
   let stageCopyFloor = -1;
   let keyboardCell = 0;
@@ -287,6 +311,7 @@
     gamesBack.hidden = !(state.screen === 'ready' || shMenu);
     if (shPhase) { help.hidden = shPhase !== 'intro'; help.disabled = shiritori.isOverlayOpen(); }
     const shPlaying = ['playing', 'blocked'].includes(shPhase);
+    setScrollLock(shouldLockPlayScroll(state.screen, shPhase));
     pause.hidden = !(playing || shPlaying); retry.hidden = !(playing || shPlaying);
     const reduced = state.reduced === true;
     sfx.textContent = pauseSfx.textContent = `効果音 ${state.sfx ? 'ON' : 'OFF'}`;
@@ -430,6 +455,7 @@
   function fallback() {
     active = false; app.hidden = true; root.removeAttribute('data-modern-active');
     root.setAttribute('data-modern-ready', 'false');
+    setScrollLock(false);
     if (window.parent !== window) window.parent.postMessage({type: 'number-rush-modern-fallback'}, location.origin);
   }
   function safeUpdate() {

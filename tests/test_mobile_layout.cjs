@@ -66,7 +66,7 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
   assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(player, /canvas \{ touch-action: none;/);
-  assert.match(player, /modern-ui\.css\?v=touch-manip-1/);
+  assert.match(player, /modern-ui\.css\?v=scroll-lock-1/);
   assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
   // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
@@ -111,4 +111,22 @@ test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
   assert.match(css, /\.nr-header \{ min-height: 32px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   assert.match(html, /mobile-layout\.css\?v=6-portrait-narrow/);
+});
+
+test('host and player lock overscroll; play posts scroll-lock to the shell', () => {
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const viewport = fs.readFileSync(require.resolve('../viewport.js'), 'utf8');
+  assert.match(index, /html, body \{[^}]*overscroll-behavior: none/);
+  assert.match(player, /html, body \{[^}]*overscroll-behavior: none/);
+  assert.match(index, /html\[data-scroll-lock="true"\]/);
+  assert.match(css, /#modern-app\[data-scroll-lock='true'\]/);
+  assert.match(js, /number-rush-scroll-lock/);
+  assert.match(js, /shouldLockPlayScroll/);
+  assert.match(js, /passive: false/);
+  assert.match(viewport, /number-rush-scroll-lock/);
+  assert.match(player, /modern-ui\.js\?v=scroll-lock-1/);
+  assert.match(index, /viewport\.js\?v=5-scroll-lock/);
 });

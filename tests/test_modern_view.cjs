@@ -2,7 +2,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable} = require('../modern-ui.js');
+const {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable, shouldLockPlayScroll, isPlayScrollAllowed} = require('../modern-ui.js');
 const state = () => ({v: 1, screen: 'playing', cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
 
 test('modern bridge activates only for a valid complete 5 by 8 board', () => {
@@ -111,9 +111,24 @@ function browserHarness() {
     focus() { document.activeElement = this; }
   }
   const root = new Element('html'), app = new Element('div'); app.hidden = true; root.append(app);
-  document = {documentElement: root, activeElement: root, createElement: tag => new Element(tag), getElementById: id => id === 'modern-app' ? app : null};
+  const docHandlers = new Map();
+  const posts = [];
+  document = {
+    documentElement: root, activeElement: root,
+    createElement: tag => new Element(tag),
+    getElementById: id => id === 'modern-app' ? app : null,
+    addEventListener(name, handler) {
+      if (!docHandlers.has(name)) docHandlers.set(name, []);
+      docHandlers.get(name).push(handler);
+    },
+    emit(name, event = {}) {
+      for (const fn of docHandlers.get(name) || []) fn({preventDefault() {}, stopPropagation() {}, ...event});
+    },
+  };
   const observers = [];
-  const browserWindow = {matchMedia: () => ({matches: false, addEventListener() {}})}; browserWindow.parent = browserWindow;
+  const browserWindow = {matchMedia: () => ({matches: false, addEventListener() {}})};
+  // Distinct parent mimics the host shell iframe relationship.
+  browserWindow.parent = { postMessage: (data, origin) => { posts.push({data, origin}); } };
   browserWindow.rivalCursor=require('../rival-cursor.js').rivalCursor;
   browserWindow.createShiritoriView=({section})=>({page:section('shiritori','sh-page'),update(){},isOverlayOpen:()=>false,headerAction(){}});
   vm.runInNewContext(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'), {
@@ -126,7 +141,7 @@ function browserHarness() {
       ack: 0, bgm: true, sfx: true, target: 1, cells: ['playing', 'finished', 'review'].includes(screen) ? state().cells : [], ...overrides};
     root.setAttribute('data-modern-state', JSON.stringify(next)); notify('data-modern-state'); return next;
   }
-  return {root, app, document, render, notify, cells: () => walk(app).filter(node => node.className === 'nr-cell'),
+  return {root, app, document, render, notify, posts, cells: () => walk(app).filter(node => node.className === 'nr-cell'),
     queue: () => JSON.parse(root.getAttribute('data-modern-commands') || '[]')};
 }
 function walk(element) { return element.children.flatMap(child => [child, ...walk(child)]); }
@@ -406,4 +421,46 @@ test('Escape toggles pause confirm and dismisses retry/title without quitting', 
     b.app.emit('keydown', {key: 'Escape'});
     assert.equal(b.queue().length, beforeSafe, `Esc stays inert on ${screen}`);
   }
+});
+
+test('play scroll lock helpers cover numbers and shiritori live phases only', () => {
+  assert.equal(shouldLockPlayScroll('playing'), true);
+  assert.equal(shouldLockPlayScroll('shiritori', 'playing'), true);
+  assert.equal(shouldLockPlayScroll('shiritori', 'blocked'), true);
+  assert.equal(shouldLockPlayScroll('shiritori', 'intro'), false);
+  assert.equal(shouldLockPlayScroll('ready'), false);
+  assert.equal(shouldLockPlayScroll('confirm'), false);
+  assert.equal(shouldLockPlayScroll('finished'), false);
+  assert.equal(isPlayScrollAllowed({closest: sel => sel.includes('.nr-history') ? {} : null}), true);
+  assert.equal(isPlayScrollAllowed({closest: () => null}), false);
+  assert.equal(isPlayScrollAllowed(null), false);
+});
+
+test('playing locks document scroll and unlocks on pause/result; reading panes stay allowlisted', () => {
+  const b = browserHarness();
+  b.render('ready');
+  assert.equal(b.app.dataset.scrollLock, 'false');
+  assert.equal(b.root.dataset.scrollLock, 'false');
+  b.render('playing');
+  assert.equal(b.app.dataset.scrollLock, 'true');
+  assert.equal(b.root.dataset.scrollLock, 'true');
+  assert.ok(b.posts.some(p => p.data?.type === 'number-rush-scroll-lock' && p.data.locked === true));
+  let prevented = false;
+  b.document.emit('touchmove', {
+    target: b.cells()[0],
+    preventDefault() { prevented = true; },
+  });
+  assert.equal(prevented, true, 'board touchmove is blocked while playing');
+  prevented = false;
+  b.document.emit('touchmove', {
+    target: {closest: sel => sel.includes('.nr-history') ? {} : null},
+    preventDefault() { prevented = true; },
+  });
+  assert.equal(prevented, false, 'history pane may still scroll');
+  b.render('confirm');
+  assert.equal(b.app.dataset.scrollLock, 'false');
+  b.render('shiritori', {shiritori: {phase: 'playing'}});
+  assert.equal(b.app.dataset.scrollLock, 'true');
+  b.render('finished');
+  assert.equal(b.app.dataset.scrollLock, 'false');
 });

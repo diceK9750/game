@@ -7,7 +7,7 @@
   <title>NUMBER RUSH | 数字さがし・絵しりとり対戦</title>
   <style>
     * { box-sizing: border-box; }
-    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #090e19; color: #f1f6ed; touch-action: manipulation; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; background: #090e19; color: #f1f6ed; touch-action: manipulation; }
     body { font-family: system-ui, sans-serif; }
     body::before {
       content: ""; position: fixed; inset: 0; pointer-events: none;
@@ -47,6 +47,8 @@
     html[data-app-ready="true"] footer,
     html[data-app-ready="true"] #orientation-hint { display: none; }
     html[data-app-ready="true"] main { gap: 0; }
+    /* Iframe play lock: keep host from rubber-banding behind the board. */
+    html[data-scroll-lock="true"], html[data-scroll-lock="true"] body { overflow: hidden; overscroll-behavior: none; touch-action: none; }
     @media (orientation: landscape) and (max-height: 500px) {
       footer, #orientation-hint, .subtitle { display: none; }
       header { padding: 2px 8px; }
@@ -59,7 +61,7 @@
       main { gap: 2px; }
     }
   </style>
-  <script src="viewport.js?v=4" defer></script>
+  <script src="viewport.js?v=5-scroll-lock" defer></script>
 </head>
 <body>
   <main>
