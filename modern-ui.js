@@ -331,13 +331,15 @@
       item.cell.setAttribute('aria-label', empty ? '空のマス' : `${data.n}${data.owner === 'cpu' ? ' CPUが獲得' : claimed ? ' 獲得済み' : ''}`);
       if (data.effect && data.effect_id !== item.effectId) {
         item.effectId = data.effect_id;
-        const type = data.effect === 'wrong' ? 'wrong' : 'correct';
+        const type = data.effect === 'wrong' ? 'wrong' : data.effect === 'cpu' ? 'cpu' : 'correct';
         const effect = E('span', `nr-fx nr-fx-${type}`);
         if (type === 'wrong') add(effect, E('i', 'nr-bomb'), E('i', 'nr-burst'));
+        else if (type === 'cpu') add(effect, E('i', 'nr-ring nr-ring-cpu'), E('span', 'nr-cpu-claim', 'CPU'));
         else add(effect, E('i', 'nr-ring'), E('i', 'nr-spark', '✦'));
         item.effect.replaceChildren(effect);
       }
       if (data.effect === 'wrong') recent = 'ちがう数字！お題を確認して、すぐ押し直そう。';
+      else if (data.effect === 'cpu') recent = 'CPUが先に見つけた！次のお題を狙おう。';
       else if (data.effect === 'correct' && !recent) recent = 'ナイス！次のお題も、すぐに見つけよう。';
     });
     feedback.textContent = recent || (state.streak >= 3 ? `${state.streak}連続正解！いいリズム。` : battle ? '青はあなた、ピンクはCPU。先に見つけよう。' : 'あわてず、ひとつずつ。');
