@@ -54,10 +54,18 @@
   function isPlayScrollAllowed(target) {
     return Boolean(target && typeof target.closest === 'function' && target.closest(PLAY_SCROLL_ALLOW));
   }
-  if (typeof module !== 'undefined') module.exports = {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable, shouldLockPlayScroll, isPlayScrollAllowed};
+  function markHostInsets(win, rootEl) {
+    if (!rootEl) return false;
+    const embedded = Boolean(win && win.parent && win.parent !== win);
+    if (embedded) rootEl.setAttribute('data-host-insets', 'true');
+    else rootEl.removeAttribute('data-host-insets');
+    return embedded;
+  }
+  if (typeof module !== 'undefined') module.exports = {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable, shouldLockPlayScroll, isPlayScrollAllowed, markHostInsets};
   if (typeof document === 'undefined') return;
   const root = document.documentElement, app = document.getElementById('modern-app');
   if (!app) return;
+  markHostInsets(window, root);
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let state = null, sequence = 0, active = false, previousScreen = '', announcement = '', historyKey = '';
   let scrollLocked = false;
