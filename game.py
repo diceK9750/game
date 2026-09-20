@@ -86,7 +86,8 @@ BATTLE_BGM_PHRASE_FRAMES = (
     BGM_NOTES_PER_PHRASE * BATTLE_SPEED * FPS // PYXEL_AUDIO_TICKS_PER_SECOND
 )
 BATTLE_BGM_LOOP_FRAMES = BATTLE_BGM_PHRASE_FRAMES * BATTLE_PHRASE_COUNT
-# Soft pause: brief deferred channel stop before the ~8-frame quiet gap into wait.
+# Soft release: brief deferred channel stop before the ~8-frame quiet gap
+# (gameplay soft-pause → wait, and scene A→B soft switches).
 PAUSE_BGM_RELEASE_FRAMES = 3
 
 # Pyxel標準16色パレット。
@@ -725,6 +726,9 @@ class NumberRush:
         if scene is not None or pending is not None:
             for channel in range(3):
                 pyxel.stop(channel)
+            # Scene soft-release shares bgm_channel_stop_at; cancel when hard-stopping.
+            if hasattr(self, "bgm_channel_stop_at"):
+                self.bgm_channel_stop_at = 0
         self.scene_music = None
         self.scene_music_pending = None
         self.scene_music_switch_at = 0
@@ -767,8 +771,12 @@ class NumberRush:
         # Finish a deferred audible start after a short quiet gap.
         if self.scene_music_pending is not None:
             if desired != self.scene_music_pending:
+                # Retarget during a soft gap: hard-cut remaining release, then
+                # restart the quiet timer. Mute/stop paths stay hard elsewhere.
                 for channel in range(3):
                     pyxel.stop(channel)
+                if hasattr(self, "bgm_channel_stop_at"):
+                    self.bgm_channel_stop_at = 0
                 self.scene_music = desired
                 if desired is None:
                     self.scene_music_pending = None
@@ -790,13 +798,24 @@ class NumberRush:
         # hard-cut here; _flush_bgm_channel_stop owns that deferred stop so
         # the quiet gap into wait stays intact.
         pending_soft_stop = bool(getattr(self, "bgm_channel_stop_at", 0) or 0)
-        if not (
+        soft_pause_release = (
             previous is None
             and pending_soft_stop
             and getattr(self, "bgm_paused", False)
-        ):
+        )
+        # Scene A→B: defer outgoing stop briefly (same release length as #9),
+        # then keep the ~8-frame quiet gap before the new track is audible.
+        soft_scene_release = previous is not None and desired is not None
+        if soft_scene_release and not pending_soft_stop:
+            self.bgm_channel_stop_at = (
+                pyxel.frame_count + PAUSE_BGM_RELEASE_FRAMES
+            )
+            pending_soft_stop = True
+        if not (soft_pause_release or soft_scene_release):
             for channel in range(3):
                 pyxel.stop(channel)
+            if hasattr(self, "bgm_channel_stop_at"):
+                self.bgm_channel_stop_at = 0
         self.scene_music = desired
         if desired is None:
             self.scene_music_pending = None
@@ -827,9 +846,11 @@ class NumberRush:
             self.scene_music_switch_at = 0
             self._play_scene_track(desired)
             return
-        # Between tracks: keep the logical track, delay audible start briefly.
+        # Between tracks: logical identity is already desired; release then quiet.
+        stop_at = getattr(self, "bgm_channel_stop_at", 0) or 0
+        quiet_from = stop_at if stop_at else pyxel.frame_count
         self.scene_music_pending = desired
-        self.scene_music_switch_at = pyxel.frame_count + 8
+        self.scene_music_switch_at = quiet_from + 8
 
     def toggle_sfx(self) -> None:
         self.sfx_on = not self.sfx_on
