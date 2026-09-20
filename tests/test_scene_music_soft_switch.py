@@ -15,10 +15,8 @@ class SceneMusicSoftSwitchTests(unittest.TestCase):
         fake.play = lambda ch, sound, loop=False, sec=0: self.plays.append((ch, sound, loop))
         fake.sounds = [MagicMock() for _ in range(64)]
         sys.modules["pyxel"] = fake
-        # Reloading game is heavy; import music SCENE_TRACKS and patch a thin adapter.
         if "game" in sys.modules:
             del sys.modules["game"]
-        # Provide minimal browser stubs used at import time.
         sys.modules.setdefault("js", types.SimpleNamespace(document=None))
         self.game = importlib.import_module("game")
         self.pyxel = fake
@@ -33,14 +31,22 @@ class SceneMusicSoftSwitchTests(unittest.TestCase):
         app.shiritori = types.SimpleNamespace(phase="setup", winner=None, history=[], total=12, mode="solo")
         self.app = app
 
-    def test_scene_change_waits_quiet_gap_before_play(self):
-        self.app.sync_scene_music()
-        self.assertEqual(self.app.scene_music_pending, "menu")
-        self.assertIsNone(self.app.scene_music)
-        self.assertEqual(self.plays, [])
-        self.pyxel.frame_count = 8
+    def test_silence_starts_immediately_and_switch_uses_quiet_gap(self):
         self.app.sync_scene_music()
         self.assertEqual(self.app.scene_music, "menu")
+        self.assertIsNone(self.app.scene_music_pending)
+        self.assertTrue(self.plays)
+        self.plays.clear()
+
+        self.app.screen = "confirm"
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "wait")
+        self.assertEqual(self.app.scene_music_pending, "wait")
+        self.assertEqual(self.plays, [])
+
+        self.pyxel.frame_count = 8
+        self.app.sync_scene_music()
+        self.assertEqual(self.app.scene_music, "wait")
         self.assertIsNone(self.app.scene_music_pending)
         self.assertTrue(self.plays)
 

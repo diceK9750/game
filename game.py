@@ -713,15 +713,32 @@ class NumberRush:
                 )
 
     def stop_scene_music(self):
-        if self.scene_music is not None or self.scene_music_pending is not None:
+        # __new__ stubs in tests may omit the pending fields.
+        scene = getattr(self, "scene_music", None)
+        pending = getattr(self, "scene_music_pending", None)
+        if scene is not None or pending is not None:
             for channel in range(3):
                 pyxel.stop(channel)
+        self.scene_music = None
+        self.scene_music_pending = None
+        self.scene_music_switch_at = 0
+
+    def _play_scene_track(self, track):
+        if track is None:
             self.scene_music = None
-            self.scene_music_pending = None
-            self.scene_music_switch_at = 0
+            return
+        for channel, sound in enumerate(SCENE_TRACKS[track]):
+            pyxel.play(channel, sound, loop=True)
+        pyxel.stop(2)
+        self.scene_music = track
 
     def sync_scene_music(self):
         """Select once per transition, never restart a loop on every frame."""
+        if not hasattr(self, "scene_music_pending"):
+            self.scene_music_pending = None
+            self.scene_music_switch_at = 0
+        if not hasattr(self, "scene_music"):
+            self.scene_music = None
         if not self.bgm_on or self.screen == "playing":
             self.stop_scene_music()
             return
@@ -740,34 +757,44 @@ class NumberRush:
         if self.screen == "finished" and pyxel.frame_count >= self.result_music_after:
             desired = ("perfect" if isinstance(self.round, BattleRound) and self.round.is_perfect
                        else "loss" if isinstance(self.round, BattleRound) and not self.round.won else "win")
-        # Finish a pending soft handoff after a short quiet gap (avoids hard cuts).
+        # Finish a deferred audible start after a short quiet gap.
         if self.scene_music_pending is not None:
             if desired != self.scene_music_pending:
-                self.scene_music_pending = desired
-                self.scene_music_switch_at = pyxel.frame_count + 8
                 for channel in range(3):
                     pyxel.stop(channel)
-                self.scene_music = None
-            elif pyxel.frame_count >= self.scene_music_switch_at:
+                self.scene_music = desired
+                if desired is None:
+                    self.scene_music_pending = None
+                    self.scene_music_switch_at = 0
+                else:
+                    self.scene_music_pending = desired
+                    self.scene_music_switch_at = pyxel.frame_count + 8
+                return
+            if pyxel.frame_count >= self.scene_music_switch_at:
                 pending = self.scene_music_pending
                 self.scene_music_pending = None
                 self.scene_music_switch_at = 0
-                if pending is not None:
-                    for channel, sound in enumerate(SCENE_TRACKS[pending]):
-                        pyxel.play(channel, sound, loop=True)
-                    pyxel.stop(2)
-                self.scene_music = pending
+                self._play_scene_track(pending)
             return
         if desired == self.scene_music:
             return
         for channel in range(3):
             pyxel.stop(channel)
-        self.scene_music = None
-        self.scene_music_pending = desired
-        self.scene_music_switch_at = pyxel.frame_count + (0 if desired is None else 8)
+        previous = self.scene_music
+        self.scene_music = desired
         if desired is None:
             self.scene_music_pending = None
             self.scene_music_switch_at = 0
+            return
+        if previous is None:
+            # From silence: start immediately.
+            self.scene_music_pending = None
+            self.scene_music_switch_at = 0
+            self._play_scene_track(desired)
+            return
+        # Between tracks: keep the logical track, delay audible start briefly.
+        self.scene_music_pending = desired
+        self.scene_music_switch_at = pyxel.frame_count + 8
 
     def toggle_sfx(self) -> None:
         self.sfx_on = not self.sfx_on
