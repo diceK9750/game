@@ -23,6 +23,8 @@ html[data-modern-active='true'] #character-layer { opacity: 0 !important; pointe
 #modern-app, #modern-app * { box-sizing: border-box; }
 /* Shell/board: disable double-tap zoom; pan + pinch remain (manipulation).
    Buttons/.nr-cell already set this; ancestor covers non-control gaps. Canvas keeps none. */
+/* Device insets: host index.html main owns all four when embedded (MOBILE-QA).
+   Standalone player.html gets top+home+side parity here — never both (no double-stack). */
 #modern-app { --nr-ink: #ecf5f3; --nr-muted: #a0b9bd; --nr-gold: #f9d58a;
   --nr-mint: #a5f0d3; --nr-pink: #f6b1cc; --nr-border: #94d2ce26;
   position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column;
@@ -30,7 +32,12 @@ html[data-modern-active='true'] #character-layer { opacity: 0 !important; pointe
   font: 500 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
   -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
   overflow: hidden; touch-action: manipulation;
-  padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left)); }
+  padding: 0 12px; }
+html:not([data-host-insets='true']) #modern-app {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: max(12px, env(safe-area-inset-right, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); }
 .nr-screen, .nr-play, .nr-board-wrap, .nr-board, .sh-page, .sh-board, .sh-board-space {
   touch-action: manipulation; }
 #modern-app[data-scroll-lock='true'] { overscroll-behavior: none; }
@@ -66,7 +73,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-secondary { color: var(--nr-gold); background: #e7bb7020; border-color: #e7bb7060; }
 .nr-secondary:hover:not(:disabled) { background: #e7bb7038; }
 .nr-screen { min-height: 0; width: 100%; max-width: 1180px; margin: 0 auto; flex: 1; overflow-y: auto; overscroll-behavior: contain;
-  padding: 24px 0 max(20px, env(safe-area-inset-bottom)); scrollbar-width: thin; scrollbar-color: #527c7f transparent; }
+  padding: 24px 0 20px; scrollbar-width: thin; scrollbar-color: #527c7f transparent; }
 .nr-ready { display: grid; grid-template-columns: 1.05fr 1fr; align-items: center; gap: clamp(24px, 5vw, 72px); }
 .nr-intro { position: relative; padding: 12px 8px 0; }
 .nr-eyebrow { display: block; color: var(--nr-gold); font-size: 11px; font-weight: 800; letter-spacing: 2px; margin-bottom: 10px; }
@@ -142,7 +149,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-settings { display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .nr-setting { background: #11283366; font-size: 11px !important; padding: 8px 12px; min-height: 36px; }
 .nr-ready-record { font-size: 10px; text-align: center; color: var(--nr-muted); margin-top: 12px !important; }
-.nr-play { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; padding-bottom: max(8px, env(safe-area-inset-bottom)); overflow: hidden; }
+.nr-play { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; padding-bottom: 8px; overflow: hidden; }
 .nr-hud { display: grid; grid-template-columns: 1fr 1.05fr 1fr; align-items: stretch; gap: 14px; min-height: 74px; flex-shrink: 0; }
 .nr-score-card { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 20px; border-radius: 17px; background: #274f504d; border: 1px solid #87e0ca44; }
 .nr-score-card > strong { font-size: 37px; font-weight: 850; font-variant-numeric: tabular-nums; color: var(--nr-mint); }
@@ -249,7 +256,10 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 @media (max-width: 850px) { .nr-header-context { display: none; } .nr-ready { gap: 20px; } .nr-intro h1 { font-size: 26px; } .nr-intro-copy { font-size: 12px; }
   .nr-setup { padding: 20px; } .nr-score-card { padding: 8px 12px; } .nr-score-note { font-size: 9px; } .nr-target { gap: 8px; } .nr-target .nr-overline { font-size: 10px; }
   .nr-play-stage { padding: 0 6px; gap: 8px; } .nr-play-stage .nr-character { width: 92px; } .nr-feedback { font-size: 10px; } }
-@media (max-width: 600px) and (min-height: 501px) { #modern-app { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+@media (max-width: 600px) and (min-height: 501px) { #modern-app { padding-left: 10px; padding-right: 10px; }
+  html:not([data-host-insets='true']) #modern-app {
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px)); }
   .nr-header { min-height: 58px; gap: 8px; } .nr-brand-name { font-size: 12px; letter-spacing: 1.4px; } .nr-brand-sub { font-size: 8px; } .nr-brand-symbol { font-size: 27px; }
   .nr-toolbar { gap: 5px; } .nr-toolbar .nr-button { font-size: 11px !important; padding: 8px 10px; } .nr-play-retry { display: none; }
   .nr-ready { display: block; padding-top: 22px; } .nr-intro { text-align: center; padding: 0 5px; } .nr-intro .nr-eyebrow { font-size: 9px; }
@@ -271,16 +281,19 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-result-duo { gap: 7px; } .nr-result-duo .nr-character { width: 100px; } .nr-result-score { font-size: 32px; letter-spacing: 0; }
   .nr-result-actions { gap: 7px; } .nr-result-actions .nr-button { font-size: 12px !important; padding: 11px 8px; } .nr-history { grid-template-columns: 1fr; }
 }
-@media (max-height: 500px) { #modern-app { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+@media (max-height: 500px) { #modern-app { padding-left: 10px; padding-right: 10px; }
+  html:not([data-host-insets='true']) #modern-app {
+    padding-left: max(10px, env(safe-area-inset-left, 0px));
+    padding-right: max(10px, env(safe-area-inset-right, 0px)); }
   .nr-header { min-height: 43px; gap: 12px; } .nr-brand-name { font-size: 11px; } .nr-brand-sub { display: none; } .nr-brand-symbol { font-size: 25px; }
   .nr-toolbar { gap: 6px; } .nr-toolbar .nr-button { min-height: 34px; padding: 5px 12px; font-size: 11px !important; } .nr-icon-button { min-width: 34px; }
-  .nr-screen { padding-top: 12px; padding-bottom: max(8px, env(safe-area-inset-bottom)); } .nr-ready { gap: 22px; align-items: start; }
+  .nr-screen { padding-top: 12px; padding-bottom: 8px; } .nr-ready { gap: 22px; align-items: start; }
   .nr-intro { padding-top: 20px; position: sticky; top: 0; } .nr-intro .nr-eyebrow { font-size: 8px; letter-spacing: 1px; } .nr-intro h1 { font-size: 22px; }
   .nr-intro-copy { font-size: 10px; margin-top: 8px !important; } .nr-hero-cast { margin-top: 0; } .nr-hero-cast .nr-character { width: min(43%, 135px); } .nr-hero-cast .nr-character-name { font-size: 8px; }
   .nr-setup { padding: 15px; border-radius: 17px; } .nr-setup-heading { font-size: 15px; margin-bottom: 10px; } .nr-field-label { margin-top: 12px !important; }
   .nr-segment .nr-button { min-height: 38px; padding: 6px; font-size: 11px !important; } .nr-range { padding: 6px; min-height: 42px; } .nr-range strong { font-size: 22px; }
   .nr-start-group { margin-top: 14px; } .nr-start-group .nr-button { min-height: 59px; padding: 10px; } .nr-start-group strong { font-size: 14px; } .nr-start-group span { font-size: 9px; }
-  .nr-play { gap: 5px; padding-top: 5px; padding-bottom: max(4px, env(safe-area-inset-bottom)); }
+  .nr-play { gap: 5px; padding-top: 5px; padding-bottom: 4px; }
   .nr-hud { min-height: 43px; gap: 10px; grid-template-columns: 1fr 1.05fr 1fr; }
   .nr-score-card { border-radius: 10px; padding: 4px 12px; } .nr-score-card > strong { font-size: 25px; line-height: 1; } .nr-overline { font-size: 9px; } .nr-score-note { font-size: 8px; margin-top: 0; }
   .nr-target { border-radius: 10px; gap: 14px; } .nr-target-number { font-size: 35px; } .nr-target .nr-overline { font-size: 10px; }

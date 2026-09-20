@@ -292,15 +292,21 @@
   /* Narrow portrait: reclaim horizontal chrome so 5×8 cells approach ~44px taps.
      8×44=352 > 320 so absolute 44px is impossible; maximize width instead.
      Landscape #21/#23 paths are orientation:landscape — untouched here.
-     Host safe-area stays on the parent; iframe does not re-stack insets. */
-  #modern-app { padding: 0 2px; }
+     Host owns device insets (MOBILE-QA); only L/R gutters shrink — keep top/home intact. */
+  #modern-app { padding-left: 2px; padding-right: 2px; }
+  html:not([data-host-insets='true']) #modern-app {
+    padding-left: max(2px, env(safe-area-inset-left, 0px));
+    padding-right: max(2px, env(safe-area-inset-right, 0px)); }
   .nr-board { padding: 2px; gap: 2px; }
   .nr-cell { border-radius: 5px; }
   .nr-cell-number { letter-spacing: -1.2px; }
 }
 @media (orientation: portrait) and (max-width: 360px) {
   /* Extreme-narrow portrait (QA 320×460): squeeze remaining gutters (~+4–5px/cell vs baseline). */
-  #modern-app { padding: 0; }
+  #modern-app { padding-left: 0; padding-right: 0; }
+  html:not([data-host-insets='true']) #modern-app {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px); }
   .nr-board { padding: 1px; gap: 1px; }
   .nr-cell { border-radius: 4px; }
 }

@@ -53,7 +53,7 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=6-portrait-narrow/);
+  assert.match(html, /mobile-layout\.css\?v=7-host-safe/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -66,7 +66,7 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
   assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(player, /canvas \{ touch-action: none;/);
-  assert.match(player, /modern-ui\.css\?v=scroll-lock-1/);
+  assert.match(player, /modern-ui\.css\?v=host-safe-1/);
   assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
   // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
@@ -89,7 +89,7 @@ test('extreme-short landscape compresses chrome to reclaim board cell height', (
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-stage-middle > \.nr-setting \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=6-portrait-narrow/);
+  assert.match(html, /mobile-layout\.css\?v=7-host-safe/);
 });
 
 test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
@@ -99,10 +99,10 @@ test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
   assert.ok(narrow, 'portrait ≤400 media block');
   assert.ok(extreme, 'portrait ≤360 media block');
   // 400px path: app + board gutters shrink; cells gain ~3px width on 375 phones.
-  assert.match(narrow[0], /#modern-app \{ padding: 0 2px/);
+  assert.match(narrow[0], /#modern-app \{ padding-left: 2px; padding-right: 2px/);
   assert.match(narrow[0], /\.nr-board \{ padding: 2px; gap: 2px/);
   // 360px path: remaining gutters for QA 320×460 (~+4–5px/cell vs baseline 34px).
-  assert.match(extreme[0], /#modern-app \{ padding: 0;/);
+  assert.match(extreme[0], /#modern-app \{ padding-left: 0; padding-right: 0/);
   assert.match(extreme[0], /\.nr-board \{ padding: 1px; gap: 1px/);
   // Landscape #21/#23 must remain orientation-scoped (not overridden by portrait).
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
@@ -110,7 +110,7 @@ test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-header \{ min-height: 32px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=6-portrait-narrow/);
+  assert.match(html, /mobile-layout\.css\?v=7-host-safe/);
 });
 
 test('host and player lock overscroll; play posts scroll-lock to the shell', () => {
@@ -127,6 +127,34 @@ test('host and player lock overscroll; play posts scroll-lock to the shell', () 
   assert.match(js, /shouldLockPlayScroll/);
   assert.match(js, /passive: false/);
   assert.match(viewport, /number-rush-scroll-lock/);
-  assert.match(player, /modern-ui\.js\?v=scroll-lock-1/);
+  assert.match(player, /modern-ui\.js\?v=host-safe-1/);
   assert.match(index, /viewport\.js\?v=5-scroll-lock/);
+});
+
+test('host owns device insets; modern shell top/home only when standalone', () => {
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  // Host main pads all four sides (MOBILE-QA).
+  assert.match(index, /safe-area-inset-top/);
+  assert.match(index, /safe-area-inset-bottom/);
+  assert.match(index, /safe-area-inset-left/);
+  assert.match(index, /safe-area-inset-right/);
+  // Embedded path: base shell gutters are fixed — no env() re-stack on #modern-app alone.
+  assert.match(css, /#modern-app \{[^}]*padding: 0 12px/);
+  // Standalone player: top + home (+ sides) parity behind :not(data-host-insets).
+  assert.match(css, /html:not\(\[data-host-insets='true'\]\) #modern-app/);
+  assert.match(css, /safe-area-inset-top/);
+  assert.match(css, /padding-bottom: env\(safe-area-inset-bottom/);
+  // Children must not re-apply home inset (would double with shell or host).
+  assert.doesNotMatch(css, /\.nr-screen \{[^}]*env\(safe-area-inset-bottom\)/);
+  assert.doesNotMatch(css, /\.nr-play \{[^}]*env\(safe-area-inset-bottom\)/);
+  assert.match(js, /markHostInsets/);
+  assert.match(js, /data-host-insets/);
+  assert.match(mobile, /Host owns device insets/);
+  assert.match(player, /modern-ui\.css\?v=host-safe-1/);
+  assert.match(player, /modern-ui\.js\?v=host-safe-1/);
+  assert.match(player, /mobile-layout\.css\?v=7-host-safe/);
 });

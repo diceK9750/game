@@ -2,7 +2,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable, shouldLockPlayScroll, isPlayScrollAllowed} = require('../modern-ui.js');
+const {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable, shouldLockPlayScroll, isPlayScrollAllowed, markHostInsets} = require('../modern-ui.js');
 const state = () => ({v: 1, screen: 'playing', cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
 
 test('modern bridge activates only for a valid complete 5 by 8 board', () => {
@@ -63,12 +63,25 @@ test('view preserves no-cooldown input, local assets, safe text and reduced moti
   assert.doesNotMatch(js, /innerHTML|setTimeout|fetch\(/);
   assert.match(css, /repeat\(8, minmax\(0, 1fr\)\)/);
   assert.match(css, /repeat\(5, minmax\(24px, 1fr\)\)/);
-  assert.match(css, /prefers-reduced-motion/); assert.match(css, /safe-area-inset/);
+  assert.match(css, /prefers-reduced-motion/); assert.match(css, /safe-area-inset-top/);
+  assert.match(css, /data-host-insets/); assert.match(css, /padding: 0 12px/);
   assert.match(css, /\.nr-cell-effect[^}]*pointer-events: none/);
   assert.match(css, /assets\/backgrounds\/lantern-forest-v2\.png/);
   assert.match(css, /data-feedback='cpu'/);
   assert.match(css, /\.nr-cpu-claim/);
   assert.match(js, /data\.effect === 'cpu'/);
+  assert.match(js, /markHostInsets/);
+});
+
+test('markHostInsets tags embedded iframe and clears standalone', () => {
+  const root = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, removeAttribute(k) { delete this.attrs[k]; } };
+  const winEmbedded = {}; winEmbedded.parent = {};
+  assert.equal(markHostInsets(winEmbedded, root), true);
+  assert.equal(root.attrs['data-host-insets'], 'true');
+  const winSolo = {}; winSolo.parent = winSolo;
+  assert.equal(markHostInsets(winSolo, root), false);
+  assert.equal(root.attrs['data-host-insets'], undefined);
+  assert.equal(markHostInsets(null, root), false);
 });
 
 // A small DOM harness exercises the actual shipped handlers without a framework.
@@ -441,6 +454,8 @@ test('playing locks document scroll and unlocks on pause/result; reading panes s
   b.render('ready');
   assert.equal(b.app.dataset.scrollLock, 'false');
   assert.equal(b.root.dataset.scrollLock, 'false');
+  // Harness window.parent !== window → host owns device insets (no iframe re-stack).
+  assert.equal(b.root.getAttribute('data-host-insets'), 'true');
   b.render('playing');
   assert.equal(b.app.dataset.scrollLock, 'true');
   assert.equal(b.root.dataset.scrollLock, 'true');
