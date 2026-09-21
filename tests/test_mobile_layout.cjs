@@ -61,7 +61,7 @@ test('short-landscape hint restores ≥44px tap (not modern-ui 36px chip) (#108)
   assert.match(mobile, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?\.nr-stage-middle > \.nr-hint \{[\s\S]*?min-height: 32px; min-width: 32px/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('short max-height toolbar pause/help restores ≥44px (not modern-ui 34) (#109)', () => {
@@ -83,7 +83,7 @@ test('short max-height toolbar pause/help restores ≥44px (not modern-ui 34) (#
   assert.match(mobile, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?#modern-app \.nr-toolbar \.nr-button \{ min-height: 32px; min-width: 32px/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('short max-height countdown control restores ≥44px (not modern-ui 36) (#110)', () => {
@@ -101,7 +101,7 @@ test('short max-height countdown control restores ≥44px (not modern-ui 36) (#1
   assert.match(mobile, /\.nr-count-card \.nr-button \{ margin-top: 6px; min-height: 44px; \}/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('short landscape parks hint beside HUD so board cells can keep ~44px taps', () => {
@@ -168,7 +168,7 @@ test('short-landscape practice stage-middle densifies after CPU-row hide (#101)'
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(html, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('short-landscape practice caps timed-chains width after cpu-row hide (#104)', () => {
@@ -187,7 +187,7 @@ test('short-landscape practice caps timed-chains width after cpu-row hide (#104)
   // JS still owns hide.
   assert.match(js, /cpuTrack\.parentElement\.hidden = !battle/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -335,7 +335,7 @@ test('short-landscape result stacks primary score above cast so award cannot col
   // Two-column result grid + replay actions column intact (#17/#19 focus target).
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('short-landscape result packs secondary stats denser beside stacked score (#76)', () => {
@@ -354,7 +354,7 @@ test('short-landscape result packs secondary stats denser beside stacked score (
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 10px; \}/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('short-landscape shiritori packs secondary stats denser (#77)', () => {
@@ -379,8 +379,8 @@ test('short-landscape shiritori packs secondary stats denser (#77)', () => {
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 
@@ -410,7 +410,7 @@ test('short-landscape / mobile review-history density: compact summary + capped 
   assert.match(js, /onHistorySummary/);
   assert.match(js, /sh-result-history/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 
@@ -439,7 +439,7 @@ test('short-landscape result-actions / dict density: stack buttons + pin dict (#
   assert.match(js, /result\.append\(dictResult\)/);
   assert.match(js, /読み方ずかん/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 
@@ -477,7 +477,7 @@ test('short-landscape shiritori play HUD/prompt density reclaim without clipping
   assert.match(shCss, /content: 'ミス'/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('ready solo hero-cast denser/centered on compact layout (#89)', () => {
@@ -490,5 +490,5 @@ test('ready solo hero-cast denser/centered on compact layout (#89)', () => {
   assert.match(modern, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });

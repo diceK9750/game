@@ -61,12 +61,15 @@
     const levelButtons = [['easy','ゆったり'],['normal','ふつう'],['hard','てごわい']].map(([v,label]) => button(label, 'sh_difficulty', v));
     const limit = E('p', 'sh-setting-note');
     add(levels, E('h2', 'nr-field-label', 'ライバルの強さ'), add(E('div', 'nr-segment sh-actions sh-levels'), ...levelButtons), limit);
+    // Named so update can swap kind-aware help (solo must not invent 相手/CPU/両者; parity numbers #90/#94/#95).
+    const guideMode = E('p', '', '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。');
+    const guideBoard = E('p', '', '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。');
+    const guideChain = E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。対戦は相手の手番中、自分のゲージが止まります。CPUも同じ条件で連鎖します。');
     const guide = add(E('details', 'sh-guide'), E('summary', '', '遊び方・読み方のルール'),
       E('p', '', '絵を1回タップするだけ！必要な頭文字につながる未使用の読み方を自動確定。「ん」終わりは自動で除外します。各絵に頭文字の異なる3〜5種類の読み方があります。'),
-      E('p', '', '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。'),
-      E('p', '', '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。'),
+      guideMode, guideBoard,
       E('p', '', 'ヒントは3回。小さい文字は大きく（ちゃ→や）、長音は直前の文字（ぎたー→た）。濁点は区別。札とことばの再使用はできません。'),
-      E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。対戦は相手の手番中、自分のゲージが止まります。CPUも同じ条件で連鎖します。'));
+      guideChain);
     const start = button('はじめる', 'sh_start', undefined, 'nr-primary');
     const startGroup = add(E('div', 'sh-actions sh-start-actions'), start);
     add(setup, E('div', 'nr-setup-heading', '絵しりとりのチャレンジ'),
@@ -123,7 +126,9 @@
     const pause = E('div', 'sh-intro nr-dialog nr-surface');
     const endSolo = button('ここまでの結果を見る', 'sh_end');
     const pauseResume = button('プレイを続ける', 'sh_resume', undefined, 'nr-primary');
-    add(pause, E('h1', '', 'ひと休みしよう'), E('p', '', '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'),
+    // Named so update can swap kind-aware pause (solo must not invent ライバル/CPU; parity numbers #90).
+    const pauseCopy = E('p', '', '札を隠して休憩中。ライバルも止まっています。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。');
+    add(pause, E('h1', '', 'ひと休みしよう'), pauseCopy,
       add(E('div', 'nr-dialog-actions'), pauseResume),
       add(E('div', 'nr-pause-extras'), button('新しい配置でやり直す', () => { restartRequested='sh_restart'; return 'sh_pause'; }), button('モード選択へ', () => { restartRequested='sh_setup'; return 'sh_pause'; })), endSolo);
     if (settingsControls) pause.append(settingsControls());
@@ -323,6 +328,19 @@
         if (dictionaryOpen) dictionary.refresh();
       }
       const solo = s.mode === 'solo', live = ['playing','blocked'].includes(s.phase);
+      // Solo has no rival — help/pause must not invent 相手/CPU/両者/ライバル (parity numbers #90/#94/#95).
+      guideMode.textContent = solo
+        ? '一人用は時間無制限。詰まったら2回つなぎ直せます。ヒントを使って、自分のペースで最後までつなごう。'
+        : '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。';
+      guideBoard.textContent = solo
+        ? '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。'
+        : '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。';
+      guideChain.textContent = solo
+        ? '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。'
+        : '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。対戦は相手の手番中、自分のゲージが止まります。CPUも同じ条件で連鎖します。';
+      pauseCopy.textContent = solo
+        ? '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'
+        : '札を隠して休憩中。ライバルも止まっています。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。';
       page.dataset.layout = dictionaryOpen || helpOpen ? 'document' : live ? 'play' :
         s.phase === 'intro' ? 'setup' : s.phase === 'finished' ? 'result' : 'dialog';
       intro.hidden = s.phase !== 'intro'; stage.hidden = !live;
