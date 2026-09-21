@@ -567,6 +567,47 @@
   .nr-cell { border-radius: 4px; }
 }
 
+@media (orientation: portrait) and (max-width: 700px) and (max-height: 650px) {
+  /* Compact portrait practice stage densify after CPU-row hide — parity
+     short-landscape #101/#104. Vertical stack (not landscape row strip):
+     tighten gap, restore feedback into the freed slot, cap timed-chains so
+     modern-ui width:100% does not re-crowd stats+hint. JS [hidden] owns
+     hide; battle keeps stats|cpu-row|feedback. Landscape #97/#101/#104/#91
+     untouched (orientation:landscape). Leave ≤360 tap densify alone. */
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats {
+    flex: 0 0 auto;
+    gap: 8px;
+    width: 100%;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong {
+    font-size: 12px;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-feedback {
+    display: block;
+    flex: 0 0 auto;
+    max-width: 100%;
+    width: 100%;
+    margin: 0 !important;
+    font-size: 10px;
+    line-height: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) > .timed-chains {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: 70%;
+    justify-content: center;
+  }
+}
+
 @media (orientation: portrait) and (max-width: 700px) and (max-height: 600px) {
   .sh-ready .nr-hero-cast { display: none; }
   .sh-ready-settings { grid-template-columns: 1fr 1fr; }

@@ -43,7 +43,7 @@ test('shiritori solo arena collapses empty LUNA column on desktop (#85 parity #8
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
+  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
   // #80 JS still owns hide.
   const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
   assert.match(js, /koh\.wrap\.hidden = solo/);
@@ -57,5 +57,5 @@ test('ready solo hero-cast denser RIN after LUNA+VS hide (#89 parity #82/#84)', 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
+  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
 });
