@@ -620,6 +620,57 @@ test('finished screen focuses replay and Enter retries without breaking title/re
   assert.equal(b.document.activeElement, retry, 'review→result also restores replay focus');
 });
 
+test('play start focuses first playable nr-cell for arrow nav; overlays and same-screen spared', () => {
+  const b = browserHarness();
+  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: i === 0 ? 'you' : null}));
+
+  // countdown → playing: skip claimed cell 0, land on first playable (index 1).
+  b.render('countdown', {cells: []});
+  const countBtn = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'モード選択へ');
+  countBtn.focus();
+  b.render('playing', {cells: cellsState});
+  const cells = b.cells();
+  assert.equal(cells[0].disabled, true);
+  assert.equal(cells[1].disabled, false);
+  assert.equal(b.document.activeElement, cells[1], 'play start focuses first playable cell');
+
+  // Arrow nav continues from that origin without Tab.
+  b.app.emit('keydown', {key: 'ArrowRight'});
+  assert.equal(b.document.activeElement, cells[2], 'arrows work from auto-focused start cell');
+
+  // Same-screen updates must not yank focus (mouse/touch users mid-board).
+  cells[5].focus();
+  b.render('playing', {cells: cellsState, completed: 1, target: 2});
+  assert.equal(b.document.activeElement, cells[5], 'playing→playing keeps current focus');
+
+  // Enter on a focused cell stays native (no double-queue).
+  const before = b.queue().length;
+  b.app.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(b.queue().length, before, 'focused cell keeps native Enter activation');
+  cells[5].emit('click', {detail: 0});
+  assert.equal(b.queue().at(-1).action, 'cell');
+  assert.equal(b.queue().at(-1).index, 5);
+
+  // Confirm (pause) screen: do not steal onto a cell while overlay shows.
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const resume = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'プレイを続ける');
+  resume.focus();
+  assert.equal(b.document.activeElement, resume, 'pause confirm keeps its own focus');
+  assert.notEqual(b.document.activeElement.className, 'nr-cell');
+
+  // Help overlay likewise spared (no cell focus while help is the active screen).
+  b.render('help', {cells: []});
+  const helpBack = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === '戻る');
+  helpBack.focus();
+  assert.equal(b.document.activeElement, helpBack, 'help keeps back-button focus');
+
+  // finished still prefers replay (do not steal with cell focus).
+  b.render('playing', {cells: cellsState});
+  b.render('finished', {perfect: false, won: true});
+  const retry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
+  assert.equal(b.document.activeElement, retry, 'result entry still focuses primary replay');
+});
+
 test('Escape toggles pause confirm and dismisses retry/title without quitting', () => {
   const b = browserHarness();
   b.render('playing');
