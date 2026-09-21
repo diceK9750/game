@@ -443,22 +443,41 @@
     const nextAnnouncement = playing ? `次の数字は${state.target}。${integer(state.completed)}個見つけました。ミス${integer(state.mistakes)}回。` : state.screen === 'finished' ? `${resultTitle.textContent} ${resultScore.textContent}` : state.screen === 'confirm' ? confirmTitle.textContent : '';
     if (nextAnnouncement !== announcement) { announcement = nextAnnouncement; live.textContent = announcement; }
     if (changedScreen) {
+      // Remember the board cell that had focus before pause/overlays hide it, so
+      // resume can restore keyboardCell instead of #41 play-start first-cell jump.
+      if (previousScreen === 'playing' && focusedIndex >= 0) keyboardCell = focusedIndex;
       screenMap[state.screen].scrollTop = 0;
       // Result→replay: land on primary retry so Enter/Space restarts without Tab hunting.
       if (state.screen === 'finished' && previousScreen) {
         resultRetry.focus({preventScroll: true});
       } else if (state.screen === 'playing' && previousScreen) {
-        // Play start: land on first playable .nr-cell so arrow nav has a clear origin
-        // without Tab hunting (parity with shiritori #35). Confirm/help/pause are other
-        // screens — never steal focus onto cells while they show. Same-screen updates
-        // leave mouse/touch focus alone (changedScreen guard).
-        const playable = cells.findIndex(item => !item.cell.disabled);
-        if (playable >= 0) {
-          keyboardCell = playable;
-          cells[playable].cell.focus({preventScroll: true});
+        const resumeFrom = previousScreen === 'resuming' || previousScreen === 'confirm';
+        if (resumeFrom) {
+          // Pause→resume: restore prior keyboardCell / focused .nr-cell when still
+          // playable; otherwise nearest playable. Do not re-fire play-start focus.
+          let idx = (keyboardCell >= 0 && cells[keyboardCell] && !cells[keyboardCell].cell.disabled)
+            ? keyboardCell
+            : cells.findIndex(item => !item.cell.disabled);
+          if (idx >= 0) {
+            keyboardCell = idx;
+            cells[idx].cell.focus({preventScroll: true});
+          } else {
+            const focusTarget = play.querySelector('.nr-target, h1, button:not(:disabled)');
+            if (focusTarget) { if (focusTarget.tagName !== 'BUTTON') focusTarget.tabIndex = -1; focusTarget.focus({preventScroll: true}); }
+          }
         } else {
-          const focusTarget = play.querySelector('.nr-target, h1, button:not(:disabled)');
-          if (focusTarget) { if (focusTarget.tagName !== 'BUTTON') focusTarget.tabIndex = -1; focusTarget.focus({preventScroll: true}); }
+          // Play start (countdown/ready/…): land on first playable .nr-cell so arrow
+          // nav has a clear origin without Tab hunting (parity with shiritori #35).
+          // Confirm/help overlays are other screens — never steal focus onto cells
+          // while they show. Same-screen updates leave mouse/touch focus alone.
+          const playable = cells.findIndex(item => !item.cell.disabled);
+          if (playable >= 0) {
+            keyboardCell = playable;
+            cells[playable].cell.focus({preventScroll: true});
+          } else {
+            const focusTarget = play.querySelector('.nr-target, h1, button:not(:disabled)');
+            if (focusTarget) { if (focusTarget.tagName !== 'BUTTON') focusTarget.tabIndex = -1; focusTarget.focus({preventScroll: true}); }
+          }
         }
       } else if (previousScreen && document.activeElement && app.contains(document.activeElement) && document.activeElement.closest('[hidden]')) {
         const focusTarget = screenMap[state.screen].querySelector('button.nr-primary:not(:disabled), h1, .nr-target, button:not(:disabled)');
