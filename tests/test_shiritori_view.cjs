@@ -564,3 +564,114 @@ test('shiritori overlay Tab cycles dialog controls and does not escape (parity #
   view.page.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no preventDefault cycle)');
 });
+
+
+test('intro setup Tab cycles mode/count/difficulty/start only (parity ready #52)', () => {
+  const {view, state, doc} = harness();
+  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
+  const stopsOf = (roots) => {
+    const stops = [];
+    const visit = (node) => {
+      if (!node || node.hidden) return;
+      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+      for (const child of node.children || []) visit(child);
+    };
+    for (const root of roots) visit(root);
+    return stops;
+  };
+  const setupRoots = () => {
+    const intro = view.page.querySelector('.sh-ready');
+    const modeGroup = intro.querySelector('.sh-modes');
+    const countGroup = intro.querySelector('.sh-counts');
+    const levels = intro.querySelector('.sh-level-settings');
+    const startGroup = intro.querySelector('.sh-start-actions');
+    const start = startGroup && startGroup.querySelectorAll('button')[0];
+    return {intro, modeGroup, countGroup, levels, startGroup, start};
+  };
+
+  // Battle intro: entry focuses intro h1; Tab cycles mode/count/difficulty/start only.
+  view.update({...state, phase: 'intro', mode: 'battle', cards: []});
+  const roots = setupRoots();
+  const heading = roots.intro.querySelector('h1');
+  assert.equal(doc.activeElement, heading, 'intro entry still focuses heading h1');
+  assert.equal(roots.levels.hidden, false, 'battle shows difficulty');
+  assert.equal(roots.start.textContent, '対戦スタート', 'battle start label');
+
+  const battleStops = stopsOf([roots.modeGroup, roots.countGroup, roots.levels, roots.startGroup]);
+  // 2 modes + 4 counts + 3 levels + 1 start = 10
+  assert.equal(battleStops.length, 10, 'battle setup exposes mode+count+difficulty+start');
+  assert.ok(battleStops.includes(roots.start));
+  assert.deepEqual(
+    battleStops.slice(0, 2).map(b => b.textContent),
+    ['CPUと対戦', 'ひとりで練習']
+  );
+  assert.equal(battleStops[battleStops.length - 1], roots.start);
+
+  const dictOpen = view.page.querySelectorAll('.sh-dict-open')[0];
+  assert.ok(dictOpen, 'intro still exposes 読み方ずかん');
+  assert.ok(!battleStops.includes(dictOpen), '読み方ずかん stays outside the setup trap');
+
+  // From entry heading (outside ring): Tab enters first mode control.
+  heading.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, battleStops[0], 'Tab from heading enters first mode');
+
+  const startIdx = battleStops.indexOf(roots.start);
+  roots.start.focus();
+  for (let i = 0; i < battleStops.length; i++) {
+    const expected = battleStops[(startIdx + i + 1) % battleStops.length];
+    view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(doc.activeElement, expected, `battle Tab step ${i + 1} stays in setup`);
+    assert.notEqual(doc.activeElement, dictOpen, 'Tab must not escape to 読み方ずかん');
+  }
+  roots.start.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(
+    doc.activeElement,
+    battleStops[(startIdx - 1 + battleStops.length) % battleStops.length],
+    'Shift+Tab wraps inside setup'
+  );
+
+  // Focus already on dict (outside ring): Tab pulls back into setup (first mode).
+  dictOpen.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, battleStops[0], 'Tab from dict re-enters setup');
+
+  // Solo hides difficulty; Tab still cycles remaining setup controls only.
+  // Leave and re-enter intro so entry focus runs (same-phase keeps focus).
+  view.update({...state, phase: 'playing', cards: []});
+  view.update({...state, phase: 'intro', mode: 'solo', cards: []});
+  assert.equal(doc.activeElement, roots.intro.querySelector('h1'), 'solo intro still focuses heading');
+  assert.equal(roots.levels.hidden, true, 'solo hides difficulty');
+  const soloStops = stopsOf([roots.modeGroup, roots.countGroup, roots.levels, roots.startGroup]);
+  assert.equal(soloStops.length, 7, 'solo setup omits hidden difficulty');
+  assert.ok(!soloStops.some(n => {
+    let cur = n;
+    while (cur) {
+      if (cur === roots.levels) return true;
+      cur = cur.parentElement;
+    }
+    return false;
+  }), 'solo stops exclude difficulty buttons');
+  roots.start.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, soloStops[0], 'solo Tab wraps to first mode');
+  assert.notEqual(doc.activeElement, dictOpen);
+
+  // Overlay trap still wins over intro when help is open (#46 regression).
+  view.headerAction('help');
+  const helpPage = view.page.querySelector('.nr-help-card');
+  const helpBack = btn(helpPage, '戻る');
+  assert.equal(doc.activeElement, helpBack, 'help entry still focuses 戻る');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, helpBack, 'help Tab stays on 戻る (intro trap idle)');
+  assert.notEqual(doc.activeElement, roots.start, 'help Tab must not escape to setup');
+
+  // Playing: Tab is not trapped (no intro bleed).
+  const cards12 = Array.from({length: 12}, () => ({id: 'apple', icon: '🍎', words: ['りんご'], owner: null}));
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const first = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden)[0];
+  first.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no intro trap bleed)');
+});
