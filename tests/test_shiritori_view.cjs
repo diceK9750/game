@@ -1220,7 +1220,7 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
-  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
+  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
 
   const {view, state, doc} = harness();
   view.update({
@@ -1265,4 +1265,44 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   });
   const battleCast = view.page.querySelector('.sh-result-cast');
   assert.equal(battleCast.children[2].hidden, false, 'battle still shows LUNA');
+});
+
+
+test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #83)', () => {
+  const layout = fs.readFileSync(require.resolve('../character-layout.css'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+
+  assert.match(layout, /\.sh-arena:has\(> \.nr-koh\[hidden\]\) \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\);/);
+  assert.match(layout, /@media \(orientation: portrait\) \{[\s\S]*?\.sh-arena:has\(> \.nr-koh\[hidden\]\) \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);[\s\S]*?grid-template-rows: var\(--cast-height\) minmax\(0, 1fr\);/);
+  assert.match(layout, /\.sh-arena \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\) clamp\(40px, 15vw, 180px\);/);
+  assert.match(js, /koh\.wrap\.hidden = solo/);
+  assert.match(player, /character-layout\.css\?v=sh-arena-solo-85-1/);
+  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
+
+  const {view, state} = harness();
+  view.update({
+    ...state,
+    phase: 'playing',
+    mode: 'solo',
+    cards: state.cards || [],
+  });
+  const arena = view.page.querySelector('.sh-arena');
+  assert.ok(arena, 'play arena present');
+  // Harness portrait() mocks lack nr-koh class — last arena child is koh.
+  const koh = arena.children[arena.children.length - 1];
+  assert.equal(koh.hidden, true, 'solo play hides LUNA (#80)');
+  const rin = arena.children[0];
+  assert.equal(rin.hidden, false, 'solo play keeps RIN');
+
+  view.update({
+    ...state,
+    phase: 'playing',
+    mode: 'battle',
+    cards: state.cards || [],
+  });
+  const battleArena = view.page.querySelector('.sh-arena');
+  const battleKoh = battleArena.children[battleArena.children.length - 1];
+  assert.equal(battleKoh.hidden, false, 'battle play still shows LUNA');
 });
