@@ -671,6 +671,53 @@ test('play start focuses first playable nr-cell for arrow nav; overlays and same
   assert.equal(b.document.activeElement, retry, 'result entry still focuses primary replay');
 });
 
+test('pause resume restores prior keyboardCell instead of play-start first cell', () => {
+  const b = browserHarness();
+  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: i === 0 ? 'you' : null}));
+
+  // Establish mid-board keyboard origin via play-start then arrows.
+  b.render('countdown', {cells: []});
+  b.render('playing', {cells: cellsState});
+  const cells = b.cells();
+  assert.equal(b.document.activeElement, cells[1], 'play start lands on first playable');
+  b.app.emit('keydown', {key: 'ArrowRight'});
+  b.app.emit('keydown', {key: 'ArrowRight'});
+  b.app.emit('keydown', {key: 'ArrowRight'});
+  assert.equal(b.document.activeElement, cells[4], 'pre-pause keyboard cell is mid-board');
+
+  // Pause overlay: board hides; do not keep cell focus.
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const resumeBtn = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'プレイを続ける');
+  resumeBtn.focus();
+  assert.equal(b.document.activeElement, resumeBtn);
+
+  // Countdown resume screen, then back to playing — must restore cell 4, not cell 1 (#41).
+  b.render('resuming', {cells: []});
+  b.render('playing', {cells: cellsState, completed: 1, target: 2});
+  assert.equal(b.document.activeElement, cells[4], 'resuming→playing restores prior keyboardCell');
+
+  // Arrows continue from restored origin.
+  b.app.emit('keydown', {key: 'ArrowRight'});
+  assert.equal(b.document.activeElement, cells[5], 'arrows continue from restored cell');
+
+  // Direct confirm→playing (if ever skipped) also restores, not first playable.
+  cells[7].focus();
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  b.render('playing', {cells: cellsState});
+  assert.equal(b.document.activeElement, cells[7], 'confirm→playing restores snapped cell focus');
+
+  // If the prior cell was claimed during pause, fall back to a playable cell (no crash).
+  cells[4].focus();
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const claimed = cellsState.map((c, i) => (i === 0 || i === 4) ? {...c, owner: 'you'} : c);
+  b.render('resuming', {cells: []});
+  b.render('playing', {cells: claimed});
+  const after = b.cells();
+  assert.equal(after[4].disabled, true);
+  assert.equal(b.document.activeElement.className, 'nr-cell');
+  assert.equal(b.document.activeElement.disabled, false, 'claimed prior cell falls back to a playable cell');
+});
+
 test('Escape toggles pause confirm and dismisses retry/title without quitting', () => {
   const b = browserHarness();
   b.render('playing');
