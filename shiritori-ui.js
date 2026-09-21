@@ -1,6 +1,45 @@
 /* Mobile-first view only; Python owns cards, stock, timers, and decisions. */
 (function () {
   'use strict';
+
+  // Grid arrow math for .sh-card boards (variable column count). Mirrors
+  // modern-ui nextCell/nextPlayable so keyboard users are not Tab-only.
+  function nextShCell(index, key, cols, count) {
+    if (!count) return index;
+    cols = Math.max(1, cols | 0);
+    const row = Math.floor(index / cols), col = index % cols;
+    const rows = Math.ceil(count / cols);
+    if (key === 'ArrowRight' || key === 'ArrowLeft') {
+      const rowStart = row * cols;
+      const rowCount = Math.min(cols, count - rowStart);
+      if (rowCount <= 0) return index;
+      const delta = key === 'ArrowRight' ? 1 : rowCount - 1;
+      return rowStart + (col + delta) % rowCount;
+    }
+    if (key === 'ArrowDown' || key === 'ArrowUp') {
+      const step = key === 'ArrowDown' ? 1 : rows - 1;
+      for (let n = 1; n <= rows; n++) {
+        const nextRow = (row + step * n) % rows;
+        const rowStart = nextRow * cols;
+        const rowCount = Math.min(cols, count - rowStart);
+        if (rowCount <= 0) continue;
+        return rowStart + Math.min(col, rowCount - 1);
+      }
+    }
+    return index;
+  }
+  function nextPlayableShCard(available, index, key, cols) {
+    const count = available.length;
+    if (!count) return -1;
+    let next = nextShCell(Math.max(0, Math.min(index, count - 1)), key, cols, count);
+    for (let n = 0; n < count; n++) {
+      if (available[next]) return next;
+      next = nextShCell(next, key, cols, count);
+    }
+    return available.findIndex(Boolean);
+  }
+  if (typeof module !== 'undefined') module.exports = {nextShCell, nextPlayableShCard};
+  if (typeof window === 'undefined') return;
   window.createShiritoriView = function ({section, E, add, button, portrait, command, settingsControls, onNavigationChange = () => {}}) {
     const page = section('shiritori', 'sh-page');
     const intro = E('div', 'nr-ready sh-ready');
@@ -71,7 +110,7 @@
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
     add(page, intro, stage, pause, result);
-    let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false;
+    let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false, keyboardCard = 0, boardCols = 4;
     const helpPage=E('div','sh-intro nr-help-card nr-surface');
     const closeHelp=E('button','nr-button nr-primary','戻る'); closeHelp.type='button';
     closeHelp.addEventListener('click',()=>{helpOpen=false; helpPage.hidden=true; intro.hidden=false; onNavigationChange(); intro.querySelector('h1').focus();});
@@ -110,6 +149,18 @@
         if (helpOpen) { closeHelp.click(); event.preventDefault(); return; }
         if (restartRequested && latest?.phase==='paused') { cancelRestart.click(); event.preventDefault(); return; }
         if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');
+        return;
+      }
+      // Arrow keys move among playable .sh-card buttons (parity with number-rush nextPlayable).
+      // Enter/Space stay native button activation; mouse/touch paths unchanged.
+      if (latest?.phase === 'playing' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
+        event.preventDefault();
+        const cards = slots.map(item => item.card);
+        const visible = Math.min(cards.length, latest.cards?.length || cards.filter(c => !c.hidden).length);
+        const available = cards.slice(0, visible).map(c => !c.disabled && !c.hidden);
+        const focused = cards.findIndex(c => c === document.activeElement);
+        const next = nextPlayableShCard(available, focused >= 0 ? focused : keyboardCard, event.key, boardCols);
+        if (next >= 0) { keyboardCard = next; cards[next].focus({preventScroll: true}); }
         return;
       }
       if (latest?.phase === 'finished' && (event.key === 'Enter' || event.key === ' ') && !event.repeat) {
@@ -180,6 +231,7 @@
       board.setAttribute('aria-label', `しりとりの絵札 ${Math.min(s.total || 24, 24)}枚`);
       slots.forEach((item, i) => { item.card.hidden = i >= s.cards.length; if(!live||solo||mine) item.card.dataset.cpuSelecting='false'; });
       const columns=Number(window.getComputedStyle?.(boardSpace).getPropertyValue('--sh-cols')) || (s.total>12?8:4);
+      boardCols = columns;
       const cpuCursor=!solo && live && !mine ? window.rivalCursor?.(s.cards.length,columns,s.cpu_target,s.cpu_progress) : null;
       s.cards.forEach((data, i) => {
         const item = slots[i], {card, icon, mark} = item;
@@ -223,4 +275,6 @@
       lastPhase = s.phase;
     }};
   };
+  window.createShiritoriView.nextShCell = nextShCell;
+  window.createShiritoriView.nextPlayableShCard = nextPlayableShCard;
 })();

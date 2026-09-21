@@ -283,3 +283,73 @@ test('sh-card keyboard focus uses ::before ring so hint/CPU outlines stay visibl
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-hint='true'\][^{]*\{[^}]*outline: 4px solid Highlight/);
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-cpu-selecting='true'\][\s\S]*?outline: 4px solid ButtonText/);
 });
+
+
+test('nextShCell wraps within rows/cols for variable shiritori boards', () => {
+  const {nextShCell, nextPlayableShCard} = require('../shiritori-ui.js');
+  // 4×3 board (12 cards).
+  assert.equal(nextShCell(0, 'ArrowRight', 4, 12), 1);
+  assert.equal(nextShCell(3, 'ArrowRight', 4, 12), 0);
+  assert.equal(nextShCell(0, 'ArrowLeft', 4, 12), 3);
+  assert.equal(nextShCell(0, 'ArrowDown', 4, 12), 4);
+  assert.equal(nextShCell(0, 'ArrowUp', 4, 12), 8);
+  // Incomplete final row (10 cards / 4 cols): col1 down from row2 lands on row0 col1.
+  assert.equal(nextShCell(9, 'ArrowDown', 4, 10), 1);
+  // 8-col / 24-card board mirrors number-rush row wrap.
+  assert.equal(nextShCell(7, 'ArrowRight', 8, 24), 0);
+  assert.equal(nextShCell(8, 'ArrowLeft', 8, 24), 15);
+  const available = Array(12).fill(false); available[1] = true; available[6] = true;
+  assert.equal(nextPlayableShCard(available, 0, 'ArrowRight', 4), 1);
+  assert.equal(nextPlayableShCard(available, 1, 'ArrowDown', 4), 1); // 1→5 disabled →9 disabled → wrap to 1
+  assert.equal(nextPlayableShCard(available, 1, 'ArrowLeft', 4), 1);
+  assert.equal(nextPlayableShCard(Array(12).fill(false), 0, 'ArrowRight', 4), -1);
+});
+
+test('arrow keys move among playable sh-cards and skip owned; Enter/Space stay native', () => {
+  const {view, state, queue, doc} = harness();
+  // total 12 → fallback cols=4 when getComputedStyle is absent.
+  const cards12 = Array.from({length: 12}, (_, i) => ({id: 'apple', icon: '🍎', words: ['りんご'], owner: i === 1 ? 'you' : null}));
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const cards = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden);
+  assert.equal(cards.length, 12);
+  assert.equal(cards[1].disabled, true, 'owned card is disabled');
+  assert.equal(cards[0].disabled, false);
+
+  cards[0].focus();
+  assert.equal(doc.activeElement, cards[0]);
+  view.page.emit('keydown', {key: 'ArrowRight'});
+  // Skip owned index 1 → land on 2.
+  assert.equal(doc.activeElement, cards[2], 'ArrowRight skips owned card');
+
+  view.page.emit('keydown', {key: 'ArrowLeft'});
+  assert.equal(doc.activeElement, cards[0], 'ArrowLeft skips owned card back to 0');
+
+  cards[0].focus();
+  view.page.emit('keydown', {key: 'ArrowDown'});
+  assert.equal(doc.activeElement, cards[4], 'ArrowDown moves one row in 4-col grid');
+
+  // Enter/Space must not synthesize sh_card when a card already has focus (native click path).
+  const before = queue.length;
+  view.page.emit('keydown', {key: 'Enter', repeat: false});
+  view.page.emit('keydown', {key: ' ', repeat: false});
+  assert.equal(queue.length, before, 'Enter/Space do not double-fire card commands');
+
+  // Mouse path still works.
+  cards[2].click();
+  assert.deepEqual(queue.at(-1), {action: 'sh_card', value: 2});
+});
+
+test('arrow keys are inert outside playing and when no playable cards remain', () => {
+  const {view, state, doc} = harness();
+  view.update({...state, phase: 'intro', cards: []});
+  const introFocus = doc.activeElement;
+  view.page.emit('keydown', {key: 'ArrowRight'});
+  assert.equal(doc.activeElement, introFocus, 'arrows ignored on intro');
+
+  const owned = Array.from({length: 12}, () => ({id: 'apple', icon: '🍎', words: ['りんご'], owner: 'you'}));
+  view.update({...state, total: 12, cards: owned, phase: 'playing', turn: 'you'});
+  const cards = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden);
+  cards[0].focus();
+  view.page.emit('keydown', {key: 'ArrowRight'});
+  assert.equal(doc.activeElement, cards[0], 'no move when every card is disabled');
+});
