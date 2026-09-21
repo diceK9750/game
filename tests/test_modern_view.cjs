@@ -111,19 +111,22 @@ test('forced-colors and prefers-contrast keep miss/CPU/correct durable outlines 
 
 test('nr-cell keyboard focus uses ::before ring so durable outlines stay visible', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
-  // Shell buttons keep outline focus; cells are excluded so feedback outlines are not clobbered.
-  assert.match(css, /#modern-app button:not\(\.nr-cell\):focus-visible/);
-  assert.match(css, /#modern-app \.nr-cell:focus-visible \{ outline: none; \}/);
-  assert.match(css, /#modern-app \.nr-cell:focus-visible::before \{[^}]*box-shadow: inset 0 0 0 3px #f9d58a/);
+  // Shell buttons keep outline focus; cells/cards are excluded so feedback outlines are not clobbered.
+  assert.match(css, /#modern-app button:not\(\.nr-cell\):not\(\.sh-card\):focus-visible/);
+  assert.match(css, /#modern-app \.nr-cell:focus-visible, #modern-app \.sh-card:focus-visible \{ outline: none; \}/);
+  assert.match(css, /#modern-app \.nr-cell:focus-visible::before, #modern-app \.sh-card:focus-visible::before \{[^}]*box-shadow: inset 0 0 0 3px #f9d58a/);
   // Feedback selectors carry #modern-app so they beat focus outline:none when both apply.
   assert.match(css, /#modern-app \.nr-cell\[data-feedback='wrong'\]/);
   assert.match(css, /#modern-app \.nr-cell\[data-feedback='correct'\]/);
   assert.match(css, /#modern-app \.nr-cell\[data-feedback='cpu'\]/);
+  assert.match(css, /#modern-app \.nr-cell\[data-cpu-selecting='true'\]/);
+  assert.match(css, /#modern-app \.sh-card\[data-cpu-selecting='true'\]/);
+  assert.match(css, /#modern-app \.nr-cell\[data-hint='true'\]/);
   // Contrast / forced-colors keep a visible focus ring without reclaiming outline.
   const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
-  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.nr-cell:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px #c9a227/);
+  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px #c9a227/);
   const forcedIdx = css.indexOf('@media (forced-colors: active)');
-  assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-cell:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px Highlight/);
+  assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px Highlight/);
 });
 
 test('markHostInsets tags embedded iframe and clears standalone', () => {

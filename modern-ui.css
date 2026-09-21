@@ -49,13 +49,13 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 #modern-app [hidden], #modern-app[hidden] { display: none !important; }
 #modern-app h1, #modern-app h2, #modern-app p { margin: 0; }
 #modern-app button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-/* Shell controls keep outline focus. Board cells use a ::before ring below so
-   durable miss/CPU/correct outlines are not clobbered (higher-specificity outline). */
-#modern-app button:not(.nr-cell):focus-visible, #modern-app [tabindex='-1']:focus-visible { outline: 3px solid #f9d58a; outline-offset: 3px; }
-/* Keyboard-only cell focus: inset ring via ::before. Leaves outline + box-shadow free
+/* Shell controls keep outline focus. Board cells/cards use a ::before ring below so
+   durable miss/CPU/correct/hint/cpu-selecting outlines are not clobbered. */
+#modern-app button:not(.nr-cell):not(.sh-card):focus-visible, #modern-app [tabindex='-1']:focus-visible { outline: 3px solid #f9d58a; outline-offset: 3px; }
+/* Keyboard-only cell/card focus: inset ring via ::before. Leaves outline + box-shadow free
    for feedback; :focus-visible keeps mouse taps free of sticky rings. */
-#modern-app .nr-cell:focus-visible { outline: none; }
-#modern-app .nr-cell:focus-visible::before {
+#modern-app .nr-cell:focus-visible, #modern-app .sh-card:focus-visible { outline: none; }
+#modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 5;
   box-shadow: inset 0 0 0 3px #f9d58a;
 }
@@ -133,8 +133,9 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 @keyframes chain-cheer-b { 50% { transform: translateY(-5px) rotate(4deg); } }
 @media (prefers-reduced-motion: reduce) { .nr-character-art[data-chain-tier] { animation: none !important; } }
 #modern-app[data-reduced='true'] .nr-character-art[data-chain-tier] { animation: none !important; }
-.nr-cell[data-cpu-selecting='true'], .sh-card[data-cpu-selecting='true'] { outline: 3px solid #ee56ff; outline-offset: -1px; box-shadow: inset 0 0 0 2px #651680, 0 0 9px #ed56ff; z-index: 2; }
-.nr-cell[data-cpu-selecting='true']::after, .sh-card[data-cpu-selecting='true']::after { content: 'CPU'; position: absolute; top: 1px; right: 2px; padding: 1px 3px; border-radius: 3px; font-size: 9px; line-height: 1.2; font-weight: 900; color: white; background: #751887; pointer-events: none; }
+/* #modern-app prefix beats .nr-cell/.sh-card:focus-visible { outline: none } when both apply. */
+#modern-app .nr-cell[data-cpu-selecting='true'], #modern-app .sh-card[data-cpu-selecting='true'] { outline: 3px solid #ee56ff; outline-offset: -1px; box-shadow: inset 0 0 0 2px #651680, 0 0 9px #ed56ff; z-index: 2; }
+#modern-app .nr-cell[data-cpu-selecting='true']::after, #modern-app .sh-card[data-cpu-selecting='true']::after { content: 'CPU'; position: absolute; top: 1px; right: 2px; padding: 1px 3px; border-radius: 3px; font-size: 9px; line-height: 1.2; font-weight: 900; color: white; background: #751887; pointer-events: none; }
 .nr-hero-cast .nr-character { width: min(44%, 230px); }
 .nr-hero-cast .nr-character-name { font-size: 11px; }
 .nr-versus { color: #f9d58a99; font: italic 800 20px/1 Georgia, serif; }
@@ -183,7 +184,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-cell[data-owner='cpu'] { color: #e6a9c059; background: #62354d61; border-color: #df89b23b; box-shadow: none; }
 .nr-cell-owner { position: absolute; right: 5px; top: 4px; font-size: 9px; font-weight: 800; line-height: 1; color: #a9eed4; }
 .nr-cell[data-owner='cpu'] .nr-cell-owner { color: #efadca; font-size: 7px; }
-.nr-cell[data-hint='true'] { outline: 3px solid #b8ffa3; outline-offset: -4px; box-shadow: inset 0 0 18px #4ecd8b; }
+#modern-app .nr-cell[data-hint='true'] { outline: 3px solid #b8ffa3; outline-offset: -4px; box-shadow: inset 0 0 18px #4ecd8b; }
 .nr-round-progress { height: 3px; flex-shrink: 0; border-radius: 5px; background: #b5ddd217; margin: 0 10px; overflow: hidden; }
 .nr-round-progress > div { height: 100%; background: linear-gradient(90deg, #72ceb8, #f8da92); transition: width 160ms ease-out; }
 .nr-play-stage { display: flex; align-items: center; justify-content: space-between; min-height: 100px; flex-shrink: 0; gap: 20px; padding: 0 28px; }
@@ -386,7 +387,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     outline: 4px solid #b01878; outline-offset: -3px;
     box-shadow: inset 0 0 0 2px #6a1048;
   }
-  #modern-app .nr-cell:focus-visible::before {
+  #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px #c9a227;
   }
 }
@@ -401,7 +402,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-cell[data-feedback='cpu'] {
     outline: 4px solid ButtonText; outline-offset: -3px; box-shadow: none;
   }
-  #modern-app .nr-cell:focus-visible::before {
+  #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px Highlight;
   }
 }
