@@ -89,7 +89,7 @@ test('prefers-reduced-motion keeps static cpu-claim and award without waiting fo
   assert.match(media, /\.nr-fx \{ opacity: 0; \}/);
 });
 
-test('forced-colors and prefers-contrast keep miss/CPU/correct durable outlines readable', () => {
+test('forced-colors and prefers-contrast keep miss/CPU/correct/hint/cpu-selecting durable outlines readable', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
   const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
   assert.ok(contrastIdx > 0, 'prefers-contrast media query present');
@@ -97,16 +97,24 @@ test('forced-colors and prefers-contrast keep miss/CPU/correct durable outlines 
   assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?data-feedback='wrong'[\s\S]*?outline: 4px solid #d0181c/);
   assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?data-feedback='correct'[\s\S]*?outline: 4px solid #0a8f55/);
   assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?data-feedback='cpu'[\s\S]*?outline: 4px solid #b01878/);
+  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.nr-cell\[data-hint='true'\][\s\S]*?outline: 4px solid #0a8f55/);
+  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-hint='true'\][\s\S]*?outline: 4px solid #a07000/);
+  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?data-cpu-selecting='true'[\s\S]*?outline: 4px solid #b01878/);
   const forcedIdx = css.indexOf('@media (forced-colors: active)');
   assert.ok(forcedIdx > 0, 'forced-colors media query present');
-  const forcedEnd = css.indexOf('}', css.indexOf("data-feedback='cpu'", forcedIdx) + 1);
-  const forced = css.slice(forcedIdx, forcedEnd + 1);
+  const forced = css.slice(forcedIdx, css.indexOf('/* Effects remain understandable', forcedIdx));
   // System colors so Windows HC / forced-colors themes keep semantic outlines.
   assert.match(forced, /data-feedback='wrong'[^{]*\{[^}]*outline: 4px solid LinkText/);
   assert.match(forced, /data-feedback='correct'[^{]*\{[^}]*outline: 4px solid Highlight/);
   assert.match(forced, /data-feedback='cpu'[^{]*\{[^}]*outline: 4px solid ButtonText/);
+  assert.match(forced, /\.nr-cell\[data-hint='true'\][^{]*\{[^}]*outline: 4px solid Highlight/);
+  assert.match(forced, /\.sh-card\[data-hint='true'\][^{]*\{[^}]*outline: 4px solid Highlight/);
+  assert.match(forced, /data-cpu-selecting='true'[\s\S]*?outline: 4px solid ButtonText/);
   assert.match(forced, /data-feedback='wrong'[^{]*\{[^}]*box-shadow: none/);
   assert.match(forced, /data-feedback='cpu'[^{]*\{[^}]*box-shadow: none/);
+  assert.match(forced, /\.nr-cell\[data-hint='true'\][^{]*\{[^}]*box-shadow: none/);
+  assert.match(forced, /\.sh-card\[data-hint='true'\][^{]*\{[^}]*box-shadow: none/);
+  assert.match(forced, /data-cpu-selecting='true'[\s\S]*?box-shadow: none/);
 });
 
 test('nr-cell keyboard focus uses ::before ring so durable outlines stay visible', () => {

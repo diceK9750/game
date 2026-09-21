@@ -276,6 +276,10 @@ test('sh-card keyboard focus uses ::before ring so hint/CPU outlines stay visibl
   assert.match(modern, /#modern-app \.sh-card\[data-cpu-selecting='true'\]/);
   const contrastIdx = modern.indexOf('@media (prefers-contrast: more)');
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px #c9a227/);
+  assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-hint='true'\][\s\S]*?outline: 4px solid #a07000/);
+  assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-cpu-selecting='true'\][\s\S]*?outline: 4px solid #b01878/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px Highlight/);
+  assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-hint='true'\][^{]*\{[^}]*outline: 4px solid Highlight/);
+  assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-cpu-selecting='true'\][\s\S]*?outline: 4px solid ButtonText/);
 });
