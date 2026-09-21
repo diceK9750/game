@@ -399,6 +399,35 @@ class ShiritoriTests(unittest.TestCase):
                 for a, b in zip(words, words[1:]):
                     self.assertEqual(tail(a), b[0])
 
+    def test_wrong_card_sets_durable_miss_outline_then_expires(self):
+        """Wrong taps mark the card for ~1.2s so short-landscape HUD truncation still leaves a cue."""
+        from shiritori import MISS_OUTLINE_SECONDS
+        index = next(i for i, c in enumerate(self.game.cards) if not any(
+            w[0] == self.game.required and tail(w) != 'ん' and w not in self.game.seen for w in c[2]))
+        self.game.command('card', index)
+        self.assertEqual(self.game.mistakes, 1)
+        self.assertEqual(self.game.miss_card, index)
+        self.assertEqual(self.game.active_miss_card(), index)
+        self.assertEqual(self.game.snapshot()['miss_card'], index)
+        self.assertGreaterEqual(MISS_OUTLINE_SECONDS, 1.2)
+        # Still within TTL.
+        self.now = MISS_OUTLINE_SECONDS - 0.01
+        self.assertEqual(self.game.active_miss_card(), index)
+        # Expired: outline clears without another tap.
+        self.now = MISS_OUTLINE_SECONDS
+        self.assertIsNone(self.game.active_miss_card())
+        self.assertIsNone(self.game.snapshot()['miss_card'])
+        # Fresh miss remounts; a later correct take clears it immediately.
+        self.now = 10
+        self.game.command('card', index)
+        self.assertEqual(self.game.active_miss_card(), index)
+        move = self.game.moves()[0]
+        self.game.command('card', move[0])
+        self.assertIsNone(self.game.miss_card)
+        self.assertIsNone(self.game.active_miss_card())
+        self.assertIsNone(self.game.snapshot()['miss_card'])
+
+
 
 if __name__ == '__main__':
     unittest.main()

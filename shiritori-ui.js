@@ -321,7 +321,11 @@
       board.dataset.count = String(Math.min(s.total || 24, 24));
       boardSpace.dataset.count = board.dataset.count;
       board.setAttribute('aria-label', `しりとりの絵札 ${Math.min(s.total || 24, 24)}枚`);
-      slots.forEach((item, i) => { item.card.hidden = i >= s.cards.length; if(!live||solo||mine) item.card.dataset.cpuSelecting='false'; });
+      slots.forEach((item, i) => {
+        item.card.hidden = i >= s.cards.length;
+        if (!live || solo || mine) item.card.dataset.cpuSelecting = 'false';
+        if (!live) item.card.dataset.feedback = '';
+      });
       const columns=Number(window.getComputedStyle?.(boardSpace).getPropertyValue('--sh-cols')) || (s.total>12?8:4);
       boardCols = columns;
       const cpuCursor=!solo && live && !mine ? window.rivalCursor?.(s.cards.length,columns,s.cpu_target,s.cpu_progress) : null;
@@ -338,10 +342,13 @@
         mark.textContent = data.owner === 'you' ? 'YOU ✓' : data.owner === 'cpu' ? 'CPU ✓' : s.refilled === i ? 'NEW' : '';
         card.disabled = !mine || !!data.owner || s.phase !== 'playing';
         const hinted = live && s.hint === i && !data.owner;
+        // Durable miss outline (#18 parity): status truncates on short landscape.
+        const missed = live && s.miss_card === i && !data.owner;
         card.dataset.owner = data.owner || ''; card.dataset.hint = String(hinted);
+        card.dataset.feedback = missed ? 'wrong' : '';
         item.hintLabel.hidden = !hinted;
         card.dataset.cpuSelecting = String(i===cpuCursor);
-        card.setAttribute('aria-label', `${hinted ? 'ヒント：' : ''}絵札${i + 1} ${data.words[0]}${data.owner ? ' 使用済み' : ' タップで自動回答'}`);
+        card.setAttribute('aria-label', `${hinted ? 'ヒント：' : missed ? 'ミス：' : ''}絵札${i + 1} ${data.words[0]}${data.owner ? ' 使用済み' : ' タップで自動回答'}`);
       });
       resultTitle.textContent = solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : s.winner === 'you' ? 'あなたの勝利！' : s.winner === 'draw' ? 'ふたりでつなぎきった！' : 'ルナの勝利！';
       reason.textContent = s.message;
