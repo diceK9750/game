@@ -26,9 +26,36 @@
 .sh-hud .nr-character { width: 58px; flex: 0 0 58px; }
 .sh-hud .nr-character-art { width: 58px; height: 58px; }
 .sh-hud .nr-character-name { display: none; }
-.sh-task { flex: 1; text-align: center; }
+.sh-task { flex: 1; text-align: center; border: 1px solid #f9d58a66; border-radius: 12px; padding: 2px 10px; background: linear-gradient(115deg, #80633428, #eab66312); box-shadow: inset 0 0 16px #edc27908; }
 .sh-task span { display: block; font-size: 12px; color: var(--nr-mint); }
 .sh-prompt { font-size: clamp(17px, 2.8vw, 28px); }
+/* Shiritori HUD required-kana change cue: brief gold pulse when 「required」 flips. Pulse 0/1 restarts.
+   Reduced: static brighter ring (no motion) until next change or leave live. */
+.sh-task[data-cue='true'][data-pulse='0'] { animation: sh-task-cue-a .85s ease both; }
+.sh-task[data-cue='true'][data-pulse='1'] { animation: sh-task-cue-b .85s ease both; }
+.sh-task[data-cue='true'] .sh-prompt { text-shadow: 0 0 12px #ffe8acaa; }
+@keyframes sh-task-cue-a {
+  0% { box-shadow: inset 0 0 16px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+  22% { box-shadow: inset 0 0 20px #edc27955, 0 0 14px #ffe8ac99; border-color: #ffe8ac; transform: scale(1.04); }
+  100% { box-shadow: inset 0 0 16px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+}
+@keyframes sh-task-cue-b {
+  0% { box-shadow: inset 0 0 16px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+  22% { box-shadow: inset 0 0 20px #edc27955, 0 0 14px #ffe8ac99; border-color: #ffe8ac; transform: scale(1.04); }
+  100% { box-shadow: inset 0 0 16px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sh-task[data-cue='true'] {
+    animation: none !important; transform: none;
+    border-color: #ffe8ac; box-shadow: inset 0 0 0 3px #ffe8ac88, 0 0 0 2px #f9d58a66;
+  }
+  .sh-task[data-cue='true'] .sh-prompt { text-shadow: none; }
+}
+#modern-app[data-reduced='true'] .sh-task[data-cue='true'] {
+  animation: none !important; transform: none;
+  border-color: #ffe8ac; box-shadow: inset 0 0 0 3px #ffe8ac88, 0 0 0 2px #f9d58a66;
+}
+#modern-app[data-reduced='true'] .sh-task[data-cue='true'] .sh-prompt { text-shadow: none; }
 .sh-clock { font-variant-numeric: tabular-nums; min-width: 64px; }
 .sh-clock[data-urgent='true'] { color: #ff9fae; }
 .sh-status { min-height: 22px; text-align: center; font-size: 13px; }
