@@ -1624,3 +1624,76 @@ test('settings toast wiring lives in modern-ui.js with animationend dismiss', ()
   assert.match(js, /animationend/);
   assert.match(js, /prevPrefs/);
 });
+
+
+test('numbers HUD target cue CSS pulses on change and stays static under reduced-motion', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  assert.match(css, /\.nr-target\[data-cue='true'\]\[data-pulse='0'\]/);
+  assert.match(css, /\.nr-target\[data-cue='true'\]\[data-pulse='1'\]/);
+  assert.match(css, /@keyframes nr-target-cue-a/);
+  assert.match(css, /@keyframes nr-target-cue-b/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.nr-target\[data-cue='true'\][\s\S]*?animation: none !important/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-target\[data-cue='true'\][\s\S]*?animation: none !important/);
+  assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?\.nr-target\[data-cue='true'\]/);
+  assert.match(css, /forced-colors LAST[\s\S]*?@media \(forced-colors: active\) \{[\s\S]*?\.nr-target\[data-cue='true'\]/);
+});
+
+test('numbers HUD flashes cue when お題 changes; animationend clears; leave play clears', () => {
+  const b = browserHarness();
+  b.render('ready', {target: 1, cells: []});
+  const wrap = walk(b.app).find(n => n.className === 'nr-target');
+  assert.ok(wrap, 'nr-target mounted');
+  assert.equal(wrap.dataset.cue, 'false');
+
+  b.render('playing', {target: 1});
+  assert.equal(wrap.dataset.cue, 'true', 'entering play cues initial お題');
+  const pulseEnter = wrap.dataset.pulse;
+  const number = walk(wrap).find(n => n.className === 'nr-target-number');
+  assert.equal(number.textContent, '1');
+
+  // Same target re-render: no pulse flip / stay cued until animationend.
+  b.render('playing', {target: 1, completed: 0});
+  assert.equal(wrap.dataset.pulse, pulseEnter, 'identical お題 does not restart pulse');
+
+  wrap.emit('animationend', {target: wrap});
+  assert.equal(wrap.dataset.cue, 'false');
+
+  b.render('playing', {target: 2, completed: 1});
+  assert.equal(wrap.dataset.cue, 'true', 'お題 change re-cues');
+  assert.equal(number.textContent, '2');
+  assert.notEqual(wrap.dataset.pulse, pulseEnter, 'pulse flips to restart CSS animation');
+  const pulseChange = wrap.dataset.pulse;
+
+  b.render('playing', {target: 5, completed: 2});
+  assert.equal(wrap.dataset.cue, 'true');
+  assert.equal(number.textContent, '5');
+  assert.notEqual(wrap.dataset.pulse, pulseChange);
+
+  b.render('confirm', {target: 5, cells: []});
+  assert.equal(wrap.dataset.cue, 'false', 'leaving play clears cue');
+});
+
+test('numbers HUD reduced-motion keeps static cue until next お題 or leave play', () => {
+  const b = browserHarness();
+  b.render('playing', {target: 3, reduced: true});
+  const wrap = walk(b.app).find(n => n.className === 'nr-target');
+  assert.equal(wrap.dataset.cue, 'true');
+  // No animationend under reduced — cue stays until next change.
+  b.render('playing', {target: 3, reduced: true, completed: 0});
+  assert.equal(wrap.dataset.cue, 'true');
+  b.render('playing', {target: 7, reduced: true, completed: 1});
+  assert.equal(wrap.dataset.cue, 'true');
+  assert.equal(walk(wrap).find(n => n.className === 'nr-target-number').textContent, '7');
+  b.render('finished', {target: null, reduced: true});
+  assert.equal(wrap.dataset.cue, 'false');
+});
+
+test('numbers HUD target cue wiring lives in modern-ui.js with animationend dismiss', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /flashTargetCue/);
+  assert.match(js, /clearTargetCue/);
+  assert.match(js, /prevTargetKey/);
+  assert.match(js, /dataset\.cue/);
+  assert.match(js, /targetWrap\.addEventListener\('animationend'/);
+  assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
+});

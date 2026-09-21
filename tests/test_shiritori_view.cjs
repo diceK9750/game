@@ -991,7 +991,7 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
   assert.match(player, /shiritori-ui\.css\?v=sh-refill-new-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-refill-new-1/);
-  assert.match(player, /modern-ui\.css\?v=settings-toast-1/);
+  assert.match(player, /modern-ui\.css\?v=target-cue-1/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1009,6 +1009,6 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
   assert.match(player, /shiritori-ui\.css\?v=sh-refill-new-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-refill-new-1/);
-  assert.match(player, /modern-ui\.css\?v=settings-toast-1/);
+  assert.match(player, /modern-ui\.css\?v=target-cue-1/);
 });
 
