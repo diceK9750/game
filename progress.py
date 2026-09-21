@@ -67,6 +67,11 @@ def encode(app):
         "battle_records": [list(k) + [v] for k, v in app.battle_records.items()],
         "bonus_bank": app.bonus_bank, "bgm_on": app.bgm_on,
         "sfx_on": app.sfx_on, "reduced_motion": app.reduced_motion}
+    if not getattr(app, "audio_available", True):
+        # Changing modes/saving a score in a silent session must not save the
+        # temporary forced-OFF flags over the user's actual sound preferences.
+        for field in ("bgm_on", "sfx_on"):
+            data[field] = getattr(app, "audio_preferences", {}).get(field, data[field])
     for field in ("selected_max_number", "selected_mode", "play_kind", "difficulty"):
         if hasattr(app, field):
             data[field] = getattr(app, field)

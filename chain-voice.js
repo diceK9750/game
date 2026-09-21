@@ -25,6 +25,7 @@
   }
 
   async function unlock() {
+    if (window.numberRushAudio?.diagnostic.mode === 'silent') return;
     try {
       const Context = window.AudioContext || window.webkitAudioContext;
       if (!Context) return;

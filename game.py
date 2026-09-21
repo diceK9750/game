@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import pyxel
 import math
+import os
 import progress
 from ui_text import text as ui_text, text_width, translate
 from characters import draw_rival
@@ -189,10 +190,30 @@ def draw_number(x: int, y: int, number: int, color: int, scale: int = 3) -> None
                     )
 
 
+def prepare_web_audio() -> bool:
+    """Before SDL init, capability-test its actual WebAudio buffer allocation.
+
+    Native Python is unchanged. A rejected browser device uses SDL's dummy
+    driver, not a second pyxel.init on partially initialized global state.
+    """
+    if browser_document is None:
+        return True
+    try:
+        from js import window
+        available = bool(window.numberRushAudio.prepare(window.pyxelContext.pyodide._module))
+    except Exception as error:
+        print(f"Audio preflight unavailable; using silent driver: {error}")
+        available = False
+    if not available:
+        os.environ["SDL_AUDIODRIVER"] = "dummy"
+    return available
+
+
 class NumberRush:
     """描画と入力を受け持つPyxelアプリケーション。"""
 
     def __init__(self) -> None:
+        self.audio_available = prepare_web_audio()
         # Escape belongs to our pause/help UI, not Pyxel's default quit shortcut.
         pyxel.init(WIDTH, HEIGHT, title="NUMBER RUSH", fps=FPS, quit_key=pyxel.KEY_NONE)
         pyxel.colors.from_list(PALETTE)
@@ -254,6 +275,10 @@ class NumberRush:
         self.storage_saved = False
         for field, value in progress.load().items():
             setattr(self, field, value)
+        if not self.audio_available:
+            # Session-only fallback: do not overwrite the user's saved prefs.
+            self.audio_preferences = {"bgm_on": self.bgm_on, "sfx_on": self.sfx_on}
+            self.bgm_on = self.sfx_on = False
         # RAF may stop entirely in a hidden Safari tab. Pause at the event itself.
         if browser_document is not None:
             self._visibility_listener = create_proxy(lambda *_: self.update_visibility())
@@ -721,6 +746,8 @@ class NumberRush:
         self.resume_end_frame = pyxel.frame_count + 120
 
     def toggle_bgm(self) -> None:
+        if not getattr(self, "audio_available", True):
+            return
         self.bgm_on = not self.bgm_on
         self.storage_saved = progress.save(self)
         if not self.bgm_on:
@@ -879,6 +906,8 @@ class NumberRush:
         self.scene_music_switch_at = quiet_from + 8
 
     def toggle_sfx(self) -> None:
+        if not getattr(self, "audio_available", True):
+            return
         self.sfx_on = not self.sfx_on
         self.storage_saved = progress.save(self)
         if not self.sfx_on:

@@ -26,6 +26,30 @@ class Root:
 
 
 class ModernUITests(unittest.TestCase):
+    def test_audio_failure_boots_game_with_controls_off_without_saving_preferences(self):
+        with patch.object(game, 'prepare_web_audio', return_value=False), \
+             patch.object(game, 'CharacterLayer'), patch.object(game, 'ModernUI'), \
+             patch.object(game, 'browser_document', None), \
+             patch.object(game.pyxel, 'run'), patch.object(game.pyxel, 'init'), \
+             patch.object(game.pyxel, 'mouse'), patch.object(game.pyxel, 'colors'), \
+             patch.object(game.NumberRush, 'configure_sounds'), \
+             patch.object(game.progress, 'load', return_value={'bgm_on': True, 'sfx_on': True}), \
+             patch.object(game.progress, 'save') as save:
+            app = game.NumberRush()
+            game.pyxel.init.assert_called_once()
+            game.pyxel.run.assert_called_once()
+            self.assertFalse(app.bgm_on)
+            self.assertFalse(app.sfx_on)
+            app.toggle_bgm()
+            app.toggle_sfx()
+            self.assertFalse(app.bgm_on)
+            self.assertFalse(app.sfx_on)
+            save.assert_not_called()
+            self.assertFalse(self.bridge.snapshot(app)['audio_available'])
+            stored = json.loads(game.progress.encode(app))
+            self.assertTrue(stored['bgm_on'])
+            self.assertTrue(stored['sfx_on'])
+
     def test_saved_shiritori_settings_restore_and_changes_save_immediately(self):
         self.app.shiritori_settings={'mode':'battle','total':36,'difficulty':'hard'}
         self.queue({'action':'shiritori'})

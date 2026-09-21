@@ -5,6 +5,20 @@ const vm = require('node:vm');
 const {parseState, formatTime, posePosition, remainingCommands, nextCell, nextPlayable, shouldLockPlayScroll, isPlayScrollAllowed, markHostInsets} = require('../modern-ui.js');
 const state = () => ({v: 1, screen: 'playing', cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
 
+test('audio fallback disables only sound controls and leaves the game usable', () => {
+  const b=browserHarness();
+  b.render('ready',{cells:[],audio_available:false,bgm:false,sfx:false});
+  const buttons=walk(b.app).filter(n=>n.tagName==='BUTTON');
+  const sound=buttons.find(n=>n.getAttribute('aria-label')==='BGMのオン・オフ');
+  const effects=buttons.filter(n=>n.textContent==='効果音 OFF');
+  assert.equal(sound.disabled,true); assert.ok(effects.length>=2);
+  assert.ok(effects.every(n=>n.disabled));
+  assert.match(sound.title,/無音/);
+  assert.equal(buttons.find(n=>String(n.className).includes('nr-primary')).disabled,false);
+  b.render('ready',{cells:[],audio_available:true,bgm:true,sfx:true});
+  assert.equal(sound.disabled,false); assert.equal(sound.title,'');
+});
+
 test('modern bridge activates only for a valid complete 5 by 8 board', () => {
   assert.equal(parseState('broken'), null);
   assert.equal(parseState('null'), null);

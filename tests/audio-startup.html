@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pyxel audio startup isolation</title>
+<script src="audio-fault.js"></script>
+<script src="../assets/audio-boot.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/kitao/pyxel@v2.9.8/wasm/pyxel.js"></script>
+<style>body{font:16px system-ui}button,select{min-height:44px}#report{white-space:pre-wrap}#pyxel-screen{position:relative!important;height:240px!important}</style>
+<h1>Pyxel 2.9.8 音声切り分け</h1>
+<p>同じランタイムで比較。開始後のPyxel画像もタップしてください。</p>
+<label>ケース <select id="case"><option>A: initのみ</option><option>B: init + stop（無音）</option><option>C: init + SFX</option><option>D: init + BGM</option></select></label>
+<label><input id="guard" type="checkbox" checked>起動防御を使用</label>
+<button id="start">開始</button>
+<p><a href="?fault=reject">レート拒否を模擬</a> / <a href="?fault=none">通常の音声能力</a></p>
+<pre id="report">未開始</pre>
+<script>
+  document.querySelector('#start').onclick = () => {
+    document.querySelector('#start').disabled = true;
+    const kind = document.querySelector('#case').selectedIndex;
+    const guard = document.querySelector('#guard').checked;
+    const preflight = guard ? `
+if not window.numberRushAudio.prepare(window.pyxelContext.pyodide._module):
+    os.environ['SDL_AUDIODRIVER'] = 'dummy'
+` : '';
+    launchPyxel({command:'run',root:'.',gamepad:'disabled',script:`
+import os, pyxel
+from js import window, document
+${preflight}
+pyxel.init(160, 90, title='Audio isolation')
+if ${kind} == 1:
+    pyxel.stop()
+if ${kind} >= 2:
+    pyxel.sounds[0].set('c3e3g3c4', 't', '3', 'n', 12)
+    if ${kind} == 2:
+        pyxel.play(0, 0)
+    else:
+        pyxel.musics[0].set([0], [], [], [])
+        pyxel.playm(0, loop=True)
+def update():
+    document.getElementById('report').textContent = 'RUNNING frame=' + str(pyxel.frame_count) + '\\n' + str(window.JSON.stringify(window.numberRushAudio.diagnostic)) + '\\n' + str(window.JSON.stringify(window.audioProbeCalls))
+def draw():
+    pyxel.cls(1)
+    pyxel.text(8, 30, 'GAME LOOP RUNNING', 11)
+pyxel.run(update, draw)
+`});
+  };
+</script>
+</html>

@@ -388,6 +388,11 @@
     window.chainVoice?.setEnabled(state.sfx && (playing || state.screen === 'finished' || (state.screen === 'shiritori' && ['playing','finished'].includes(state.shiritori?.phase))));
     if (state.screen === 'shiritori') { headerContext.textContent = '絵しりとり'; shiritori.update(state.shiritori); }
     sound.textContent = state.bgm ? '♪ ON' : '♪ OFF'; sound.setAttribute('aria-pressed', String(!!state.bgm));
+    const audioUnavailable = state.audio_available === false;
+    for (const control of [sound, sfx, pauseSfx, ...shSettings.map(([effects]) => effects)]) {
+      control.disabled = audioUnavailable;
+      control.title = audioUnavailable ? '音声を利用できないため無音で起動しました。再読み込みで再試行できます。' : '';
+    }
     help.hidden = !['ready', 'help'].includes(state.screen); help.disabled = state.screen === 'help';
     const shPhase = state.screen === 'shiritori' ? state.shiritori?.phase : null;
     const shMenu = shPhase === 'intro' && !shiritori?.isOverlayOpen();

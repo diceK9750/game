@@ -202,6 +202,7 @@ class ModernUI:
             "chain": round_.chain.snapshot(round_.elapsed()) if uses_round else {},
             "max_number": count, "mode": mode, "bgm": bool(app.bgm_on),
             "sfx": bool(app.sfx_on), "reduced": bool(app.reduced_motion),
+            "audio_available": getattr(app, "audio_available", True),
             "elapsed": round(elapsed, 2 if screen in ("finished", "review") else 1),
             "target": round_.current_target if screen == "playing" else None,
             "completed": round_.completed_count if uses_round else 0,
