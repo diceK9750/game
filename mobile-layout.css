@@ -209,6 +209,30 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* #101: short-landscape practice stage-middle densify after cpu-row hide
+     (parity HUD #100). JS [hidden] owns hide; battle keeps cpu-row strip.
+     Solo strip: stats+feedback reclaim width; timed-chains stops claiming
+     full parent width via modern-ui width:100%; hint stays ≥44px trailing. */
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) {
+    gap: 6px;
+    justify-content: space-between;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats {
+    flex: 1 1 auto;
+    gap: 8px;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong {
+    font-size: 12px;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-feedback {
+    flex: 1 1 30%;
+    min-width: 0;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) > .timed-chains {
+    flex: 0 1 26%;
+    width: auto;
+    max-width: 30%;
+  }
   /* #87: short-landscape shiritori play HUD/prompt density — park progress beside
      HUD (parity numbers #21) and pin status to a thin strip so arena reclaims a
      full row without clipping task/prompt/status. Keep #69-family task pulse +
@@ -451,6 +475,13 @@
   /* #97: extreme-short keeps the compact feedback strip; tighten type only. */
   .nr-play-stats .nr-stat > strong { font-size: 10px; }
   .nr-feedback { font-size: 9px; line-height: 12px; }
+  /* #101 extreme-short: practice solo stage denser after cpu-row hide; battle grid intact. */
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong { font-size: 11px; }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) > .timed-chains {
+    flex: 0 1 24%;
+    max-width: 28%;
+    width: auto;
+  }
   #modern-app[data-kind='battle'] .nr-stage-middle { grid-template-columns: 1fr 1fr; }
   #modern-app[data-kind='battle'] .nr-play-stats { grid-column: 1; grid-row: 1; }
   #modern-app[data-kind='battle'] .nr-cpu-row { grid-column: 2; grid-row: 1; }
