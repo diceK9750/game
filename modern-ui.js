@@ -459,6 +459,12 @@
         focusTarget.focus({preventScroll: true});
       } else if (state.screen === 'help' && previousScreen) {
         helpBack.focus({preventScroll: true});
+      } else if (state.screen === 'ready' && previousScreen) {
+        // Mode select: land on primary start 「1から順番」 so keyboard users can
+        // Enter without Tab hunting past kind/range/difficulty. Same-screen ready
+        // updates leave mouse/touch alone (changedScreen gate). Confirm/help are
+        // other screens — their entry branches above stay authoritative.
+        ordered.focus({preventScroll: true});
       } else if (state.screen === 'playing' && previousScreen) {
         const resumeFrom = previousScreen === 'resuming' || previousScreen === 'confirm';
         if (resumeFrom) {

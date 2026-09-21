@@ -775,6 +775,67 @@ test('confirm/help entry focuses primary dialog control without Tab hunting', ()
   assert.equal(b.queue().length, before + 1);
 });
 
+test('ready entry focuses primary start 1から順番; same-screen and overlays spared', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (screen, text) => walk(screen).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+  // Composite start buttons put labels in child <strong>; class distinguishes primary.
+  const primaryStart = (screen) => walk(screen).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
+  const strongLabel = (btn) => {
+    const s = walk(btn).find(n => n.tagName === 'STRONG');
+    return s ? s.textContent : '';
+  };
+
+  // home → ready: land on 「1から順番」 (not kind/range chrome).
+  b.render('home', {cells: []});
+  const numberGame = walk(screenOf('home')).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-number-game'));
+  assert.ok(numberGame, 'home exposes 数字さがし card');
+  numberGame.focus();
+  b.render('ready', {cells: []});
+  const readyScreen = screenOf('ready');
+  const ordered = primaryStart(readyScreen);
+  const random = walk(readyScreen).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-secondary'));
+  assert.ok(ordered && random, 'ready exposes ordered primary and random secondary');
+  assert.equal(strongLabel(ordered), '1から順番');
+  assert.equal(strongLabel(random), 'ランダム');
+  assert.equal(b.document.activeElement, ordered, 'ready entry focuses 1から順番');
+
+  // Same-screen ready updates must not yank focus (mouse/touch mid-setup).
+  const range20 = walk(readyScreen).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === '1から20まで');
+  range20.focus();
+  b.render('ready', {cells: [], max_number: 20, kind: 'battle'});
+  assert.equal(b.document.activeElement, range20, 'ready→ready keeps current focus');
+
+  // finished → title → ready also restores primary start.
+  b.render('finished', {perfect: false, won: true});
+  const title = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'モード選択');
+  title.focus();
+  b.render('ready', {cells: []});
+  assert.equal(b.document.activeElement, ordered, 'title→ready focuses 1から順番');
+
+  // ready → help still prefers 戻る (#43); help must not be stolen by ready focus.
+  b.render('ready', {cells: []});
+  assert.equal(b.document.activeElement, ordered, 're-entry still focuses ordered');
+  b.render('help', {cells: []});
+  const helpBack = btnIn(screenOf('help'), '戻る');
+  assert.equal(b.document.activeElement, helpBack, 'help entry still focuses 戻る');
+
+  // help → ready returns to primary start (parity with overlay close).
+  b.render('ready', {cells: []});
+  assert.equal(b.document.activeElement, ordered, 'help→ready focuses 1から順番');
+
+  // Confirm/pause overlay entry still wins over any ready leftover (#43).
+  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
+  b.render('playing', {cells: cellsState});
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const resume = btnIn(screenOf('confirm'), 'プレイを続ける');
+  assert.equal(b.document.activeElement, resume, 'pause entry still focuses プレイを続ける');
+});
+
+
 test('confirm Tab cycles dialog controls and does not escape to chrome', () => {
   const b = browserHarness();
   const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
