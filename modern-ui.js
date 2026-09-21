@@ -285,7 +285,8 @@
 
   const review = section('review', 'nr-centered');
   const reviewSummary = E('p', 'nr-muted'), history = E('ol', 'nr-history');
-  add(review, add(E('div', 'nr-review-card nr-surface'), E('span', 'nr-eyebrow', 'ROUND INSIGHTS'), E('h1', '', '対戦を振り返る'), reviewSummary, history, button('結果へ戻る', 'back', undefined, 'nr-primary')));
+  const reviewBack = button('結果へ戻る', 'back', undefined, 'nr-primary');
+  add(review, add(E('div', 'nr-review-card nr-surface'), E('span', 'nr-eyebrow', 'ROUND INSIGHTS'), E('h1', '', '対戦を振り返る'), reviewSummary, history, reviewBack));
   const screenMap = {home, ready, playing: play, countdown, resuming: countdown, confirm, help: helpScreen, finished, review};
   const shSettings = [];
   function settingsControls() {
@@ -465,6 +466,10 @@
         // updates leave mouse/touch alone (changedScreen gate). Confirm/help are
         // other screens — their entry branches above stay authoritative.
         ordered.focus({preventScroll: true});
+      } else if (state.screen === 'review' && previousScreen) {
+        // Battle review: land on primary 「結果へ戻る」 (parity with help #43).
+        // Explicit path — do not rely on the hidden-activeElement reclaim fallback.
+        reviewBack.focus({preventScroll: true});
       } else if (state.screen === 'playing' && previousScreen) {
         const resumeFrom = previousScreen === 'resuming' || previousScreen === 'confirm';
         if (resumeFrom) {
