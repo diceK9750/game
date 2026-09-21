@@ -1,5 +1,11 @@
 /* Presentation only: all chain timing and awards come from Python. */
 (function () {
+  function motionReduced() {
+    try {
+      if (document.getElementById('modern-app')?.getAttribute('data-reduced') === 'true') return true;
+      return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    } catch (_) { return false; }
+  }
   window.createTimedChainView = function ({E, add, portraits}) {
     const root = E('div', 'timed-chains');
     const rows = ['you', 'cpu'].map((owner, i) => {
@@ -30,7 +36,7 @@
           if (fresh && live && count >= 2) {
             r.burst.textContent = `${i ? 'CPU' : 'YOU'}  ${count}連鎖！${tier===3?' ★ FEVER!!':tier===2?' ✦ SUPER!':''}`;
             r.burst.dataset.pulse = String(r.flip);
-            r.until = Date.now() + 1000;
+            r.until = Date.now() + (motionReduced() ? 2800 : 1000);
           }
         }
         if (!live || count < 2) r.until = 0;

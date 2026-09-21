@@ -49,3 +49,40 @@ test('automatic chain gauges and character tiers work for both owners without bu
   const source=fs.readFileSync(require.resolve('../shiritori-ui.js'),'utf8');
   assert.ok(!source.includes('sh_combo_begin'));
 });
+
+test('reduced-motion holds chain burst longer for readability', () => {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const src = fs.readFileSync(require.resolve('../chain-ui.js'),'utf8');
+  assert.match(src, /motionReduced\(\) \? 2800 : 1000/);
+  assert.match(src, /prefers-reduced-motion:\s*reduce/);
+  assert.match(src, /data-reduced/);
+
+  let now = 1_000_000;
+  const E = (tag,cls='') => ({tag,className:cls,children:[],style:{},dataset:{},hidden:false,append(...c){this.children.push(...c);},setAttribute(k,v){this[k]=v;}});
+  const add = (p,...c) => {p.append(...c);return p;};
+  const sandbox = {
+    window: {
+      chainVoice: {play(){}},
+      matchMedia: (q) => ({matches: /prefers-reduced-motion:\s*reduce/.test(String(q))}),
+      createTimedChainView: null,
+    },
+    document: {getElementById: () => null},
+    Date: {now: () => now},
+  };
+  vm.runInNewContext(src, sandbox);
+  const portraits=[{image:E('div')},{image:E('div')}];
+  const view=sandbox.window.createTimedChainView({E,add,portraits});
+  view.update({you:{count:1,tier:1,event:0,window:4.5,remaining:4},cpu:{count:0,tier:0,event:0}}, true);
+  now = 1_000_000;
+  view.update({you:{count:3,tier:1,event:1,window:4.5,remaining:3.5},cpu:{count:0,tier:0,event:0}}, true);
+  const burst=view.root.children[0].children[2];
+  assert.equal(burst.hidden, false);
+  now = 1_000_000 + 1200;
+  view.update({you:{count:3,tier:1,event:1,window:4.5,remaining:3.0},cpu:{count:0,tier:0,event:0}}, true);
+  assert.equal(burst.hidden, false, 'RM banner still visible past 1s default');
+  now = 1_000_000 + 2900;
+  view.update({you:{count:3,tier:1,event:1,window:4.5,remaining:2.0},cpu:{count:0,tier:0,event:0}}, true);
+  assert.equal(burst.hidden, true, 'RM banner clears after 2.8s hold');
+});
+
