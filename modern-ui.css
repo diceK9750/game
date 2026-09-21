@@ -270,6 +270,12 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-round-progress { height: 3px; flex-shrink: 0; border-radius: 5px; background: #b5ddd217; margin: 0 10px; overflow: hidden; }
 .nr-round-progress > div { height: 100%; background: linear-gradient(90deg, #72ceb8, #f8da92); transition: width 160ms ease-out; }
 .nr-play-stage { display: flex; align-items: center; justify-content: space-between; min-height: 100px; flex-shrink: 0; gap: 20px; padding: 0 28px; }
+/* #83: practice solo play cast after #80 hides LUNA — center RIN with absolute+left
+   (parity denser result #82). Battle duo left/right absolute unchanged; JS [hidden] owns hide. */
+.nr-play-stage:has(> .nr-koh[hidden]) { justify-content: center; position: relative; }
+.nr-play-stage:has(> .nr-koh[hidden]) .nr-rin {
+  position: absolute; left: 0; right: 0; bottom: 1px; margin-inline: auto; z-index: -1;
+}
 .nr-stage-middle { flex: 1; min-width: 0; max-width: 670px; text-align: center; }
 .nr-play-stats { display: flex; justify-content: space-around; gap: 15px; }
 .nr-stat { text-align: center; }
