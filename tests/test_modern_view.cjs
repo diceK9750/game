@@ -850,6 +850,108 @@ test('ready entry focuses primary start 1から順番; same-screen and overlays 
   assert.equal(b.document.activeElement, resume, 'pause entry still focuses プレイを続ける');
 });
 
+test('ready Tab cycles setup controls and does not escape to chrome', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const headerSound = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
+  const headerHelp = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === '遊び方');
+  const gamesBack = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'ゲーム選択');
+  const collectStops = (roots) => {
+    const stops = [];
+    const visit = (node) => {
+      if (!node || node.hidden) return;
+      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+      for (const child of node.children || []) visit(child);
+    };
+    for (const root of roots) visit(root);
+    return stops;
+  };
+  const setupRoots = (readyScreen) => {
+    const kind = walk(readyScreen).find(n => n.getAttribute && n.getAttribute('aria-label') === '遊び方を選ぶ');
+    const ranges = walk(readyScreen).find(n => n.getAttribute && n.getAttribute('aria-label') === '数字の範囲');
+    const levels = walk(readyScreen).find(n => n.getAttribute && n.getAttribute('aria-label') === 'CPUの強さ');
+    const difficultyWrap = levels && levels.parentElement;
+    const ordered = walk(readyScreen).find(n =>
+      n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
+    const random = walk(readyScreen).find(n =>
+      n.tagName === 'BUTTON' && String(n.className).includes('nr-secondary'));
+    const startGroup = ordered && ordered.parentElement;
+    return {kind, ranges, difficultyWrap, startGroup, ordered, random};
+  };
+
+  // Battle ready: entry 「1から順番」 (#50); Tab cycles kind/range/difficulty/start only.
+  b.render('home', {cells: []});
+  b.render('ready', {cells: [], kind: 'battle', max_number: 10, difficulty: 'normal'});
+  const readyScreen = screenOf('ready');
+  const roots = setupRoots(readyScreen);
+  assert.equal(b.document.activeElement, roots.ordered, 'ready entry still focuses 1から順番 (#50)');
+  assert.equal(roots.difficultyWrap.hidden, false, 'battle shows difficulty');
+
+  const battleStops = collectStops([roots.kind, roots.ranges, roots.difficultyWrap, roots.startGroup]);
+  assert.equal(battleStops.length, 11, 'battle setup exposes kind+range+difficulty+start');
+  assert.ok(battleStops.includes(roots.ordered) && battleStops.includes(roots.random));
+  assert.ok(!battleStops.includes(headerSound), 'header BGM is outside the trap');
+  assert.ok(!battleStops.includes(headerHelp), 'header 遊び方 is outside the trap');
+  assert.ok(!battleStops.includes(gamesBack), 'header ゲーム選択 is outside the trap');
+  const settings = walk(readyScreen).filter(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-setting'));
+  assert.ok(settings.length >= 2, 'ready still exposes sfx/motion settings');
+  for (const btn of settings) {
+    assert.ok(!battleStops.includes(btn), 'ready settings stay outside the setup trap');
+  }
+
+  const orderedIdx = battleStops.indexOf(roots.ordered);
+  roots.ordered.focus();
+  for (let i = 0; i < battleStops.length; i++) {
+    const expected = battleStops[(orderedIdx + i + 1) % battleStops.length];
+    b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(b.document.activeElement, expected, `battle Tab step ${i + 1} stays in setup`);
+    assert.notEqual(b.document.activeElement, headerSound, 'Tab must not escape to ♪ chrome');
+  }
+  roots.ordered.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(
+    b.document.activeElement,
+    battleStops[(orderedIdx - 1 + battleStops.length) % battleStops.length],
+    'Shift+Tab wraps inside setup'
+  );
+
+  // Focus already on chrome: Tab pulls back into setup (first kind control).
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, battleStops[0], 'Tab from chrome re-enters setup');
+
+  // Practice hides difficulty; Tab still cycles remaining setup controls only.
+  // Leave and re-enter ready so #50 entry focus runs (same-screen ready keeps focus).
+  b.render('home', {cells: []});
+  b.render('ready', {cells: [], kind: 'practice', max_number: 20});
+  assert.equal(b.document.activeElement, roots.ordered, 'practice ready still focuses 1から順番 (#50)');
+  assert.equal(roots.difficultyWrap.hidden, true, 'practice hides difficulty');
+  const practiceStops = collectStops([roots.kind, roots.ranges, roots.difficultyWrap, roots.startGroup]);
+  assert.equal(practiceStops.length, 8, 'practice setup omits hidden difficulty');
+  assert.ok(!practiceStops.some(n => walk(roots.difficultyWrap).includes(n)));
+  roots.ordered.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, roots.random, 'practice Tab moves to ランダム');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, practiceStops[0], 'practice Tab wraps to first kind');
+  assert.notEqual(b.document.activeElement, headerSound);
+
+  // Confirm trap still works after ready (#45 regression guard).
+  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
+  b.render('playing', {cells: cellsState});
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.notEqual(b.document.activeElement, headerSound, 'confirm Tab still trapped after ready');
+
+  // Playing leaves Tab alone (no ready trap bleed).
+  b.render('playing', {cells: cellsState});
+  const cell = b.cells()[0];
+  cell.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, cell, 'playing leaves Tab alone (no preventDefault cycle)');
+});
+
 test('home entry focuses first enabled game card; same-screen and ready spared', () => {
   const b = browserHarness();
   const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
