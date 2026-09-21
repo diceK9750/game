@@ -427,8 +427,8 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
+  assert.match(index, /player\.html\?v=practice-ready-cast-86-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -457,6 +457,47 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   assert.equal(b.document.activeElement, retry, 'practice result still focuses replay (#17)');
 });
 
+test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
+  assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
+  assert.match(index, /player\.html\?v=practice-ready-cast-86-1/);
+
+  const b = browserHarness();
+  const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
+  const kohIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-koh'));
+  const rinIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-rin'));
+  const versusIn = (parent) => parent && parent.children.find(n => n.className === 'nr-versus');
+
+  b.render('ready', {kind: 'battle', cells: []});
+  assert.equal(kohIn(heroCast()).hidden, false, 'battle ready shows LUNA');
+  assert.equal(versusIn(heroCast()).hidden, false, 'battle ready shows VS');
+  assert.equal(rinIn(heroCast()).hidden, false, 'battle ready shows RIN');
+
+  b.render('ready', {kind: 'practice', cells: []});
+  assert.equal(kohIn(heroCast()).hidden, true, 'practice ready hides LUNA');
+  assert.equal(versusIn(heroCast()).hidden, true, 'practice ready hides VS');
+  assert.equal(rinIn(heroCast()).hidden, false, 'practice ready keeps RIN');
+
+  // #80 play+result hide still wired; #50 ready focus still 1から順番.
+  b.render('playing', {kind: 'practice', cells: state().cells});
+  const playStage = walk(b.app).find(n => n.className === 'nr-play-stage');
+  assert.equal(kohIn(playStage).hidden, true, 'practice play still hides LUNA (#80)');
+  b.render('finished', {kind: 'practice', perfect: false, won: true, cells: state().cells});
+  const resultDuo = walk(b.app).find(n => n.className === 'nr-result-duo');
+  assert.equal(kohIn(resultDuo).hidden, true, 'practice result still hides LUNA (#80)');
+
+  // Leave finished → ready so #50 entry focus runs (same-screen ready keeps focus).
+  b.render('ready', {kind: 'practice', cells: []});
+  const ready = walk(b.app).find(n => n.dataset.screen === 'ready');
+  const ordered = walk(ready).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
+  assert.equal(b.document.activeElement, ordered, 'practice ready still focuses 1から順番 (#50)');
+});
+
 test('practice result solo-cast denser/centered after LUNA hide; drop redundant visibility CSS (#81)', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
   const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
@@ -474,8 +515,8 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
+  assert.match(index, /player\.html\?v=practice-ready-cast-86-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -511,8 +552,8 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
+  assert.match(index, /player\.html\?v=practice-ready-cast-86-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -1904,7 +1945,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
 });
 
@@ -1980,7 +2021,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
 });
 

@@ -43,7 +43,7 @@ test('shiritori solo arena collapses empty LUNA column on desktop (#85 parity #8
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /character-layout\.css\?v=sh-arena-solo-85-1/);
-  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
+  assert.match(index, /player\.html\?v=practice-ready-cast-86-1/);
   // #80 JS still owns hide.
   const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
   assert.match(js, /koh\.wrap\.hidden = solo/);
