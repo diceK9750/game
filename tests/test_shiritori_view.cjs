@@ -305,6 +305,45 @@ test('blocked entry focuses rescue primary; overlays and play-start spared', () 
   assert.equal(doc.activeElement, dictFocus, 'open dictionary keeps focus (no rescue steal)');
 });
 
+test('blocked Tab stays on rescue つなぎ直す and does not escape (parity help #46)', () => {
+  const {view, state, queue, doc} = harness();
+  const cards12 = Array.from({length: 12}, (_, i) => ({
+    id: 'apple', icon: '🍎', words: ['りんご'], owner: null
+  }));
+  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
+
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'playing', turn: 'you', hints: 2});
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 2, hints: 2});
+  const rescue = btn(view.page, 'つなぎ直す あと2回');
+  assert.equal(doc.activeElement, rescue, 'blocked entry still focuses rescue (#60)');
+
+  // Single enabled play-action: Tab / Shift+Tab stay on rescue (no escape to setup/dict).
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, rescue, 'blocked Tab stays on つなぎ直す');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(doc.activeElement, rescue, 'blocked Shift+Tab stays on つなぎ直す');
+
+  // Hint remains disabled and out of the ring; cards stay disabled.
+  const hint = view.page.querySelectorAll('button').find(b => /^ヒント/.test(b.textContent || ''));
+  assert.ok(hint && hint.disabled, 'hint stays disabled while blocked');
+  assert.ok(view.page.querySelectorAll('.sh-card').filter(c => !c.hidden).every(b => b.disabled),
+    'visible cards stay disabled while blocked');
+
+  // Esc still requests pause (#16 family) while blocked.
+  const beforeEsc = queue.length;
+  view.page.emit('keydown', {key: 'Escape'});
+  assert.equal(queue.length, beforeEsc + 1);
+  assert.equal(queue.at(-1).action, 'sh_pause', 'Esc on blocked still pauses');
+
+  // Playing: Tab is still not trapped (cards keep native order / no cycle).
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'playing', turn: 'you', hints: 2});
+  const first = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden)[0];
+  first.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no preventDefault cycle)');
+});
+
+
 test('shiritori deal motion respects reduced-motion and data-reduced', () => {
   const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
   assert.match(css, /#modern-app\[data-reduced='true'\] \.sh-icon \{ animation: none/);
