@@ -231,6 +231,22 @@
   const cpuHud = add(E('div', 'nr-score-card nr-cpu'), add(E('div'), E('span', 'nr-overline', 'CPU / ルナ'), E('span', 'nr-score-note', '同じお題を探しています')), cpuScore);
   const target = E('strong', 'nr-target-number', '1');
   const targetWrap = add(E('div', 'nr-target'), E('span', 'nr-overline', 'この数字をさがそう'), target);
+  // お題 change cue: pulse HUD when target flips so players notice the new goal.
+  // Full motion uses CSS animationend (no timer APIs); reduced keeps static until next change / leave play.
+  targetWrap.dataset.cue = 'false';
+  targetWrap.dataset.pulse = '0';
+  let prevTargetKey = null;
+  function clearTargetCue() {
+    targetWrap.dataset.cue = 'false';
+  }
+  function flashTargetCue() {
+    targetWrap.dataset.cue = 'true';
+    targetWrap.dataset.pulse = targetWrap.dataset.pulse === '0' ? '1' : '0';
+  }
+  targetWrap.addEventListener('animationend', (event) => {
+    if (event.target !== targetWrap) return;
+    clearTargetCue();
+  });
   add(hud, youHud, targetWrap, cpuHud);
   const boardWrap = E('div', 'nr-board-wrap');
   const board = E('div', 'nr-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', '数字パネル 5行8列');
@@ -382,7 +398,18 @@
     for (const [p, side] of allPortraits) {
       const pose = state[side] || 'idle'; p.image.style.backgroundPosition = posePosition(pose); p.image.dataset.pose = pose;
     }
-    target.textContent = state.target == null ? '✓' : state.target;
+    const targetValue = state.target == null ? '✓' : String(state.target);
+    target.textContent = targetValue;
+    if (playing) {
+      if (prevTargetKey !== targetValue) {
+        // First enter playing or お題 change — visual cue (aria-live already announces).
+        flashTargetCue();
+        prevTargetKey = targetValue;
+      }
+    } else {
+      if (prevTargetKey !== null || targetWrap.dataset.cue === 'true') clearTargetCue();
+      prevTargetKey = null;
+    }
     youScore.textContent = battle ? integer(state.player_points) : integer(state.completed);
     cpuScore.textContent = battle ? integer(state.cpu_points) : integer(state.max_number);
     youGoal.textContent = battle ? `${integer(state.goal)}点で勝利` : '見つけた数字';

@@ -198,6 +198,33 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-target { display: flex; align-items: center; justify-content: center; gap: 16px; border: 1px solid #f9d58a66; border-radius: 17px; background: linear-gradient(115deg, #80633438, #eab6631a); box-shadow: inset 0 0 24px #edc27908; }
 .nr-target .nr-overline { color: #f6deb0; font-size: 12px; }
 .nr-target-number { font-size: 50px; line-height: 1; font-weight: 900; color: #ffe8ac; font-variant-numeric: tabular-nums; }
+/* Numbers HUD お題 change cue: brief gold pulse when target flips. Pulse 0/1 restarts.
+   Reduced: static brighter ring (no motion) until next change or leave play. */
+.nr-target[data-cue='true'][data-pulse='0'] { animation: nr-target-cue-a .85s ease both; }
+.nr-target[data-cue='true'][data-pulse='1'] { animation: nr-target-cue-b .85s ease both; }
+.nr-target[data-cue='true'] .nr-target-number { text-shadow: 0 0 12px #ffe8acaa; }
+@keyframes nr-target-cue-a {
+  0% { box-shadow: inset 0 0 24px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+  22% { box-shadow: inset 0 0 28px #edc27955, 0 0 16px #ffe8ac99; border-color: #ffe8ac; transform: scale(1.04); }
+  100% { box-shadow: inset 0 0 24px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+}
+@keyframes nr-target-cue-b {
+  0% { box-shadow: inset 0 0 24px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+  22% { box-shadow: inset 0 0 28px #edc27955, 0 0 16px #ffe8ac99; border-color: #ffe8ac; transform: scale(1.04); }
+  100% { box-shadow: inset 0 0 24px #edc27908, 0 0 0 0 #ffe8ac00; border-color: #f9d58a66; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nr-target[data-cue='true'] {
+    animation: none !important; transform: none;
+    border-color: #ffe8ac; box-shadow: inset 0 0 0 3px #ffe8ac88, 0 0 0 2px #f9d58a66;
+  }
+  .nr-target[data-cue='true'] .nr-target-number { text-shadow: none; }
+}
+#modern-app[data-reduced='true'] .nr-target[data-cue='true'] {
+  animation: none !important; transform: none;
+  border-color: #ffe8ac; box-shadow: inset 0 0 0 3px #ffe8ac88, 0 0 0 2px #f9d58a66;
+}
+#modern-app[data-reduced='true'] .nr-target[data-cue='true'] .nr-target-number { text-shadow: none; }
 .nr-board-wrap { flex: 1; min-height: 0; display: flex; justify-content: center; }
 .nr-board { width: 100%; min-height: 0; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(24px, 1fr)); gap: clamp(5px, 1vw, 10px); padding: 10px; border: 1px solid #add9d424; border-radius: 22px; background: #071b26b8; box-shadow: 0 12px 30px #0002, inset 0 1px 0 #e1faed09; }
 .nr-cell { position: relative; isolation: isolate; min-width: 0; min-height: 24px; border: 1px solid #fff6; border-radius: 11px;
@@ -511,6 +538,10 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .sh-card[data-refilled='true'] small {
     color: #fff; background: #8a6000; border-color: #a07000;
   }
+  #modern-app .nr-target[data-cue='true'] {
+    border: 2px solid #c9a227; box-shadow: inset 0 0 0 2px #8a6000; animation: none; transform: none;
+  }
+  #modern-app .nr-target[data-cue='true'] .nr-target-number { text-shadow: none; color: #fff4c8; }
   #modern-app .nr-cell[data-cpu-selecting='true'],
   #modern-app .sh-card[data-cpu-selecting='true'] {
     outline: 4px solid #b01878; outline-offset: -1px;
@@ -598,5 +629,12 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   /* Settings persist toast: system colors when HC remaps gold/mint. */
   #modern-app .nr-settings-toast {
     border: 2px solid CanvasText; background: Canvas; color: CanvasText; box-shadow: none;
+  }
+  /* Numbers HUD お題 cue: Highlight ring when HC remaps gold pulse. */
+  #modern-app .nr-target[data-cue='true'] {
+    border: 3px solid Highlight; box-shadow: none; animation: none; transform: none;
+  }
+  #modern-app .nr-target[data-cue='true'] .nr-target-number {
+    color: CanvasText; text-shadow: none; forced-color-adjust: none;
   }
 }
