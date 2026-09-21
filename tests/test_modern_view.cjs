@@ -109,6 +109,23 @@ test('forced-colors and prefers-contrast keep miss/CPU/correct durable outlines 
   assert.match(forced, /data-feedback='cpu'[^{]*\{[^}]*box-shadow: none/);
 });
 
+test('nr-cell keyboard focus uses ::before ring so durable outlines stay visible', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  // Shell buttons keep outline focus; cells are excluded so feedback outlines are not clobbered.
+  assert.match(css, /#modern-app button:not\(\.nr-cell\):focus-visible/);
+  assert.match(css, /#modern-app \.nr-cell:focus-visible \{ outline: none; \}/);
+  assert.match(css, /#modern-app \.nr-cell:focus-visible::before \{[^}]*box-shadow: inset 0 0 0 3px #f9d58a/);
+  // Feedback selectors carry #modern-app so they beat focus outline:none when both apply.
+  assert.match(css, /#modern-app \.nr-cell\[data-feedback='wrong'\]/);
+  assert.match(css, /#modern-app \.nr-cell\[data-feedback='correct'\]/);
+  assert.match(css, /#modern-app \.nr-cell\[data-feedback='cpu'\]/);
+  // Contrast / forced-colors keep a visible focus ring without reclaiming outline.
+  const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
+  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.nr-cell:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px #c9a227/);
+  const forcedIdx = css.indexOf('@media (forced-colors: active)');
+  assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-cell:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px Highlight/);
+});
+
 test('markHostInsets tags embedded iframe and clears standalone', () => {
   const root = { attrs: {}, setAttribute(k, v) { this.attrs[k] = v; }, removeAttribute(k) { delete this.attrs[k]; } };
   const winEmbedded = {}; winEmbedded.parent = {};
