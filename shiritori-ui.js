@@ -178,6 +178,13 @@
         dialogTabStops(startGroup)
       );
     }
+    // Finished result Tab ring (#48 parity): もう一度遊ぶ / モード選択 / 読み方ずかん
+    // only. Header ♪ chrome stays outside (reclaim via modern-ui). Overlays (#46)
+    // win when dict/help/restart/pause are open. Entry replay focus (#19) intact.
+    function resultTabStops() {
+      if (latest?.phase !== 'finished' || dictionaryOpen || helpOpen) return [];
+      return dialogTabStops(result);
+    }
     function cycleTabStops(event, stops) {
       if (!stops.length) return false;
       event.preventDefault();
@@ -192,6 +199,8 @@
       if (event.key !== 'Tab') return false;
       const root = activeOverlayRoot();
       if (root) return cycleTabStops(event, dialogTabStops(root));
+      // Finished result when no overlay: reclaim from ♪ chrome (#48 / #19).
+      if (latest?.phase === 'finished') return cycleTabStops(event, resultTabStops());
       // Intro setup when no overlay: reclaim from ♪ chrome / settings / dict.
       return cycleTabStops(event, introSetupTabStops());
     }
@@ -202,9 +211,9 @@
         if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');
         return;
       }
-      // Overlay Tab trap (#46) + intro setup Tab trap (#52 parity): cycle dialog /
-      // mode-count-difficulty-start only. Entry (#44 overlays / intro h1), Esc,
-      // and play-start card focus (#35) stay unchanged.
+      // Overlay Tab trap (#46) + intro setup (#52/#56) + finished result (#48 parity):
+      // cycle dialog / setup / result controls only. Entry (#44 overlays / intro h1 /
+      // #19 replay), Esc, and play-start card focus (#35) stay unchanged.
       if (trapOverlayTab(event)) return;
       // Arrow keys move among playable .sh-card buttons (parity with number-rush nextPlayable).
       // Enter/Space stay native button activation; mouse/touch paths unchanged.
