@@ -93,8 +93,9 @@
   .sh-ready-settings .sh-config, .sh-ready-settings .sh-level-settings { gap: 5px; }
 }
 @media (orientation: landscape) and (max-height: 360px) {
-  .sh-stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 32px minmax(0, 1fr) 44px; }
-  .sh-arena { grid-column: 1 / -1; grid-row: 2; height: 100%; }
+  /* #87: 4-row stage (HUD | status | arena | actions); mobile-layout densifies ≤500. */
+  .sh-stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 28px 14px minmax(0, 1fr) 44px; }
+  .sh-arena { grid-column: 1 / -1; grid-row: 3; height: 100%; }
   .sh-arena .sh-board-space { grid-column: auto; grid-row: auto; }
   .sh-arena > .nr-character { width: min(100%, calc(100dvh - 142px)); justify-self: center; }
 }
