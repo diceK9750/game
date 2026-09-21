@@ -209,6 +209,25 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* #101: practice stage-middle densify after CPU-row hide — reclaim leftover
+     flex slot so stats+feedback+hint pack the ≥44px strip beside HUD
+     (parity play HUD #100). JS [hidden] owns hide; battle keeps
+     stats|cpu-row|feedback. Do not clip #97 feedback or #91 progress.
+     Not cast/:has(koh). */
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) {
+    gap: 8px;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats {
+    flex: 1 1 auto;
+    gap: 10px;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong {
+    font-size: 12px;
+  }
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-feedback {
+    flex: 1 1 35%;
+    max-width: none;
+  }
   /* #87: short-landscape shiritori play HUD/prompt density — park progress beside
      HUD (parity numbers #21) and pin status to a thin strip so arena reclaims a
      full row without clipping task/prompt/status. Keep #69-family task pulse +
@@ -455,6 +474,10 @@
   #modern-app[data-kind='battle'] .nr-play-stats { grid-column: 1; grid-row: 1; }
   #modern-app[data-kind='battle'] .nr-cpu-row { grid-column: 2; grid-row: 1; }
   #modern-app[data-kind='battle'] .nr-stage-middle > .timed-chains { grid-column: 1 / -1; grid-row: 2; }
+  /* #101: extreme-short practice keeps denser stats; battle 2-col grid above intact. */
+  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong {
+    font-size: 11px;
+  }
   /* #87 extreme-short: keep task/prompt/status (override prior hide); denser 4-row. */
   .sh-stage {
     display: grid;
