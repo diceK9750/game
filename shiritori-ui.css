@@ -83,6 +83,7 @@
 .sh-setting-note { font-size: 12px; color: var(--nr-muted); }
 .sh-guide { font-size: 12px; }
 .sh-guide summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
+.sh-result-history summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
 .sh-config .sh-actions button[aria-pressed='true'] { border-color: var(--nr-gold); background: #395d62; }
 .sh-start-actions { position: sticky; bottom: 0; background: #16303cf5; padding: 8px 0; z-index: 2; }
 .sh-play-actions button { min-height: 44px; }

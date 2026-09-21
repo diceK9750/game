@@ -112,7 +112,7 @@
     const resultSetup = button('モード選択', 'sh_setup', undefined, 'nr-secondary');
     add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultKoh.wrap), reason, tally,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
-      add(E('details'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
+      add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
     add(page, intro, stage, pause, result);
     let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false, keyboardCard = 0, boardCols = 4;
     const helpPage=E('div','sh-intro nr-help-card nr-surface');
@@ -178,12 +178,23 @@
         dialogTabStops(startGroup)
       );
     }
-    // Finished result Tab ring (#48 parity): もう一度遊ぶ / モード選択 / 読み方ずかん
-    // only. Header ♪ chrome stays outside (reclaim via modern-ui). Overlays (#46)
-    // win when dict/help/restart/pause are open. Entry replay focus (#19) intact.
+    // Finished result Tab ring (#48/#58): もう一度遊ぶ / モード選択 / history
+    // <summary> / 読み方ずかん. Header ♪ chrome stays outside (reclaim via
+    // modern-ui). Overlays (#46) win when dict/help/restart/pause are open.
+    // Entry replay focus (#19) intact. History summary joins the ring so
+    // keyboard users can open/close「ことばと別の読み方を振り返る」without
+    // escaping the trap (pointer/touch unchanged).
     function resultTabStops() {
       if (latest?.phase !== 'finished' || dictionaryOpen || helpOpen) return [];
-      return dialogTabStops(result);
+      const stops = [];
+      (function visit(node) {
+        if (!node || node.hidden) return;
+        if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+        else if (node.tagName === 'SUMMARY') stops.push(node);
+        const kids = node.children || [];
+        for (let i = 0; i < kids.length; i++) visit(kids[i]);
+      })(result);
+      return stops;
     }
     function cycleTabStops(event, stops) {
       if (!stops.length) return false;
@@ -228,10 +239,12 @@
         return;
       }
       if (latest?.phase === 'finished' && (event.key === 'Enter' || event.key === ' ') && !event.repeat) {
-        // Match number-rush #17: primary replay path; keep mode/dict/header on native activation.
+        // Match number-rush #17: primary replay path; keep mode/dict/header and
+        // history <summary> (native details toggle) on native activation.
         const active = document.activeElement;
         const onVisibleButton = active?.tagName === 'BUTTON' && page.contains(active) && !active.closest('[hidden]');
-        if (!onVisibleButton) { event.preventDefault(); command('sh_start'); }
+        const onHistorySummary = active?.tagName === 'SUMMARY' && page.contains(active) && !active.closest('[hidden]');
+        if (!onVisibleButton && !onHistorySummary) { event.preventDefault(); command('sh_start'); }
       }
     });
     return {page, isOverlayOpen:()=>dictionaryOpen || helpOpen, trapOverlayTab,
