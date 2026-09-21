@@ -263,12 +263,26 @@
         log.replaceChildren(...s.history.map(row => add(E('li'), E('strong', '', `${row.relinked ? '↪ つなぎ直し · ' : ''}${row.owner === 'you' ? 'リン' : 'ルナ'}：${row.icon} ${row.word}`), E('small', '', `読み方：${(row.readings || [row.word]).join(' ／ ')}`))));
       }
       if (lastPhase !== s.phase) {
-        // Result→replay: land on primary もう一度遊ぶ so Enter/Space restarts without Tab hunting.
-        if (s.phase === 'finished') {
-          resultRetry.focus({preventScroll: true});
-        } else {
-          const heading = (s.phase === 'intro' ? intro : s.phase === 'paused' ? (restartRequested ? restartPage : pause) : hud).querySelector('h1, strong');
-          if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
+        // Never yank focus away from help/dictionary overlays (or restart confirm title).
+        if (!dictionaryOpen && !helpOpen && restartPage.hidden) {
+          // Result→replay: land on primary もう一度遊ぶ so Enter/Space restarts without Tab hunting.
+          if (s.phase === 'finished') {
+            resultRetry.focus({preventScroll: true});
+          } else if (s.phase === 'playing') {
+            // Play start: land on first playable .sh-card so arrow nav (#34) has a clear origin
+            // without Tab hunting. Mouse/touch paths unchanged.
+            const playable = slots.findIndex(item => !item.card.hidden && !item.card.disabled);
+            if (playable >= 0) {
+              keyboardCard = playable;
+              slots[playable].card.focus({preventScroll: true});
+            } else {
+              const heading = hud.querySelector('h1, strong');
+              if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
+            }
+          } else {
+            const heading = (s.phase === 'intro' ? intro : s.phase === 'paused' ? (restartRequested ? restartPage : pause) : hud).querySelector('h1, strong');
+            if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
+          }
         }
         page.scrollTop = 0;
       }
