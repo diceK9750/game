@@ -193,8 +193,9 @@
   const heroRin = portrait('rin', 'RIN / あなた'), heroKoh = portrait('koh', 'LUNA / ライバル');
   const heroVersus = E('span', 'nr-versus', 'VS');
   const title = E('h1', '', '見つけた！が、勝負になる。');
-  add(intro, E('span', 'nr-eyebrow', 'QUICK EYES. BRIGHT MOMENTS.'), title,
-    E('p', 'nr-intro-copy', 'お題の数字を、ライバルより先に見つけよう。\n順番・ランダムのお題で対戦。一人での練習も楽しめます。'),
+  // Named so render can swap kind-aware copy (practice must not say ライバル; #92).
+  const introCopy = E('p', 'nr-intro-copy', 'お題の数字を、ライバルより先に見つけよう。\n順番・ランダムのお題で対戦。一人での練習も楽しめます。');
+  add(intro, E('span', 'nr-eyebrow', 'QUICK EYES. BRIGHT MOMENTS.'), title, introCopy,
     add(heroCast, heroRin.wrap, heroVersus, heroKoh.wrap));
   const setup = E('div', 'nr-setup nr-surface');
   add(setup, E('div', 'nr-setup-heading', '今日のチャレンジ'));
@@ -412,6 +413,10 @@
     select(kindButtons, ['battle', 'practice'], state.kind); select(rangeButtons, [10, 20, 30, 40], state.max_number); select(levelButtons, ['easy', 'normal', 'hard'], state.difficulty);
     difficultyWrap.hidden = !battle;
     kindDescription.textContent = battle ? `先に見つけると1点。${state.goal || Math.ceil(state.max_number * .6)}点以上で勝利！` : '自分のペースで、すべての数字を見つけよう。';
+    // Practice has no rival — ready intro must not say ライバル (parity pause #90).
+    introCopy.textContent = battle
+      ? 'お題の数字を、ライバルより先に見つけよう。\n順番・ランダムのお題で対戦。一人での練習も楽しめます。'
+      : 'お題の数字を、自分のペースで見つけよう。\n順番・ランダムのお題で、時間を気にせず練習しよう。';
     readyRecord.textContent = state.bonus_bank ? `✦ 集めたボーナス ${integer(state.bonus_bank).toLocaleString()} pt` : 'いつでも一時停止できます。音量を調節して楽しもう。';
     for (const [p, side] of allPortraits) {
       const pose = state[side] || 'idle'; p.image.style.backgroundPosition = posePosition(pose); p.image.dataset.pose = pose;
