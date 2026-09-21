@@ -49,7 +49,16 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 #modern-app [hidden], #modern-app[hidden] { display: none !important; }
 #modern-app h1, #modern-app h2, #modern-app p { margin: 0; }
 #modern-app button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-#modern-app button:focus-visible, #modern-app [tabindex='-1']:focus-visible { outline: 3px solid #f9d58a; outline-offset: 3px; }
+/* Shell controls keep outline focus. Board cells use a ::before ring below so
+   durable miss/CPU/correct outlines are not clobbered (higher-specificity outline). */
+#modern-app button:not(.nr-cell):focus-visible, #modern-app [tabindex='-1']:focus-visible { outline: 3px solid #f9d58a; outline-offset: 3px; }
+/* Keyboard-only cell focus: inset ring via ::before. Leaves outline + box-shadow free
+   for feedback; :focus-visible keeps mouse taps free of sticky rings. */
+#modern-app .nr-cell:focus-visible { outline: none; }
+#modern-app .nr-cell:focus-visible::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 5;
+  box-shadow: inset 0 0 0 3px #f9d58a;
+}
 #modern-app button:disabled { cursor: default; }
 .nr-header { width: 100%; max-width: 1180px; margin: 0 auto; min-height: 68px; display: flex; align-items: center; gap: 20px; flex-shrink: 0;
   border-bottom: 1px solid var(--nr-border); }
@@ -235,13 +244,14 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-ring-cpu { border-color: #f4a8cb; }
 .nr-cpu-claim { position: absolute; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: .4px; color: #fff; background: #8a1f5aee; box-shadow: 0 0 10px #ed56ff88; animation: nr-cpu-claim 650ms both; }
 @keyframes nr-cpu-claim { 0% { transform: scale(.6); opacity: 0; } 25%, 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(.9) translateY(-6px); opacity: 0; } }
-/* Miss outline outlasts the bomb burst so wrong taps stay readable beside correct/CPU FX. */
-.nr-cell[data-feedback='wrong'] {
+/* Miss outline outlasts the bomb burst so wrong taps stay readable beside correct/CPU FX.
+   #modern-app prefix beats .nr-cell:focus-visible { outline: none } when both apply. */
+#modern-app .nr-cell[data-feedback='wrong'] {
   outline: 3px solid #f67f81; outline-offset: -3px; background: #f8b5b4;
   box-shadow: inset 0 0 0 2px #c44a4c88, 0 0 10px #f67f8155; z-index: 2;
 }
-.nr-cell[data-feedback='correct'] { outline: 3px solid #b4f6d5; outline-offset: -3px; }
-.nr-cell[data-feedback='cpu'] { outline: 3px solid #f4a8cb; outline-offset: -3px; box-shadow: inset 0 0 0 2px #8a1f5a88, 0 0 10px #ed56ff55; }
+#modern-app .nr-cell[data-feedback='correct'] { outline: 3px solid #b4f6d5; outline-offset: -3px; }
+#modern-app .nr-cell[data-feedback='cpu'] { outline: 3px solid #f4a8cb; outline-offset: -3px; box-shadow: inset 0 0 0 2px #8a1f5a88, 0 0 10px #ed56ff55; }
 .nr-character-art[data-pose='celebrate'], .nr-character-art[data-pose='victory'] { animation: nr-joy 580ms ease-out; }
 .nr-character-art[data-pose='hurt'] { animation: nr-shake 350ms ease-out; }
 .nr-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
@@ -364,29 +374,35 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 /* High-contrast / forced-colors: keep miss/CPU/correct durable outlines readable
    when soft pastels and glow shadows are remapped or dropped. */
 @media (prefers-contrast: more) {
-  .nr-cell[data-feedback='wrong'] {
+  #modern-app .nr-cell[data-feedback='wrong'] {
     outline: 4px solid #d0181c; outline-offset: -3px; background: #ffd0d0;
     box-shadow: inset 0 0 0 2px #8a1010; z-index: 2;
   }
-  .nr-cell[data-feedback='correct'] {
+  #modern-app .nr-cell[data-feedback='correct'] {
     outline: 4px solid #0a8f55; outline-offset: -3px;
     box-shadow: inset 0 0 0 2px #066b40;
   }
-  .nr-cell[data-feedback='cpu'] {
+  #modern-app .nr-cell[data-feedback='cpu'] {
     outline: 4px solid #b01878; outline-offset: -3px;
     box-shadow: inset 0 0 0 2px #6a1048;
   }
+  #modern-app .nr-cell:focus-visible::before {
+    box-shadow: inset 0 0 0 4px #c9a227;
+  }
 }
 @media (forced-colors: active) {
-  .nr-cell[data-feedback='wrong'] {
+  #modern-app .nr-cell[data-feedback='wrong'] {
     outline: 4px solid LinkText; outline-offset: -3px; background: Canvas;
     box-shadow: none; z-index: 2;
   }
-  .nr-cell[data-feedback='correct'] {
+  #modern-app .nr-cell[data-feedback='correct'] {
     outline: 4px solid Highlight; outline-offset: -3px; box-shadow: none;
   }
-  .nr-cell[data-feedback='cpu'] {
+  #modern-app .nr-cell[data-feedback='cpu'] {
     outline: 4px solid ButtonText; outline-offset: -3px; box-shadow: none;
+  }
+  #modern-app .nr-cell:focus-visible::before {
+    box-shadow: inset 0 0 0 4px Highlight;
   }
 }
 /* Effects remain understandable when animations are turned off.
