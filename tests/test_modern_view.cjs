@@ -469,8 +469,8 @@ test('practice play HUD densifies YOU+お題 after CPU score-card hide (#100)', 
   assert.match(css, /\.nr-hud:has\(> \.nr-cpu\[hidden\]\) \{ gap: 12px; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.3fr\); \}/);
   // JS still hides CPU score-card in practice (drives :has).
   assert.match(js, /cpuHud\.hidden = !battle/);
-  assert.match(player, /modern-ui\.css\?v=toolbar-tap-109-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const hudOf = () => walk(b.app).find(n => n.className === 'nr-hud');
@@ -497,7 +497,7 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -533,7 +533,7 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -582,10 +582,10 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   // #80 hide still wired; #17 focus target unchanged.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
-  assert.match(player, /modern-ui\.css\?v=toolbar-tap-109-1/);
-  assert.match(player, /mobile-layout\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
+  assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -620,9 +620,9 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
-  assert.match(player, /modern-ui\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -2081,12 +2081,14 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   // #109: short max-height:500 toolbar pause/help ≥44 (was 34) for cascade safety.
   assert.match(css, /@media \(max-height: 500px\)[\s\S]*?\.nr-toolbar \.nr-button \{ min-height: 44px;/);
   assert.match(css, /@media \(max-height: 500px\)[\s\S]*?\.nr-icon-button \{ min-width: 44px;/);
+  // #110: short max-height:500 countdown control ≥44 (was 36) for cascade safety.
+  assert.match(css, /@media \(max-height: 500px\)[\s\S]*?\.nr-count-card \.nr-button \{ margin-top: 10px; min-height: 44px; \}/);
   assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
-  assert.match(player, /modern-ui\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(player, /mobile-layout\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -2119,8 +2121,8 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   assert.match(css, /\.nr-result-score \{[^}]*font-variant-numeric: tabular-nums/);
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
-  assert.match(player, /modern-ui\.css\?v=toolbar-tap-109-1/);
-  assert.match(player, /mobile-layout\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
+  assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
 });
 
 test('finished result still focuses primary replay after score hierarchy (#17)', () => {
@@ -2160,9 +2162,9 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-award \{[\s\S]*?border: 2px solid Highlight/);
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
-  assert.match(player, /modern-ui\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(player, /mobile-layout\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
 });
 
 test('finished result sets record data-record kinds for contrast styling', () => {
@@ -2241,10 +2243,10 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
   // #86 hide still wired.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
-  assert.match(player, /modern-ui\.css\?v=toolbar-tap-109-1/);
-  assert.match(player, /mobile-layout\.css\?v=toolbar-tap-109-1/);
+  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
+  assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -2281,7 +2283,7 @@ test('practice pause copy omits rival/CPU; battle keeps rival stopped (#90)', ()
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const mutedIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-muted'));
@@ -2309,7 +2311,7 @@ test('practice ready intro-copy omits rival; battle keeps ライバル (#92)', (
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const introIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-intro-copy'));
@@ -2337,7 +2339,7 @@ test('practice PERFECT award blurb omits 先取; battle keeps it (#93)', () => {
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const awardOf = () => walk(b.app).find(n => n.className === 'nr-award');
@@ -2375,7 +2377,7 @@ test('practice help pause clause omits CPU; battle keeps it (#94)', () => {
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2412,7 +2414,7 @@ test('practice help rival bullet uses pace copy; battle keeps rival (#95)', () =
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2450,5 +2452,5 @@ test('numbers play HUD localizes TIME label to タイム (parity with result #10
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=toolbar-tap-109-1/);
+  assert.match(index, /player\.html\?v=count-tap-110-1/);
 });
