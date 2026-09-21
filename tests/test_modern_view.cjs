@@ -422,13 +422,46 @@ test('number rival frame is unique, keeps input enabled and hides for pause or s
   b.render('playing',{kind:'practice'}); assert.ok(b.cells().every(c=>c.dataset.cpuSelecting==='false'));
 });
 
+test('practice play HUD densifies YOU+お題 after CPU score-card hide (#100)', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  // Base + compact/short breakpoints reclaim the empty third column.
+  assert.match(css, /\.nr-hud:has\(> \.nr-cpu\[hidden\]\) \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.35fr\);/);
+  assert.match(css, /\.nr-hud:has\(> \.nr-cpu\[hidden\]\) \{ gap: 8px; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.4fr\); \}/);
+  assert.match(css, /\.nr-hud:has\(> \.nr-cpu\[hidden\]\) \{ gap: 12px; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.3fr\); \}/);
+  // JS still hides CPU score-card in practice (drives :has).
+  assert.match(js, /cpuHud\.hidden = !battle/);
+  assert.match(player, /modern-ui\.css\?v=practice-hud-100-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
+
+  const b = browserHarness();
+  const hudOf = () => walk(b.app).find(n => n.className === 'nr-hud');
+  const cpuIn = (hud) => hud && hud.children.find(n => String(n.className).includes('nr-cpu'));
+  const youIn = (hud) => hud && hud.children.find(n => String(n.className).includes('nr-you'));
+  const targetIn = (hud) => hud && hud.children.find(n => String(n.className).includes('nr-target'));
+
+  b.render('playing', {kind: 'battle', cells: state().cells});
+  assert.equal(cpuIn(hudOf()).hidden, false, 'battle HUD shows CPU score-card');
+  assert.ok(youIn(hudOf()), 'battle HUD keeps YOU');
+  assert.ok(targetIn(hudOf()), 'battle HUD keeps お題');
+
+  b.render('playing', {kind: 'practice', cells: state().cells});
+  assert.equal(cpuIn(hudOf()).hidden, true, 'practice HUD hides CPU score-card');
+  assert.equal(youIn(hudOf()).hidden, false, 'practice HUD keeps YOU');
+  assert.ok(targetIn(hudOf()), 'practice HUD keeps お題');
+  // Battle trio grid still declared for the non-:has path.
+  assert.match(css, /\.nr-hud \{ display: grid; grid-template-columns: 1fr 1\.05fr 1fr;/);
+});
+
 test('practice hides LUNA cast on play stage and result (parity shiritori solo; #80)', () => {
   const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -464,7 +497,7 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -513,10 +546,10 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   // #80 hide still wired; #17 focus target unchanged.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
-  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-hud-100-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -551,9 +584,9 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
-  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-hud-100-1/);
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -1998,7 +2031,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
-  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-hud-100-1/);
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
 });
@@ -2033,7 +2066,7 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   assert.match(css, /\.nr-result-score \{[^}]*font-variant-numeric: tabular-nums/);
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
-  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-hud-100-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
 });
 
@@ -2074,7 +2107,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-award \{[\s\S]*?border: 2px solid Highlight/);
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
-  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-hud-100-1/);
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
 });
@@ -2155,10 +2188,10 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
   // #86 hide still wired.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
-  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-hud-100-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -2195,7 +2228,7 @@ test('practice pause copy omits rival/CPU; battle keeps rival stopped (#90)', ()
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const mutedIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-muted'));
@@ -2223,7 +2256,7 @@ test('practice ready intro-copy omits rival; battle keeps ライバル (#92)', (
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const introIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-intro-copy'));
@@ -2251,7 +2284,7 @@ test('practice PERFECT award blurb omits 先取; battle keeps it (#93)', () => {
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const awardOf = () => walk(b.app).find(n => n.className === 'nr-award');
@@ -2289,7 +2322,7 @@ test('practice help pause clause omits CPU; battle keeps it (#94)', () => {
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2326,7 +2359,7 @@ test('practice help rival bullet uses pace copy; battle keeps rival (#95)', () =
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
-  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=practice-hud-100-1/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
