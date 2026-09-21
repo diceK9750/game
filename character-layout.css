@@ -44,6 +44,9 @@
 .nr-ready .nr-hero-cast { display: flex; flex: 1; min-height: 0; height: auto; margin: 0; container-type: size; align-items: center; }
 .nr-ready .nr-hero-cast .nr-character { display: block; width: min(43cqw, calc(100cqh - 18px), 280px); align-self: center; }
 .nr-ready .nr-hero-cast .nr-character-name { display: block; font-size: 9px; }
+/* #89: ready solo cast denser RIN after LUNA+VS hide (parity result #82/#84). */
+.nr-ready .nr-hero-cast:has(> .nr-koh[hidden]) { gap: 12px; justify-content: center; }
+.nr-ready .nr-hero-cast:has(> .nr-koh[hidden]) .nr-character { width: min(56cqw, calc(100cqh - 18px), 320px); }
 .nr-ready .nr-hero-cast::before { display: none; }
 .sh-page[data-layout='setup'] { overflow: clip; }
 @media (orientation: portrait) {

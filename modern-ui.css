@@ -139,6 +139,10 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 #modern-app .nr-cell[data-cpu-selecting='true']::after, #modern-app .sh-card[data-cpu-selecting='true']::after { content: 'CPU'; position: absolute; top: 1px; right: 2px; padding: 1px 3px; border-radius: 3px; font-size: 9px; line-height: 1.2; font-weight: 900; color: white; background: #751887; pointer-events: none; }
 .nr-hero-cast .nr-character { width: min(44%, 230px); }
 .nr-hero-cast .nr-character-name { font-size: 11px; }
+/* #89: ready solo cast after #86/#88 hide LUNA+VS — denser centered RIN
+   (parity result solo-cast #82/#84). Battle duo + VS unchanged; JS [hidden] owns hide. */
+.nr-hero-cast:has(> .nr-koh[hidden]) { gap: 12px; justify-content: center; }
+.nr-hero-cast:has(> .nr-koh[hidden]) .nr-character { width: min(56%, 280px); }
 .nr-versus { color: #f9d58a99; font: italic 800 20px/1 Georgia, serif; }
 .nr-surface { border: 1px solid var(--nr-border); border-radius: 24px; background: linear-gradient(135deg, #243d48e8, #122831f2); box-shadow: 0 18px 60px #0003, inset 0 1px 0 #ffffff08; }
 .nr-setup { padding: clamp(20px, 2.6vw, 32px); }
@@ -500,6 +504,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-result-duo .nr-character { width: 80px; }
   /* #81: solo cast denser in short-height two-column result. */
   .nr-result-duo:has(> .nr-koh[hidden]) { gap: 6px; justify-content: center; }
+  /* #89: ready solo cast denser in short-height. */
+  .nr-hero-cast:has(> .nr-koh[hidden]) { gap: 6px; justify-content: center; }
   .nr-result-card > .nr-muted { display: none; }
   .nr-result-stats { grid-area: stats; margin: 0; padding: 10px 0; }
   .nr-award { grid-area: award; margin: 0; padding: 8px; }
