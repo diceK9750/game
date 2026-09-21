@@ -263,3 +263,19 @@ test('shiritori deal motion respects reduced-motion and data-reduced', () => {
   assert.match(css, /#modern-app\[data-reduced='true'\] \.sh-icon \{ animation: none/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.sh-card\[data-dealt\] \.sh-icon \{ animation: none/);
 });
+
+test('sh-card keyboard focus uses ::before ring so hint/CPU outlines stay visible', () => {
+  const modern = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  // Cards excluded from shell outline; inset ::before ring leaves outline free for hint/CPU.
+  assert.match(modern, /#modern-app button:not\(\.nr-cell\):not\(\.sh-card\):focus-visible/);
+  assert.match(modern, /#modern-app \.nr-cell:focus-visible, #modern-app \.sh-card:focus-visible \{ outline: none; \}/);
+  assert.match(modern, /#modern-app \.nr-cell:focus-visible::before, #modern-app \.sh-card:focus-visible::before \{[^}]*box-shadow: inset 0 0 0 3px #f9d58a/);
+  // Hint + CPU-selecting carry #modern-app so they beat focus outline:none when both apply.
+  assert.match(css, /#modern-app \.sh-card\[data-hint='true'\]/);
+  assert.match(modern, /#modern-app \.sh-card\[data-cpu-selecting='true'\]/);
+  const contrastIdx = modern.indexOf('@media (prefers-contrast: more)');
+  assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px #c9a227/);
+  const forcedIdx = modern.indexOf('@media (forced-colors: active)');
+  assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px Highlight/);
+});
