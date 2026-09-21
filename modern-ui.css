@@ -225,6 +225,33 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   border-color: #ffe8ac; box-shadow: inset 0 0 0 3px #ffe8ac88, 0 0 0 2px #f9d58a66;
 }
 #modern-app[data-reduced='true'] .nr-target[data-cue='true'] .nr-target-number { text-shadow: none; }
+/* Numbers YOU score-card cue: brief gold pulse when points/completed increments mid-play.
+   Pulse 0/1 restarts. Reduced: static brighter ring until next increment or leave play. */
+.nr-score-card.nr-you[data-cue='true'][data-pulse='0'] { animation: nr-you-score-cue-a .85s ease both; }
+.nr-score-card.nr-you[data-cue='true'][data-pulse='1'] { animation: nr-you-score-cue-b .85s ease both; }
+.nr-score-card.nr-you[data-cue='true'] > strong { text-shadow: 0 0 12px #ffe8acaa; color: #ffe8ac; }
+@keyframes nr-you-score-cue-a {
+  0% { box-shadow: 0 0 0 0 #ffe8ac00; border-color: #87e0ca44; transform: scale(1); }
+  22% { box-shadow: inset 0 0 20px #edc27944, 0 0 14px #ffe8ac88; border-color: #ffe8ac; transform: scale(1.03); }
+  100% { box-shadow: 0 0 0 0 #ffe8ac00; border-color: #87e0ca44; transform: scale(1); }
+}
+@keyframes nr-you-score-cue-b {
+  0% { box-shadow: 0 0 0 0 #ffe8ac00; border-color: #87e0ca44; transform: scale(1); }
+  22% { box-shadow: inset 0 0 20px #edc27944, 0 0 14px #ffe8ac88; border-color: #ffe8ac; transform: scale(1.03); }
+  100% { box-shadow: 0 0 0 0 #ffe8ac00; border-color: #87e0ca44; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nr-score-card.nr-you[data-cue='true'] {
+    animation: none !important; transform: none;
+    border-color: #ffe8ac; box-shadow: inset 0 0 0 3px #ffe8ac88, 0 0 0 2px #f9d58a66;
+  }
+  .nr-score-card.nr-you[data-cue='true'] > strong { text-shadow: none; color: #ffe8ac; }
+}
+#modern-app[data-reduced='true'] .nr-score-card.nr-you[data-cue='true'] {
+  animation: none !important; transform: none;
+  border-color: #ffe8ac; box-shadow: inset 0 0 0 3px #ffe8ac88, 0 0 0 2px #f9d58a66;
+}
+#modern-app[data-reduced='true'] .nr-score-card.nr-you[data-cue='true'] > strong { text-shadow: none; color: #ffe8ac; }
 .nr-board-wrap { flex: 1; min-height: 0; display: flex; justify-content: center; }
 .nr-board { width: 100%; min-height: 0; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(24px, 1fr)); gap: clamp(5px, 1vw, 10px); padding: 10px; border: 1px solid #add9d424; border-radius: 22px; background: #071b26b8; box-shadow: 0 12px 30px #0002, inset 0 1px 0 #e1faed09; }
 .nr-cell { position: relative; isolation: isolate; min-width: 0; min-height: 24px; border: 1px solid #fff6; border-radius: 11px;
@@ -542,6 +569,10 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     border: 2px solid #c9a227; box-shadow: inset 0 0 0 2px #8a6000; animation: none; transform: none;
   }
   #modern-app .nr-target[data-cue='true'] .nr-target-number { text-shadow: none; color: #fff4c8; }
+  #modern-app .nr-score-card.nr-you[data-cue='true'] {
+    border: 2px solid #c9a227; box-shadow: inset 0 0 0 2px #8a6000; animation: none; transform: none;
+  }
+  #modern-app .nr-score-card.nr-you[data-cue='true'] > strong { text-shadow: none; color: #fff4c8; }
   #modern-app .sh-task[data-cue='true'] {
     border: 2px solid #c9a227; box-shadow: inset 0 0 0 2px #8a6000; animation: none; transform: none;
   }
@@ -639,6 +670,13 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     border: 3px solid Highlight; box-shadow: none; animation: none; transform: none;
   }
   #modern-app .nr-target[data-cue='true'] .nr-target-number {
+    color: CanvasText; text-shadow: none; forced-color-adjust: none;
+  }
+  /* Numbers YOU score cue: Highlight ring when HC remaps gold pulse. */
+  #modern-app .nr-score-card.nr-you[data-cue='true'] {
+    border: 3px solid Highlight; box-shadow: none; animation: none; transform: none;
+  }
+  #modern-app .nr-score-card.nr-you[data-cue='true'] > strong {
     color: CanvasText; text-shadow: none; forced-color-adjust: none;
   }
   /* Shiritori HUD required-kana cue: Highlight ring when HC remaps gold pulse. */

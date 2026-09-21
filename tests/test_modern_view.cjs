@@ -1697,3 +1697,83 @@ test('numbers HUD target cue wiring lives in modern-ui.js with animationend dism
   assert.match(js, /targetWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
 });
+
+
+test('numbers YOU score-card cue CSS pulses on increment and stays static under reduced-motion', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  assert.match(css, /\.nr-score-card\.nr-you\[data-cue='true'\]\[data-pulse='0'\]/);
+  assert.match(css, /\.nr-score-card\.nr-you\[data-cue='true'\]\[data-pulse='1'\]/);
+  assert.match(css, /@keyframes nr-you-score-cue-a/);
+  assert.match(css, /@keyframes nr-you-score-cue-b/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.nr-score-card\.nr-you\[data-cue='true'\][\s\S]*?animation: none !important/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-score-card\.nr-you\[data-cue='true'\][\s\S]*?animation: none !important/);
+  assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?\.nr-score-card\.nr-you\[data-cue='true'\]/);
+  assert.match(css, /forced-colors LAST[\s\S]*?@media \(forced-colors: active\) \{[\s\S]*?\.nr-score-card\.nr-you\[data-cue='true'\]/);
+  assert.equal(css.indexOf('@media (prefers-contrast: more)'), css.lastIndexOf('@media (prefers-contrast: more)'));
+});
+
+test('numbers YOU score-card cues when completed/points increment; animationend clears; leave play clears', () => {
+  const b = browserHarness();
+  b.render('ready', {completed: 0, player_points: 0, cells: []});
+  const you = walk(b.app).find(n => String(n.className).includes('nr-score-card') && String(n.className).includes('nr-you'));
+  assert.ok(you, 'YOU score-card mounted');
+  assert.equal(you.dataset.cue, 'false');
+
+  b.render('playing', {kind: 'practice', completed: 0, player_points: 0});
+  assert.equal(you.dataset.cue, 'false', 'enter play at 0 does not cue');
+  const score = walk(you).find(n => n.tagName === 'STRONG');
+  assert.equal(score.textContent, '0');
+
+  b.render('playing', {kind: 'practice', completed: 1, player_points: 0});
+  assert.equal(you.dataset.cue, 'true', 'completed increment cues');
+  assert.equal(score.textContent, '1');
+  const pulse1 = you.dataset.pulse;
+
+  b.render('playing', {kind: 'practice', completed: 1, player_points: 0});
+  assert.equal(you.dataset.pulse, pulse1, 'identical score does not restart pulse');
+
+  you.emit('animationend', {target: you});
+  assert.equal(you.dataset.cue, 'false');
+
+  b.render('playing', {kind: 'practice', completed: 3, player_points: 0});
+  assert.equal(you.dataset.cue, 'true');
+  assert.notEqual(you.dataset.pulse, pulse1, 'pulse flips to restart CSS animation');
+  assert.equal(score.textContent, '3');
+
+  b.render('confirm', {kind: 'practice', cells: []});
+  assert.equal(you.dataset.cue, 'false', 'leaving play clears cue');
+
+  b.render('playing', {kind: 'battle', completed: 0, player_points: 0});
+  assert.equal(you.dataset.cue, 'false', 'battle enter at 0 does not cue');
+  b.render('playing', {kind: 'battle', completed: 1, player_points: 2});
+  assert.equal(you.dataset.cue, 'true', 'battle player_points increment cues');
+  assert.equal(score.textContent, '2');
+
+  b.render('finished', {kind: 'battle', player_points: 2});
+  assert.equal(you.dataset.cue, 'false', 'finished clears cue');
+});
+
+test('numbers YOU score-card reduced-motion keeps static cue until next increment or leave play', () => {
+  const b = browserHarness();
+  b.render('playing', {kind: 'practice', completed: 0, reduced: true});
+  const you = walk(b.app).find(n => String(n.className).includes('nr-score-card') && String(n.className).includes('nr-you'));
+  assert.equal(you.dataset.cue, 'false');
+  b.render('playing', {kind: 'practice', completed: 2, reduced: true});
+  assert.equal(you.dataset.cue, 'true');
+  b.render('playing', {kind: 'practice', completed: 2, reduced: true});
+  assert.equal(you.dataset.cue, 'true');
+  b.render('playing', {kind: 'practice', completed: 4, reduced: true});
+  assert.equal(you.dataset.cue, 'true');
+  b.render('finished', {kind: 'practice', completed: 4, reduced: true});
+  assert.equal(you.dataset.cue, 'false');
+});
+
+test('numbers YOU score-card cue wiring lives in modern-ui.js with animationend dismiss', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /flashYouScoreCue/);
+  assert.match(js, /clearYouScoreCue/);
+  assert.match(js, /prevYouScoreKey/);
+  assert.match(js, /youHud\.dataset\.cue/);
+  assert.match(js, /youHud\.addEventListener\('animationend'/);
+  assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
+});
