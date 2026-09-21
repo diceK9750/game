@@ -244,6 +244,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-spark { color: #fff1ad; font-style: normal; font-size: 32px; text-shadow: 0 0 10px #fff8; animation: nr-spark 600ms both; }
 .nr-ring-cpu { border-color: #f4a8cb; }
 .nr-cpu-claim { position: absolute; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: .4px; color: #fff; background: #8a1f5aee; box-shadow: 0 0 10px #ed56ff88; animation: nr-cpu-claim 650ms both; }
+.nr-miss-badge { position: absolute; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: .4px; color: #fff; background: #a81f2eee; box-shadow: 0 0 10px #f67f8188; opacity: 0; pointer-events: none; }
 @keyframes nr-cpu-claim { 0% { transform: scale(.6); opacity: 0; } 25%, 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(.9) translateY(-6px); opacity: 0; } }
 /* Miss outline outlasts the bomb burst so wrong taps stay readable beside correct/CPU FX.
    #modern-app prefix beats .nr-cell:focus-visible { outline: none } when both apply. */
@@ -454,14 +455,15 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 #modern-app[data-reduced='true'] .nr-award { opacity: 1; animation: none !important; }
 #modern-app[data-reduced='true'] *, #modern-app[data-reduced='true'] *::before, #modern-app[data-reduced='true'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 /* Reduced-motion FX: do not blank .nr-fx (that hid ring/spark and nested CPU badge).
-   Cell outlines (#28/#29) stay the durable outer cue; ring/spark/CPU badge are static
-   inner stand-ins. Miss pop/burst stay hidden — outline alone reads without motion.
-   .nr-fx / .nr-cell-effect keep pointer-events: none so taps stay unblocked. */
+   Cell outlines (#28/#29) stay the durable outer cue; ring/spark/CPU badge + miss badge
+   are static inner stand-ins. Miss bomb/burst stay hidden (motion-heavy); .nr-miss-badge
+   is the reduced-only inner cue (opacity 0 under full motion). pointer-events: none. */
 #modern-app[data-reduced='true'] .nr-fx { opacity: 1; animation: none !important; }
 #modern-app[data-reduced='true'] .nr-bomb,
 #modern-app[data-reduced='true'] .nr-burst { opacity: 0; }
 #modern-app[data-reduced='true'] .nr-ring,
-#modern-app[data-reduced='true'] .nr-spark {
+#modern-app[data-reduced='true'] .nr-spark,
+#modern-app[data-reduced='true'] .nr-miss-badge {
   opacity: 1; transform: none; animation: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -479,7 +481,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-bomb,
   #modern-app .nr-burst { opacity: 0; }
   #modern-app .nr-ring,
-  #modern-app .nr-spark {
+  #modern-app .nr-spark,
+  #modern-app .nr-miss-badge {
     opacity: 1; transform: none; animation: none !important;
   }
 }

@@ -86,23 +86,54 @@ test('prefers-reduced-motion keeps static cpu-claim and award without waiting fo
   assert.match(media, /data-feedback='cpu'/);
   assert.match(media, /\.nr-cpu-claim/);
   assert.match(media, /\.nr-award/);
-  // Static ring/spark stand-ins (not blank .nr-fx); miss bomb/burst stay hidden.
+  // Static ring/spark/miss-badge stand-ins (not blank .nr-fx); miss bomb/burst stay hidden.
   assert.match(media, /\.nr-fx \{ opacity: 1; animation: none !important; \}/);
   assert.match(media, /\.nr-bomb,[\s\S]*?\.nr-burst \{ opacity: 0; \}/);
-  assert.match(media, /\.nr-ring,[\s\S]*?\.nr-spark \{[\s\S]*?opacity: 1; transform: none/);
+  assert.match(media, /\.nr-ring,[\s\S]*?\.nr-spark,[\s\S]*?\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
 });
 
-test('data-reduced keeps static ring/spark/CPU badge stand-ins instead of blanking .nr-fx', () => {
+test('data-reduced keeps static ring/spark/CPU/miss badge stand-ins instead of blanking .nr-fx', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
   // Parent opacity:0 would hide nested .nr-cpu-claim despite its own opacity:1.
   assert.doesNotMatch(css, /#modern-app\[data-reduced='true'\] \.nr-fx \{ opacity: 0/);
   assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-fx \{ opacity: 1; animation: none !important; \}/);
   assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-bomb,[\s\S]*?\.nr-burst \{ opacity: 0; \}/);
-  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-spark \{[\s\S]*?opacity: 1; transform: none/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-spark,[\s\S]*?\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
   // Outlines (#28/#29) remain; FX layer never intercepts taps.
   assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cell\[data-feedback='correct'\]/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cell\[data-feedback='wrong'\]/);
   assert.match(css, /\.nr-fx \{[^}]*pointer-events: none/);
   assert.match(css, /\.nr-cell-effect \{[^}]*pointer-events: none/);
+  assert.match(css, /\.nr-miss-badge \{[^}]*pointer-events: none/);
+});
+
+test('wrong FX mounts miss badge; reduced CSS shows it while bomb/burst stay hidden', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  // Always mounted with bomb/burst for parity with CPU badge mount pattern.
+  assert.match(js, /nr-bomb.*nr-burst.*nr-miss-badge/);
+  assert.match(js, /'nr-miss-badge', 'ミス'/);
+  // Full motion: badge stays opacity 0 (bomb/burst are the cue).
+  assert.match(css, /\.nr-miss-badge \{[^}]*opacity: 0/);
+  // Reduced / data-reduced: static visible badge; bomb/burst remain hidden.
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-miss-badge/);
+  const idx = css.lastIndexOf('@media (prefers-reduced-motion: reduce)');
+  assert.ok(idx > 0);
+  assert.match(css.slice(idx), /\.nr-miss-badge/);
+  assert.match(css.slice(idx), /\.nr-bomb,[\s\S]*?\.nr-burst \{ opacity: 0; \}/);
+  // Runtime mount under a wrong effect.
+  const browser = browserHarness();
+  const round = browser.render('playing');
+  const cells = browser.cells();
+  round.cells[1].effect = 'wrong';
+  round.cells[1].effect_id = 'wrong:7';
+  browser.render('playing', round);
+  const fx = walk(cells[1]).find(n => String(n.className || '').includes('nr-fx-wrong'));
+  assert.ok(fx);
+  const badge = walk(fx).find(n => n.className === 'nr-miss-badge');
+  assert.equal(badge && badge.textContent, 'ミス');
+  assert.ok(walk(fx).some(n => n.className === 'nr-bomb'));
+  assert.ok(walk(fx).some(n => n.className === 'nr-burst'));
 });
 
 test('prefers-reduced-motion kills pose joy/shake; sprite data-pose is the static fallback', () => {
