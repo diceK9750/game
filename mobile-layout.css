@@ -178,8 +178,11 @@
     display: flex; flex-direction: row; align-items: center; gap: 4px; height: 100%;
   }
   .nr-play-stats, .nr-cpu-row { margin: 0; }
+  /* #108: keep short-landscape hint ≥44px tap (override modern-ui short
+     absolute 44px chip; do not re-compress to 36). Extreme-short ≤360 still
+     32px tradeoff below. */
   .nr-stage-middle > .nr-hint {
-    flex: 0 0 auto; min-height: 44px; min-width: 44px; margin: 0;
+    position: static; flex: 0 0 auto; min-height: 44px; min-width: 44px; margin: 0;
   }
   .nr-stage-middle > .timed-chains { flex: 1; min-width: 0; }
   /* #97: densify numbers play stats + restore compact feedback after #91 progress
