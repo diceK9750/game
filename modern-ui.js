@@ -290,7 +290,7 @@
   const playStats = E('div', 'nr-play-stats');
   const elapsed = E('strong'), completed = E('strong'), mistakes = E('strong'), streak = E('strong');
   function stat(label, value) { return add(E('div', 'nr-stat'), E('span', '', label), value); }
-  add(playStats, stat('TIME', elapsed), stat('見つけた', completed), stat('ミス', mistakes), stat('連続正解', streak));
+  add(playStats, stat('タイム', elapsed), stat('見つけた', completed), stat('ミス', mistakes), stat('連続正解', streak));
   const cpuTrack = E('div', 'nr-cpu-timer'); cpuTrack.setAttribute('role', 'progressbar'); cpuTrack.setAttribute('aria-label', 'CPUが数字を見つけるまで'); cpuTrack.setAttribute('aria-valuemin', '0'); cpuTrack.setAttribute('aria-valuemax', '100');
   const cpuFill = E('div'); cpuTrack.append(cpuFill);
   const cpuClock = E('span', 'nr-cpu-clock');

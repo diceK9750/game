@@ -106,7 +106,7 @@ test('short-landscape practice stage-middle densifies after CPU-row hide (#101)'
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(html, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 test('short-landscape practice caps timed-chains width after cpu-row hide (#104)', () => {
@@ -125,7 +125,7 @@ test('short-landscape practice caps timed-chains width after cpu-row hide (#104)
   // JS still owns hide.
   assert.match(js, /cpuTrack\.parentElement\.hidden = !battle/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -199,7 +199,7 @@ test('host and player lock overscroll; play posts scroll-lock to the shell', () 
   assert.match(js, /shouldLockPlayScroll/);
   assert.match(js, /passive: false/);
   assert.match(viewport, /number-rush-scroll-lock/);
-  assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
+  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
   assert.match(index, /viewport\.js\?v=5-scroll-lock/);
 });
 
@@ -227,7 +227,7 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.match(js, /data-host-insets/);
   assert.match(mobile, /Host owns device insets/);
   assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
-  assert.match(player, /modern-ui\.js\?v=miss-live-guidance-98-1/);
+  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
 });
 
@@ -273,7 +273,7 @@ test('short-landscape result stacks primary score above cast so award cannot col
   // Two-column result grid + replay actions column intact (#17/#19 focus target).
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 test('short-landscape result packs secondary stats denser beside stacked score (#76)', () => {
@@ -292,7 +292,7 @@ test('short-landscape result packs secondary stats denser beside stacked score (
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 10px; \}/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 test('short-landscape shiritori packs secondary stats denser (#77)', () => {
@@ -318,7 +318,7 @@ test('short-landscape shiritori packs secondary stats denser (#77)', () => {
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 
@@ -348,7 +348,7 @@ test('short-landscape / mobile review-history density: compact summary + capped 
   assert.match(js, /onHistorySummary/);
   assert.match(js, /sh-result-history/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 
@@ -377,7 +377,7 @@ test('short-landscape result-actions / dict density: stack buttons + pin dict (#
   assert.match(js, /result\.append\(dictResult\)/);
   assert.match(js, /読み方ずかん/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 
@@ -415,7 +415,7 @@ test('short-landscape shiritori play HUD/prompt density reclaim without clipping
   assert.match(shCss, /content: 'ミス'/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 test('ready solo hero-cast denser/centered on compact layout (#89)', () => {
@@ -428,5 +428,5 @@ test('ready solo hero-cast denser/centered on compact layout (#89)', () => {
   assert.match(modern, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
   assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });

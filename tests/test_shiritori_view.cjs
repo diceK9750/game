@@ -1038,7 +1038,7 @@ test('wrong-card miss outline stays non-live while statusLive carries guidance (
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1264,7 +1264,7 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 
   const {view, state, doc} = harness();
   view.update({
@@ -1323,7 +1323,7 @@ test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #
   assert.match(layout, /\.sh-arena \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\) clamp\(40px, 15vw, 180px\);/);
   assert.match(js, /koh\.wrap\.hidden = solo/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 
   const {view, state} = harness();
   view.update({
@@ -1359,7 +1359,7 @@ test('shiritori solo hides LUNA+VS on ready hero-cast (parity #86 numbers; #88)'
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
 
   const {view, state, doc} = harness();
   const heroCast = () => view.page.querySelector('.nr-hero-cast');
@@ -1424,7 +1424,7 @@ test('shiritori ready solo hero-cast denser/centered after LUNA+VS hide (parity 
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=practice-chains-104-1/);
+  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
   assert.match(fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8'),
     /heroRival\.wrap\.hidden = solo;\s*heroVersus\.hidden = solo;/);
 
