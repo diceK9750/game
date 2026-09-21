@@ -989,8 +989,8 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid #d0181c/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
-  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
-  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
 });
 
@@ -1007,8 +1007,8 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid #a07000/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
-  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
-  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
 });
 
@@ -1086,8 +1086,8 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.match(js, /dataset\.cue/);
   assert.match(js, /taskWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
-  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
-  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
 });
 
@@ -1116,12 +1116,22 @@ test('shiritori finished splits primary score vs secondary stats (hierarchy #73)
   assert.ok(score, 'primary score element present');
   assert.ok(secondary, 'secondary stats element present');
   assert.equal(score.textContent, '2 / 24');
-  assert.match(secondary.textContent, /ミス2回/);
-  assert.match(secondary.textContent, /ヒント2回/);
-  assert.match(secondary.textContent, /つなぎ直し1回/);
-  assert.match(secondary.textContent, /最大3連鎖/);
-  // Must not glue primary into the secondary line.
-  assert.ok(!secondary.textContent.includes('2 / 24'), 'secondary omits primary score');
+  assert.equal(secondary.tagName, 'DIV', 'secondary is packed container (#77)');
+  const stats = secondary.querySelectorAll('.nr-stat');
+  assert.equal(stats.length, 3, 'three packed secondary stats');
+  // Harness textContent is per-node (no child rollup) — read label/value kids.
+  assert.equal(stats[0].children[0].textContent, 'ミス');
+  assert.equal(stats[0].children[1].textContent, '2回');
+  assert.equal(stats[1].children[0].textContent, 'ヒント');
+  assert.equal(stats[1].children[1].textContent, '2回');
+  assert.equal(stats[2].children[0].textContent, 'つなぎ直し');
+  assert.equal(stats[2].children[1].textContent, '1回');
+  const chain = secondary.querySelector('.nr-muted');
+  assert.ok(chain, 'chain summary muted wrap present');
+  assert.match(chain.textContent, /最大3連鎖/);
+  // Aggregated secondary must still omit primary score string.
+  const secondaryBlob = [stats[0], stats[1], stats[2], chain].flatMap(n => [n, ...n.children]).map(n => n.textContent).join('');
+  assert.ok(!secondaryBlob.includes('2 / 24'), 'secondary omits primary score');
   const retry = result.querySelectorAll('button').find(b => b.textContent === 'もう一度遊ぶ');
   assert.equal(doc.activeElement, retry, 'result entry focuses primary replay (#19)');
 });
@@ -1132,9 +1142,51 @@ test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   assert.match(js, /nr-result-score/);
   assert.match(js, /sh-result-secondary/);
+  assert.match(js, /shStat\(/);
   assert.match(sh, /\.sh-result-secondary \{/);
   assert.match(sh, /\.sh-result > \.nr-result-score/);
-  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
-  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
+});
+
+test('shiritori finished packs secondary stats denser on short landscape (#77)', () => {
+  const {view, state, doc} = harness();
+  view.update({
+    ...state,
+    phase: 'finished',
+    mode: 'solo',
+    winner: 'you',
+    total: 24,
+    mistakes: 1,
+    hints: 2,
+    relinks: 0,
+    history: [{word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+    chain: {you: {best: 4, bonus: 2}, cpu: {best: 0, bonus: 0}},
+  });
+  const secondary = view.page.querySelector('.sh-result-secondary');
+  assert.ok(secondary);
+  assert.equal(secondary.querySelectorAll('.nr-stat').length, 3);
+  assert.match(secondary.querySelector('.nr-muted').textContent, /最大4連鎖/);
+  // Battle swaps third packed label to 最大連鎖 (relink N/A).
+  view.update({
+    ...state,
+    phase: 'finished',
+    mode: 'battle',
+    winner: 'you',
+    total: 24,
+    mistakes: 0,
+    hints: 3,
+    relinks: 2,
+    history: [{word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+    chain: {you: {best: 5, bonus: 1}, cpu: {best: 2, bonus: 0}},
+  });
+  const battleSecondary = view.page.querySelector('.sh-result-secondary');
+  const stats = battleSecondary.querySelectorAll('.nr-stat');
+  assert.equal(stats[2].children[0].textContent, '最大連鎖');
+  assert.equal(stats[2].children[1].textContent, '5');
+  assert.match(battleSecondary.querySelector('.nr-muted').textContent, /CPU最大2連鎖/);
+  const retry = [...view.page.querySelector('.sh-result').querySelectorAll('button')].find(b => b.textContent === 'もう一度遊ぶ');
+  assert.equal(doc.activeElement, retry, 'replay focus kept (#19)');
 });
