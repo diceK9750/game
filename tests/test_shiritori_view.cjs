@@ -992,8 +992,8 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid #d0181c/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1010,8 +1010,8 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid #a07000/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1089,8 +1089,8 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.match(js, /dataset\.cue/);
   assert.match(js, /taskWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1147,10 +1147,10 @@ test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
   assert.match(js, /sh-result-secondary/);
   assert.match(js, /shStat\(/);
   assert.match(sh, /\.sh-result-secondary \{/);
-  assert.match(sh, /\.sh-result > \.nr-result-score/);
+  assert.match(sh, /\.sh-result-cast > \.nr-result-score/);
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1192,4 +1192,77 @@ test('shiritori finished packs secondary stats denser on short landscape (#77)',
   assert.match(battleSecondary.querySelector('.nr-muted').textContent, /CPU最大2連鎖/);
   const retry = [...view.page.querySelector('.sh-result').querySelectorAll('button')].find(b => b.textContent === 'もう一度遊ぶ');
   assert.equal(doc.activeElement, retry, 'replay focus kept (#19)');
+});
+
+
+test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #82)', () => {
+  const sh = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+
+  // Score nested in cast (numbers .nr-result-duo order: rin, score, koh).
+  assert.match(js, /add\(E\('div', 'sh-result-cast'\), resultRin\.wrap, resultScore, resultKoh\.wrap\)/);
+  // Solo denser gap + centered (desktop + mobile).
+  assert.match(sh, /\.sh-result-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
+  assert.match(mobile, /\.sh-result-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 6px; justify-content: center; \}/);
+  // Short-height / short-ls keep score; hide portraits only (not whole cast).
+  assert.match(sh, /\.sh-result-cast \.nr-character \{ display: none; \}/);
+  assert.ok(!/\.sh-result-cast \{ display: none; \}/.test(sh), 'shiritori-ui no longer hides whole cast on short height');
+  assert.match(mobile, /\.sh-result-cast \.nr-character \{ display: none; \}/);
+  assert.ok(!/@media \(orientation: landscape\) and \(max-height: 500px\)[\s\S]*?\.sh-result-cast \{ display: none; \}/.test(mobile),
+    'short-ls no longer hides whole cast');
+  // #80 hide still wired; #19 replay focus target still present.
+  assert.match(js, /resultKoh\.wrap\.hidden = solo/);
+  assert.match(js, /もう一度遊ぶ/);
+
+  assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
+  assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
+  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
+
+  const {view, state, doc} = harness();
+  view.update({
+    ...state,
+    phase: 'finished',
+    mode: 'solo',
+    winner: 'you',
+    total: 24,
+    mistakes: 0,
+    hints: 0,
+    relinks: 0,
+    history: [{word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+    chain: {you: {best: 1, bonus: 0}, cpu: {best: 0, bonus: 0}},
+  });
+  const result = view.page.querySelector('.sh-result');
+  const cast = result.querySelector('.sh-result-cast');
+  const score = cast.querySelector('.nr-result-score');
+  assert.ok(cast, 'result cast present');
+  assert.ok(score, 'primary score nested inside cast');
+  assert.equal(score.parentElement, cast, 'score is direct cast child');
+  // Harness portrait() mock has no nr-rin/nr-koh class — identify by order.
+  assert.equal(cast.children.length, 3, 'cast has rin + score + koh');
+  const rin = cast.children[0];
+  const koh = cast.children[2];
+  assert.equal(cast.children[1], score, 'score middle (numbers duo parity)');
+  assert.equal(koh.hidden, true, 'solo hides LUNA (#80)');
+  assert.equal(rin.hidden, false, 'solo keeps RIN');
+  const retry = [...result.querySelectorAll('button')].find(b => b.textContent === 'もう一度遊ぶ');
+  assert.equal(doc.activeElement, retry, 'result entry focuses replay (#19)');
+
+  view.update({
+    ...state,
+    phase: 'finished',
+    mode: 'battle',
+    winner: 'you',
+    total: 24,
+    mistakes: 0,
+    hints: 0,
+    relinks: 0,
+    history: [{word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+    chain: {you: {best: 2, bonus: 0}, cpu: {best: 1, bonus: 0}},
+  });
+  const battleCast = view.page.querySelector('.sh-result-cast');
+  assert.equal(battleCast.children[2].hidden, false, 'battle still shows LUNA');
 });
