@@ -775,6 +775,81 @@ test('confirm/help entry focuses primary dialog control without Tab hunting', ()
   assert.equal(b.queue().length, before + 1);
 });
 
+test('confirm Tab cycles dialog controls and does not escape to chrome', () => {
+  const b = browserHarness();
+  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (screen, text) => walk(screen).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+  const headerSound = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
+
+  // Pause dialog: resume → extras → settings, then wrap; never land on header ♪.
+  b.render('playing', {cells: cellsState});
+  b.cells()[0].focus();
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const confirmScreen = screenOf('confirm');
+  const resume = btnIn(confirmScreen, 'プレイを続ける');
+  assert.equal(b.document.activeElement, resume, 'pause entry still focuses resume (#43)');
+
+  const pauseStops = [];
+  (function visit(node) {
+    if (!node || node.hidden) return;
+    if (node.tagName === 'BUTTON' && !node.disabled) pauseStops.push(node);
+    for (const child of node.children || []) visit(child);
+  })(confirmScreen);
+  assert.ok(pauseStops.length >= 4, 'pause exposes multiple tab stops');
+  assert.equal(pauseStops[0], resume);
+  assert.ok(!pauseStops.includes(headerSound), 'header BGM is outside the trap');
+
+  for (let i = 0; i < pauseStops.length; i++) {
+    const expected = pauseStops[(i + 1) % pauseStops.length];
+    b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(b.document.activeElement, expected, `Tab step ${i + 1} stays in dialog`);
+    assert.notEqual(b.document.activeElement, headerSound, 'Tab must not escape to ♪ chrome');
+  }
+  // Shift+Tab wraps backward from resume to the last stop.
+  resume.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, pauseStops[pauseStops.length - 1], 'Shift+Tab wraps inside dialog');
+  assert.notEqual(b.document.activeElement, headerSound);
+
+  // Focus already on chrome: Tab pulls back into the dialog instead of leaving.
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, pauseStops[0], 'Tab from chrome re-enters dialog');
+
+  // Esc still resumes (#16) after Tab cycling.
+  const beforeEsc = b.queue().length;
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().at(-1).action, 'yes', 'Esc on pause still resumes via yes');
+  assert.equal(b.queue().length, beforeEsc + 1);
+
+  // Retry confirm: affirmative yes remains entry (#43); Tab cycles yes/no/settings only.
+  b.render('playing', {cells: cellsState});
+  b.cells()[2].focus();
+  b.render('confirm', {confirm_action: 'retry', cells: []});
+  const retryScreen = screenOf('confirm');
+  const retryYes = btnIn(retryScreen, 'やり直す');
+  assert.equal(b.document.activeElement, retryYes, 'retry entry still focuses affirmative yes');
+  const retryStops = [];
+  (function visit(node) {
+    if (!node || node.hidden) return;
+    if (node.tagName === 'BUTTON' && !node.disabled) retryStops.push(node);
+    for (const child of node.children || []) visit(child);
+  })(retryScreen);
+  assert.ok(retryStops.includes(retryYes));
+  assert.ok(!retryStops.some(n => n.textContent === '新しい配置でやり直す'), 'pause extras stay hidden on retry');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, retryStops[1], 'retry Tab moves to next dialog control');
+  assert.notEqual(b.document.activeElement, headerSound);
+
+  // Playing screen: Tab is not trapped (board/chrome keep native order).
+  b.render('playing', {cells: cellsState});
+  const cell = b.cells()[0];
+  cell.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, cell, 'playing leaves Tab alone (no preventDefault cycle)');
+});
+
 test('Escape toggles pause confirm and dismisses retry/title without quitting', () => {
   const b = browserHarness();
   b.render('playing');

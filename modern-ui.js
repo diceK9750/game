@@ -510,6 +510,18 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
+  // Keep Tab/Shift+Tab cycling inside the open confirm dialog so focus cannot
+  // escape to header chrome (♪) or a hidden board behind the overlay.
+  function dialogTabStops(root) {
+    const stops = [];
+    (function visit(node) {
+      if (!node || node.hidden) return;
+      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+      const kids = node.children || [];
+      for (let i = 0; i < kids.length; i++) visit(kids[i]);
+    })(root);
+    return stops;
+  }
   app.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       // Toggle pause while playing; dismiss confirm without accepting quit/retry.
@@ -517,6 +529,18 @@
       else if (state?.screen === 'confirm') {
         event.preventDefault();
         command(state?.confirm_action === 'pause' ? 'yes' : 'no');
+      }
+    } else if (state?.screen === 'confirm' && event.key === 'Tab') {
+      // Cycle visible dialog buttons only (#45). Esc (#16), entry focus (#43),
+      // and pause→resume cell restore (#42) stay on their existing paths.
+      const stops = dialogTabStops(confirm);
+      if (stops.length) {
+        event.preventDefault();
+        const active = document.activeElement;
+        let idx = stops.indexOf(active);
+        if (event.shiftKey) idx = idx <= 0 ? stops.length - 1 : idx - 1;
+        else idx = (idx < 0 || idx === stops.length - 1) ? 0 : idx + 1;
+        stops[idx].focus({preventScroll: true});
       }
     } else if (state?.screen === 'playing') {
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
