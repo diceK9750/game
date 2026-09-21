@@ -766,6 +766,21 @@ test('confirm/help entry focuses primary dialog control without Tab hunting', ()
   assert.equal(b.document.activeElement, helpBack, 'help entry focuses 戻る');
   assert.ok(String(helpBack.className).includes('nr-primary'));
 
+  // finished → review: primary 「結果へ戻る」 (explicit #43 parity; not only hidden-reclaim).
+  const reviewCells = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
+  b.render('finished', {kind: 'battle', cells: reviewCells});
+  const reviewOpen = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === '対戦を振り返る');
+  reviewOpen.focus();
+  b.render('review', {kind: 'battle', history: [{number: 1, owner: 'you', seconds: 1.2}], cells: reviewCells});
+  const reviewBack = btnIn(screenOf('review'), '結果へ戻る');
+  assert.equal(b.document.activeElement, reviewBack, 'review entry focuses 結果へ戻る');
+  assert.ok(String(reviewBack.className).includes('nr-primary'));
+
+  // Same-screen review updates leave current focus alone.
+  reviewBack.focus();
+  b.render('review', {kind: 'battle', history: [{number: 1, owner: 'you', seconds: 1.2}, {number: 2, owner: 'cpu', seconds: 2.0}], cells: reviewCells});
+  assert.equal(b.document.activeElement, reviewBack, 'review→review keeps current focus');
+
   // Esc on pause still resumes (#16); focus target does not change Esc wiring.
   const before = b.queue().length;
   b.render('confirm', {confirm_action: 'pause', cells: []});
@@ -1029,8 +1044,8 @@ test('finished/review Tab cycles result controls and does not escape to chrome',
   const back = btnIn(reviewScreen, '結果へ戻る');
   assert.ok(back);
   assert.ok(String(back.className).includes('nr-primary'));
-  // Entry may land via hidden-focus reclaim; pin focus for trap assertions.
-  back.focus();
+  // Explicit review entry focus (#49 / #43 parity) — no manual pin required.
+  assert.equal(b.document.activeElement, back, 'review entry focuses 結果へ戻る');
   const reviewStops = collectStops(reviewScreen);
   assert.equal(reviewStops.length, 1, 'review exposes a single tab stop (結果へ戻る)');
   assert.equal(reviewStops[0], back);
