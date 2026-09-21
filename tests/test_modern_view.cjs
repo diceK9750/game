@@ -428,7 +428,7 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=sh-play-hud-87-1/);
+  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -464,7 +464,7 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=sh-play-hud-87-1/);
+  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -516,7 +516,7 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
   assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=sh-play-hud-87-1/);
+  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -553,7 +553,7 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=sh-play-hud-87-1/);
+  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
