@@ -159,6 +159,33 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-start-group span { display: block; font-size: 10px; margin-top: 6px; font-weight: 500; }
 .nr-settings { display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .nr-setting { background: #11283366; font-size: 11px !important; padding: 8px 12px; min-height: 36px; }
+/* Settings persist toast: brief confirm after BGM/SFX/motion toggle saves to localStorage.
+   Pulse 0/1 restarts keyframes on rapid re-toggle. Reduced: static readable until screen change. */
+.nr-settings-toast {
+  position: fixed; top: max(12px, env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+  z-index: 40; max-width: min(420px, calc(100vw - 24px)); padding: 10px 16px; border-radius: 14px;
+  border: 1px solid #f9d58a88; background: #14303eef; color: #ffe8ac; box-shadow: 0 8px 24px #0006;
+  font-size: 13px; font-weight: 800; letter-spacing: .3px; text-align: center; line-height: 1.35;
+  pointer-events: none; opacity: 0;
+}
+.nr-settings-toast[data-show='true'][data-pulse='0'] { animation: nr-settings-toast-a 1.8s ease both; }
+.nr-settings-toast[data-show='true'][data-pulse='1'] { animation: nr-settings-toast-b 1.8s ease both; }
+@keyframes nr-settings-toast-a {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  12%, 72% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -4px); }
+}
+@keyframes nr-settings-toast-b {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  12%, 72% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nr-settings-toast[data-show='true'] { opacity: 1; transform: translateX(-50%); animation: none !important; }
+}
+#modern-app[data-reduced='true'] .nr-settings-toast[data-show='true'] {
+  opacity: 1; transform: translateX(-50%); animation: none !important;
+}
 .nr-ready-record { font-size: 10px; text-align: center; color: var(--nr-muted); margin-top: 12px !important; }
 .nr-play { display: flex; flex-direction: column; gap: 10px; padding-top: 12px; padding-bottom: 8px; overflow: hidden; }
 .nr-hud { display: grid; grid-template-columns: 1fr 1.05fr 1fr; align-items: stretch; gap: 14px; min-height: 74px; flex-shrink: 0; }
@@ -566,5 +593,10 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   }
   #modern-app .nr-miss-badge {
     color: Canvas; background: LinkText; box-shadow: none;
+  }
+
+  /* Settings persist toast: system colors when HC remaps gold/mint. */
+  #modern-app .nr-settings-toast {
+    border: 2px solid CanvasText; background: Canvas; color: CanvasText; box-shadow: none;
   }
 }

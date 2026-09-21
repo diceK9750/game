@@ -68,6 +68,7 @@
   markHostInsets(window, root);
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let state = null, sequence = 0, active = false, previousScreen = '', announcement = '', historyKey = '';
+  let prevPrefs = null; // null until first paint — avoid toast on cold load
   let scrollLocked = false;
   function setScrollLock(locked) {
     locked = Boolean(locked);
@@ -149,7 +150,33 @@
   const pause = button('一時停止', 'pause', undefined, 'nr-quiet');
   const retry = button('やり直す', 'retry', undefined, 'nr-quiet nr-play-retry');
   const gamesBack = button('ゲーム選択', 'home', undefined, 'nr-quiet nr-games-back');
-  add(topControls, gamesBack, sound, help, retry, pause); add(header, brand, headerContext, topControls); app.append(header, live);
+  add(topControls, gamesBack, sound, help, retry, pause); add(header, brand, headerContext, topControls);
+  // Settings persistence toast: brief visible confirm when BGM/SFX/motion toggle saves.
+  // Full motion uses CSS animationend (no timer APIs); reduced keeps static until screen change.
+  const settingsToast = E('div', 'nr-settings-toast');
+  settingsToast.hidden = true;
+  settingsToast.setAttribute('role', 'status');
+  settingsToast.setAttribute('aria-live', 'polite');
+  settingsToast.setAttribute('aria-atomic', 'true');
+  settingsToast.dataset.show = 'false';
+  settingsToast.dataset.pulse = '0';
+  function hideSettingsToast() {
+    settingsToast.hidden = true;
+    settingsToast.dataset.show = 'false';
+    settingsToast.textContent = '';
+  }
+  function showSettingsToast(message) {
+    settingsToast.textContent = message;
+    settingsToast.hidden = false;
+    settingsToast.dataset.show = 'true';
+    // Flip pulse so a rapid re-toggle restarts the CSS keyframes.
+    settingsToast.dataset.pulse = settingsToast.dataset.pulse === '0' ? '1' : '0';
+  }
+  settingsToast.addEventListener('animationend', (event) => {
+    if (event.target !== settingsToast) return;
+    hideSettingsToast();
+  });
+  app.append(header, live, settingsToast);
 
   const home = section('home', 'nr-home');
   const homeChoices = E('div', 'nr-game-choices');
@@ -332,6 +359,22 @@
       effects.textContent=sfx.textContent; effects.setAttribute('aria-pressed',String(!!state.sfx));
       animation.textContent=motion.textContent; animation.setAttribute('aria-pressed',String(reduced));
     }
+    // Persist-confirm toast when BGM / 効果音 / 演出 actually flip (not cold load).
+    const prefs = {bgm: !!state.bgm, sfx: !!state.sfx, reduced};
+    if (prevPrefs) {
+      const parts = [];
+      if (prefs.bgm !== prevPrefs.bgm) parts.push(prefs.bgm ? 'BGM ON' : 'BGM OFF');
+      if (prefs.sfx !== prevPrefs.sfx) parts.push(prefs.sfx ? '効果音 ON' : '効果音 OFF');
+      if (prefs.reduced !== prevPrefs.reduced) parts.push(prefs.reduced ? '演出 ひかえめ' : '演出 通常');
+      if (parts.length) {
+        const ok = state.storage_saved !== false;
+        showSettingsToast(`${parts.join(' · ')} · ${ok ? '保存しました' : '保存できませんでした'}`);
+      } else if (changedScreen) {
+        // Reduced-motion path has no animationend; dismiss on screen change.
+        hideSettingsToast();
+      }
+    }
+    prevPrefs = prefs;
     select(kindButtons, ['battle', 'practice'], state.kind); select(rangeButtons, [10, 20, 30, 40], state.max_number); select(levelButtons, ['easy', 'normal', 'hard'], state.difficulty);
     difficultyWrap.hidden = !battle;
     kindDescription.textContent = battle ? `先に見つけると1点。${state.goal || Math.ceil(state.max_number * .6)}点以上で勝利！` : '自分のペースで、すべての数字を見つけよう。';
