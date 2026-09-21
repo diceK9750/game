@@ -98,7 +98,12 @@
       if (event.target !== taskWrap) return;
       clearRequiredCue();
     });
-    const status = E('p', 'sh-status'); status.setAttribute('role', 'status');
+    // Visual status strip stays non-live (#98 parity); polite sr-only region announces miss guidance.
+    const status = E('p', 'sh-status');
+    const statusLive = E('div', 'nr-sr-only');
+    statusLive.setAttribute('role', 'status');
+    statusLive.setAttribute('aria-live', 'polite');
+    statusLive.setAttribute('aria-atomic', 'true');
     const stock = E('span', 'sh-stock'), completed = E('span');
     const board = E('div', 'sh-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', 'しりとりの絵札');
     const boardSpace = add(E('div', 'sh-board-space'), board);
@@ -147,8 +152,9 @@
     add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultScore, resultKoh.wrap), reason, resultSecondary,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
-    add(page, intro, stage, pause, result);
+    add(page, statusLive, intro, stage, pause, result);
     let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false, keyboardCard = 0, boardCols = 4;
+    let announcement = '';
     const helpPage=E('div','sh-intro nr-help-card nr-surface');
     const closeHelp=E('button','nr-button nr-primary','戻る'); closeHelp.type='button';
     closeHelp.addEventListener('click',()=>{helpOpen=false; helpPage.hidden=true; intro.hidden=false; onNavigationChange(); intro.querySelector('h1').focus();});
@@ -356,6 +362,20 @@
       clock.textContent = solo ? '時間無制限' : mine ? `${s.remaining.toFixed(1)} 秒` : '…';
       clock.dataset.urgent = String(!solo && mine && s.remaining < 5);
       status.textContent = s.message + (newFind ? ` · ${newFind}` : '');
+      // Durable miss guidance feeds polite live region so SR hear「ちがう絵」even when
+      // short-landscape .sh-status ellipsizes; visual strip + #65 outline stay non-live (#98).
+      const missGuidance = live && s.miss_card != null
+        ? 'ちがう絵！お題を確認して、すぐ押し直そう。'
+        : '';
+      const nextAnnouncement = live
+        ? `次は「${s.required}」。${s.completed || 0}枚つながった。ミス${s.mistakes || 0}回。${missGuidance}`
+        : s.phase === 'finished'
+          ? `${resultTitle.textContent}`
+          : '';
+      if (nextAnnouncement !== announcement) {
+        announcement = nextAnnouncement;
+        statusLive.textContent = announcement;
+      }
       stock.textContent = `山札 ${s.stock || 0}枚`; completed.textContent = `${s.completed || 0} / ${s.total || 24}枚 つながった`;
       hint.textContent = `ヒント ${s.hints}回`; hint.disabled = !mine || !s.hints || s.phase !== 'playing';
       relink.hidden = s.phase !== 'blocked'; relink.textContent = `つなぎ直す あと${s.relinks}回`;
