@@ -904,6 +904,112 @@ test('help Tab cycles help controls and does not escape to chrome', () => {
   assert.notEqual(b.document.activeElement, headerSound, 'confirm Tab still trapped after help');
 });
 
+test('finished/review Tab cycles result controls and does not escape to chrome', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (screen, text) => walk(screen).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+  const headerSound = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
+  const collectStops = (root) => {
+    const stops = [];
+    (function visit(node) {
+      if (!node || node.hidden) return;
+      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+      for (const child of node.children || []) visit(child);
+    })(root);
+    return stops;
+  };
+
+  // Battle result: entry replay (#17); Tab cycles retry/title/review only; never ♪.
+  b.render('playing');
+  b.render('finished', {kind: 'battle', perfect: true, bonus: 1000, won: true});
+  const finishedScreen = screenOf('finished');
+  const retry = btnIn(finishedScreen, 'もう一度遊ぶ');
+  const title = btnIn(finishedScreen, 'モード選択');
+  const reviewBtn = btnIn(finishedScreen, '対戦を振り返る');
+  assert.equal(b.document.activeElement, retry, 'result entry still focuses primary replay (#17)');
+  assert.equal(reviewBtn.hidden, false, 'battle review remains reachable');
+
+  const finishedStops = collectStops(finishedScreen);
+  assert.deepEqual(finishedStops, [retry, title, reviewBtn], 'finished exposes retry/title/review');
+  assert.ok(!finishedStops.includes(headerSound), 'header BGM is outside the trap');
+
+  for (let i = 0; i < finishedStops.length; i++) {
+    const expected = finishedStops[(i + 1) % finishedStops.length];
+    b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(b.document.activeElement, expected, `finished Tab step ${i + 1} stays in result`);
+    assert.notEqual(b.document.activeElement, headerSound, 'Tab must not escape to ♪ chrome');
+  }
+  retry.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, finishedStops[finishedStops.length - 1], 'Shift+Tab wraps inside finished');
+
+  // Focus already on chrome: Tab pulls back onto replay (first stop).
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, retry, 'Tab from chrome re-enters finished on replay');
+
+  // #17 Enter/Space retry still works when focus is not on a visible button.
+  const heading = walk(finishedScreen).find(n => n.tagName === 'H1');
+  heading.focus();
+  const beforeEnter = b.queue().length;
+  b.app.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(b.queue().at(-1).action, 'retry', 'Enter still retries from non-button focus (#17)');
+  assert.equal(b.queue().length, beforeEnter + 1);
+  title.focus();
+  const afterTitle = b.queue().length;
+  b.app.emit('keydown', {key: ' ', repeat: false});
+  assert.equal(b.queue().length, afterTitle, 'title button keeps native Space activation');
+
+  // Review: single 結果へ戻る stop; Tab/Shift+Tab stay put; chrome reclaim.
+  reviewBtn.emit('click');
+  assert.equal(b.queue().at(-1).action, 'review');
+  b.render('review', {kind: 'battle', history: [{number: 1, owner: 'you', seconds: 1.25}]});
+  const reviewScreen = screenOf('review');
+  const back = btnIn(reviewScreen, '結果へ戻る');
+  assert.ok(back);
+  assert.ok(String(back.className).includes('nr-primary'));
+  // Entry may land via hidden-focus reclaim; pin focus for trap assertions.
+  back.focus();
+  const reviewStops = collectStops(reviewScreen);
+  assert.equal(reviewStops.length, 1, 'review exposes a single tab stop (結果へ戻る)');
+  assert.equal(reviewStops[0], back);
+  assert.ok(!reviewStops.includes(headerSound), 'header BGM is outside review trap');
+
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, back, 'review Tab stays on 結果へ戻る');
+  assert.notEqual(b.document.activeElement, headerSound, 'review Tab must not escape to ♪ chrome');
+  back.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, back, 'review Shift+Tab also stays on 結果へ戻る');
+
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, back, 'Tab from chrome re-enters review');
+
+  // Practice finished hides review; Tab still cycles remaining result actions only.
+  b.render('finished', {kind: 'practice', perfect: false, won: true});
+  const practiceScreen = screenOf('finished');
+  const practiceRetry = btnIn(practiceScreen, 'もう一度遊ぶ');
+  const practiceTitle = btnIn(practiceScreen, 'モード選択');
+  const practiceReview = btnIn(practiceScreen, '対戦を振り返る');
+  assert.equal(b.document.activeElement, practiceRetry, 'practice result still focuses replay (#17)');
+  assert.equal(practiceReview.hidden, true, 'practice hides review action');
+  const practiceStops = collectStops(practiceScreen);
+  assert.deepEqual(practiceStops, [practiceRetry, practiceTitle], 'practice finished omits hidden review');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, practiceTitle, 'practice Tab moves to モード選択');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, practiceRetry, 'practice Tab wraps to replay');
+  assert.notEqual(b.document.activeElement, headerSound);
+
+  // Playing leaves Tab alone (no finished trap bleed).
+  b.render('playing', {cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
+  const cell = b.cells()[0];
+  cell.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, cell, 'playing leaves Tab alone after finished trap');
+});
+
 test('shiritori overlay Tab reclaim wiring keeps chrome parity with confirm trap', () => {
   const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
   const sh = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
