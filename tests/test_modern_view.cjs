@@ -1797,7 +1797,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
   assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
-  assert.match(player, /mobile-layout\.css\?v=sh-result-stats-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=review-history-ls-1/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -1831,7 +1831,7 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
-  assert.match(player, /mobile-layout\.css\?v=sh-result-stats-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=review-history-ls-1/);
 });
 
 test('finished result still focuses primary replay after score hierarchy (#17)', () => {
@@ -1873,7 +1873,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
   assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
-  assert.match(player, /mobile-layout\.css\?v=sh-result-stats-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=review-history-ls-1/);
 });
 
 test('finished result sets record data-record kinds for contrast styling', () => {
