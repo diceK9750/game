@@ -323,6 +323,9 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-result-card { max-width: 620px; }
 .nr-result-duo { display: flex; justify-content: center; align-items: center; gap: 24px; margin: 8px auto 0; }
 .nr-result-duo .nr-character { width: 126px; }
+/* #81: practice solo result cast after #80 hides LUNA — denser centered RIN+score
+   (parity .sh-arena:has(> .nr-koh[hidden])); JS [hidden] owns hide, no empty rival slot. */
+.nr-result-duo:has(> .nr-koh[hidden]) { gap: 12px; justify-content: center; }
 .nr-result-score { color: var(--nr-gold); font-size: 52px; font-weight: 850; line-height: 1; white-space: nowrap; letter-spacing: 2px; font-variant-numeric: tabular-nums; text-shadow: 0 0 18px #e1bc6c55, 0 2px 0 #0004; }
 /* Result secondary stats: quieter than primary score (hierarchy, not play HUD). */
 .nr-result-stats { display: flex; justify-content: space-around; padding: 14px 0; margin-top: 14px; border-top: 1px solid var(--nr-border); border-bottom: 1px solid var(--nr-border); }
@@ -464,7 +467,6 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-stat > span { font-size: 8px; letter-spacing: .3px; margin: 0; } .nr-stat > strong { font-size: 11px; }
   .nr-cpu-row { margin-top: 4px; gap: 8px; } .nr-cpu-clock { font-size: 8px; min-width: 88px; } .nr-cpu-timer { height: 3px; }
   .nr-feedback { font-size: 8px; margin-top: 2px !important; } .nr-stage-middle > .nr-hint { position: absolute; right: 14px; bottom: 6px; padding: 6px 12px; min-height: 36px; min-width: 44px; font-size: 11px !important; }
-  #modern-app[data-kind='practice'] .nr-play-stage .nr-koh { visibility: hidden; }
   .nr-centered { align-items: safe center; } .nr-dialog, .nr-help-card, .nr-review-card, .nr-count-card, .nr-result-card { padding: 22px; }
   .nr-count-card { padding: 15px; } .nr-count-card .nr-eyebrow { margin-bottom: 4px; } .nr-count-card h1 { font-size: 20px; } .nr-count-number { font-size: 75px; }
   .nr-count-card .nr-muted { margin-top: 0 !important; } .nr-count-card .nr-button { margin-top: 10px; min-height: 36px; }
@@ -490,6 +492,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-result-card > h1 { grid-area: title; font-size: 25px; }
   .nr-result-duo { grid-area: duo; align-self: center; gap: 10px; }
   .nr-result-duo .nr-character { width: 80px; }
+  /* #81: solo cast denser in short-height two-column result. */
+  .nr-result-duo:has(> .nr-koh[hidden]) { gap: 6px; justify-content: center; }
   .nr-result-card > .nr-muted { display: none; }
   .nr-result-stats { grid-area: stats; margin: 0; padding: 10px 0; }
   .nr-award { grid-area: award; margin: 0; padding: 8px; }
