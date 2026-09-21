@@ -53,7 +53,7 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=result-cast-score-ls-1/);
+  assert.match(html, /mobile-layout\.css\?v=result-stats-ls-1/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -89,7 +89,7 @@ test('extreme-short landscape compresses chrome to reclaim board cell height', (
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-stage-middle > \.nr-hint \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=result-cast-score-ls-1/);
+  assert.match(html, /mobile-layout\.css\?v=result-stats-ls-1/);
 });
 
 test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
@@ -110,7 +110,7 @@ test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-header \{ min-height: 32px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=result-cast-score-ls-1/);
+  assert.match(html, /mobile-layout\.css\?v=result-stats-ls-1/);
 });
 
 test('host and player lock overscroll; play posts scroll-lock to the shell', () => {
@@ -156,7 +156,7 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.match(mobile, /Host owns device insets/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
   assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
-  assert.match(player, /mobile-layout\.css\?v=result-cast-score-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-stats-ls-1/);
 });
 
 
@@ -166,7 +166,7 @@ test('mobile result keeps primary score heavier than secondary stats (#73)', () 
   assert.match(css, /\.nr-result-score \{ font-size: 34px; font-weight: 850; \}/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 12px; font-weight: 650; color: var\(--nr-muted\); \}/);
   assert.match(css, /\.sh-result > \.nr-result-score \{ font-size: 34px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=result-cast-score-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-stats-ls-1/);
 });
 
 
@@ -175,7 +175,7 @@ test('mobile result keeps award/record contrast readable on compact cards', () =
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   assert.match(css, /\.nr-result-card \.nr-award > span \{ font-size: 9px/);
   assert.match(css, /\.nr-result-card \.nr-record\[data-record='new'\] \{ font-size: 11px; padding: 3px 8px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=result-cast-score-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-stats-ls-1/);
 });
 
 
@@ -198,6 +198,26 @@ test('short-landscape result stacks primary score above cast so award cannot col
   assert.match(css, /\.nr-result-duo \.nr-result-score \{ font-size: 28px/);
   // Two-column result grid + replay actions column intact (#17/#19 focus target).
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
-  assert.match(player, /mobile-layout\.css\?v=result-cast-score-ls-1/);
-  assert.match(index, /player\.html\?v=result-cast-score-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-stats-ls-1/);
+  assert.match(index, /player\.html\?v=result-stats-ls-1/);
 });
+
+test('short-landscape result packs secondary stats denser beside stacked score (#76)', () => {
+  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
+  // Fixed 3-col pack (no flex wrap + chain summary row crowding half-width).
+  assert.match(css, /\.nr-result-stats \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 11px; font-weight: 650; color: var\(--nr-muted\); \}/);
+  assert.match(css, /\.nr-result-stats > \.nr-muted \{ display: none/);
+  // Stats stay in right column beside #75 stacked score; actions column intact.
+  assert.match(css, /\.nr-result-stats \{ grid-column: 2 !important; grid-row: 1 \/ 3 !important; \}/);
+  assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
+  // Extreme-short keeps pack, slightly tighter.
+  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
+  assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 10px; \}/);
+  assert.match(player, /mobile-layout\.css\?v=result-stats-ls-1/);
+  assert.match(index, /player\.html\?v=result-stats-ls-1/);
+});
+

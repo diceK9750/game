@@ -268,6 +268,18 @@
   .nr-result-card .nr-award { padding: 3px 5px; margin-top: 0; }
   .nr-result-card .nr-award > strong { font-size: 16px; line-height: 1.1; }
   .nr-result-card .nr-award > span { font-size: 8px; letter-spacing: 1px; }
+  /* #76: denser secondary stats beside #75 stacked score — fixed 3-col pack,
+     drop chain-summary wrap (flex-basis:100%) that crowds the half-width column. */
+  .nr-result-stats {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: center; justify-items: center; gap: 2px 6px;
+    padding: 2px 0; margin: 0; min-height: 0;
+    border-top: none; border-bottom: 1px solid var(--nr-border);
+  }
+  .nr-result-stats .nr-stat { min-width: 0; }
+  .nr-result-stats .nr-stat > span { font-size: 7px; letter-spacing: 0; margin: 0; }
+  .nr-result-stats .nr-stat > strong { font-size: 11px; font-weight: 650; color: var(--nr-muted); }
+  .nr-result-stats > .nr-muted { display: none; }
   .sh-result { grid-template-columns: 1fr 1fr; }
   .sh-result-cast { display: none; }
   .sh-result > h1, .sh-result > p { grid-column: 1; }
@@ -308,7 +320,11 @@
   .nr-result-duo .nr-character { display: none; }
   .nr-result-duo .nr-result-score { font-size: 28px; }
   .nr-result-card .nr-award > strong { font-size: 14px; }
+  /* #76: extreme-short keeps 3-col pack; slightly tighter values. */
+  .nr-result-stats .nr-stat > strong { font-size: 10px; }
+  .nr-result-stats { gap: 1px 4px; padding: 1px 0; }
 }
+
 @media (orientation: portrait) and (max-width: 400px) {
   /* Narrow portrait: reclaim horizontal chrome so 5×8 cells approach ~44px taps.
      8×44=352 > 320 so absolute 44px is impossible; maximize width instead.
