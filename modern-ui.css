@@ -453,7 +453,17 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 #modern-app[data-reduced='true'] .nr-cpu-claim,
 #modern-app[data-reduced='true'] .nr-award { opacity: 1; animation: none !important; }
 #modern-app[data-reduced='true'] *, #modern-app[data-reduced='true'] *::before, #modern-app[data-reduced='true'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-#modern-app[data-reduced='true'] .nr-fx { opacity: 0; }
+/* Reduced-motion FX: do not blank .nr-fx (that hid ring/spark and nested CPU badge).
+   Cell outlines (#28/#29) stay the durable outer cue; ring/spark/CPU badge are static
+   inner stand-ins. Miss pop/burst stay hidden — outline alone reads without motion.
+   .nr-fx / .nr-cell-effect keep pointer-events: none so taps stay unblocked. */
+#modern-app[data-reduced='true'] .nr-fx { opacity: 1; animation: none !important; }
+#modern-app[data-reduced='true'] .nr-bomb,
+#modern-app[data-reduced='true'] .nr-burst { opacity: 0; }
+#modern-app[data-reduced='true'] .nr-ring,
+#modern-app[data-reduced='true'] .nr-spark {
+  opacity: 1; transform: none; animation: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   #modern-app .nr-cell[data-feedback='wrong'] {
     background: #f8b5b4; outline: 3px solid #f67f81; outline-offset: -3px;
@@ -465,5 +475,11 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-cpu-claim,
   #modern-app .nr-award { opacity: 1; animation: none !important; }
   #modern-app *, #modern-app *::before, #modern-app *::after { animation: none !important; transition: none !important; }
-  #modern-app .nr-fx { opacity: 0; }
+  #modern-app .nr-fx { opacity: 1; animation: none !important; }
+  #modern-app .nr-bomb,
+  #modern-app .nr-burst { opacity: 0; }
+  #modern-app .nr-ring,
+  #modern-app .nr-spark {
+    opacity: 1; transform: none; animation: none !important;
+  }
 }
