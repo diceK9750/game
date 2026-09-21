@@ -477,6 +477,18 @@
         // Battle review: land on primary 「結果へ戻る」 (parity with help #43).
         // Explicit path — do not rely on the hidden-activeElement reclaim fallback.
         reviewBack.focus({preventScroll: true});
+      } else if ((state.screen === 'countdown' || state.screen === 'resuming') && previousScreen) {
+        // Countdown: land on 「モード選択へ」 so keyboard users can cancel without Tab
+        // hunting past header chrome. Resuming hides that button — reclaim onto the
+        // countdown heading (not a hidden control / ♪). Play-start #41
+        // (countdown→playing first playable cell) stays on the playing branch below.
+        // Same-screen countdown ticks leave mouse/touch alone (changedScreen gate).
+        if (state.screen === 'countdown' && !countTitle.hidden) {
+          countTitle.focus({preventScroll: true});
+        } else {
+          countLabel.tabIndex = -1;
+          countLabel.focus({preventScroll: true});
+        }
       } else if (state.screen === 'playing' && previousScreen) {
         const resumeFrom = previousScreen === 'resuming' || previousScreen === 'confirm';
         if (resumeFrom) {
