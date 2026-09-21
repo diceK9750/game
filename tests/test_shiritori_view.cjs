@@ -259,6 +259,41 @@ test('blocked solo exposes rescue without any reading choices', () => {
   assert.ok(view.page.querySelectorAll('.sh-card').every(b => b.disabled));
 });
 
+test('blocked entry focuses rescue つなぎ直す (parity pause #44 / result #19)', () => {
+  const {view, state, doc} = harness();
+  const cards12 = Array.from({length: 12}, (_, i) => ({
+    id: 'apple', icon: '🍎', words: ['りんご'], owner: null
+  }));
+  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
+
+  // playing → blocked: land on primary rescue, not HUD heading / disabled cards.
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'playing', turn: 'you', hints: 2});
+  const cards = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden);
+  assert.equal(doc.activeElement, cards[0], 'play start still focuses first playable (#35)');
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 2, hints: 2});
+  const rescue = btn(view.page, 'つなぎ直す あと2回');
+  assert.ok(rescue && String(rescue.className).includes('nr-primary'));
+  assert.equal(rescue.hidden, false, 'rescue visible on blocked');
+  assert.equal(doc.activeElement, rescue, 'blocked entry focuses primary つなぎ直す');
+
+  // Same-phase blocked updates leave mouse/keyboard focus alone.
+  const endSolo = btn(view.page, 'ここまでの結果を見る');
+  assert.ok(endSolo && endSolo.hidden === false);
+  endSolo.focus();
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 1, hints: 2, message: 'still blocked'});
+  assert.equal(doc.activeElement, endSolo, 'blocked→blocked keeps current focus');
+  assert.equal(btn(view.page, 'つなぎ直す あと1回').hidden, false, 'relink count updates without focus yank');
+
+  // Dictionary overlay open: do not steal focus onto rescue (parity play-start #35).
+  view.update({...state, phase: 'intro', mode: 'solo', cards: []});
+  view.page.querySelectorAll('.sh-dict-open')[0].events.click();
+  const dictFocus = doc.activeElement;
+  assert.equal(dictFocus && dictFocus.textContent, '← 絵しりとりに戻る', 'dict entry focuses back');
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 2, hints: 2});
+  assert.equal(view.isOverlayOpen(), true);
+  assert.equal(doc.activeElement, dictFocus, 'open dictionary keeps focus (no rescue steal)');
+});
+
 test('shiritori deal motion respects reduced-motion and data-reduced', () => {
   const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
   assert.match(css, /#modern-app\[data-reduced='true'\] \.sh-icon \{ animation: none/);
