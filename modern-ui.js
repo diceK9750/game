@@ -261,7 +261,8 @@
     ['ミスしても、すぐ次へ', 'まちがいは爆弾の演出でお知らせ。同じマスはすぐ押し直せます。正解後も待ち時間はありません。'],
     ['練習と休憩も、気軽に', 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。'],
   ]) add(instructions, add(E('li'), E('h2', '', heading), E('p', '', text)));
-  add(helpScreen, add(E('div', 'nr-help-card nr-surface'), E('span', 'nr-eyebrow', 'HOW TO PLAY'), E('h1', '', '遊び方'), instructions, E('p', 'nr-muted', 'PC：クリック、または矢印キー＋Enter。Escで一時停止。結果画面はEnter／Spaceでもう一度。スマートフォンは横持ちがおすすめ。'), button('戻る', 'back', undefined, 'nr-primary')));
+  const helpBack = button('戻る', 'back', undefined, 'nr-primary');
+  add(helpScreen, add(E('div', 'nr-help-card nr-surface'), E('span', 'nr-eyebrow', 'HOW TO PLAY'), E('h1', '', '遊び方'), instructions, E('p', 'nr-muted', 'PC：クリック、または矢印キー＋Enter。Escで一時停止。結果画面はEnter／Spaceでもう一度。スマートフォンは横持ちがおすすめ。'), helpBack));
 
   const finished = section('finished', 'nr-centered');
   const resultRin = portrait('rin', 'RIN / YOU'), resultKoh = portrait('koh', 'LUNA / CPU');
@@ -450,6 +451,14 @@
       // Result→replay: land on primary retry so Enter/Space restarts without Tab hunting.
       if (state.screen === 'finished' && previousScreen) {
         resultRetry.focus({preventScroll: true});
+      } else if (state.screen === 'confirm' && previousScreen) {
+        // Pause hides confirmYes (nr-primary); land on visible resume 「プレイを続ける」.
+        // Retry/title keep confirmYes (affirmative 「はい」/やり直す/戻る). Avoid Tab hunting
+        // and never focus a [hidden] control. Esc toggle (#16) stays key-driven.
+        const focusTarget = state.confirm_action === 'pause' ? confirmNo : confirmYes;
+        focusTarget.focus({preventScroll: true});
+      } else if (state.screen === 'help' && previousScreen) {
+        helpBack.focus({preventScroll: true});
       } else if (state.screen === 'playing' && previousScreen) {
         const resumeFrom = previousScreen === 'resuming' || previousScreen === 'confirm';
         if (resumeFrom) {
@@ -480,7 +489,7 @@
           }
         }
       } else if (previousScreen && document.activeElement && app.contains(document.activeElement) && document.activeElement.closest('[hidden]')) {
-        const focusTarget = screenMap[state.screen].querySelector('button.nr-primary:not(:disabled), h1, .nr-target, button:not(:disabled)');
+        const focusTarget = screenMap[state.screen].querySelector('button.nr-primary:not([hidden]):not(:disabled), h1, .nr-target, button:not([hidden]):not(:disabled)');
         if (focusTarget) { if (focusTarget.tagName !== 'BUTTON') focusTarget.tabIndex = -1; focusTarget.focus({preventScroll: true}); }
       }
     }

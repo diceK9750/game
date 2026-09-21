@@ -318,20 +318,21 @@ function browserHarness() {
     querySelector(selector = '') {
       const nodes = walk(this);
       const parts = String(selector).split(',').map(part => part.trim()).filter(Boolean);
+      // Skip [hidden] controls so pause dialogs do not land on hidden nr-primary yes.
       const match = (part) => {
         if (part.includes('button.nr-primary') || (part.includes('.nr-primary') && part.includes('button'))) {
-          return nodes.find(node => node.tagName === 'BUTTON' && String(node.className).includes('nr-primary') && !node.disabled) || null;
+          return nodes.find(node => node.tagName === 'BUTTON' && String(node.className).includes('nr-primary') && !node.disabled && !node.hidden) || null;
         }
-        if (part === 'h1' || part.startsWith('h1')) return nodes.find(node => node.tagName === 'H1') || null;
-        if (part.includes('.nr-target')) return nodes.find(node => node.className === 'nr-target') || null;
-        if (part.includes('button')) return nodes.find(node => node.tagName === 'BUTTON' && !node.disabled) || null;
+        if (part === 'h1' || part.startsWith('h1')) return nodes.find(node => node.tagName === 'H1' && !node.hidden) || null;
+        if (part.includes('.nr-target')) return nodes.find(node => node.className === 'nr-target' && !node.hidden) || null;
+        if (part.includes('button')) return nodes.find(node => node.tagName === 'BUTTON' && !node.disabled && !node.hidden) || null;
         return null;
       };
       if (parts.length) {
         for (const part of parts) { const found = match(part); if (found) return found; }
         return null;
       }
-      return nodes.find(node => node.tagName === 'H1' || node.className === 'nr-target' || (node.tagName === 'BUTTON' && !node.disabled)) || null;
+      return nodes.find(node => !node.hidden && (node.tagName === 'H1' || node.className === 'nr-target' || (node.tagName === 'BUTTON' && !node.disabled))) || null;
     }
     focus() { document.activeElement = this; }
   }
@@ -651,18 +652,17 @@ test('play start focuses first playable nr-cell for arrow nav; overlays and same
   assert.equal(b.queue().at(-1).action, 'cell');
   assert.equal(b.queue().at(-1).index, 5);
 
-  // Confirm (pause) screen: do not steal onto a cell while overlay shows.
+  // Confirm (pause) screen: land on resume, never a hidden cell/yes control.
   b.render('confirm', {confirm_action: 'pause', cells: []});
   const resume = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'プレイを続ける');
-  resume.focus();
-  assert.equal(b.document.activeElement, resume, 'pause confirm keeps its own focus');
+  assert.equal(b.document.activeElement, resume, 'pause entry focuses プレイを続ける');
   assert.notEqual(b.document.activeElement.className, 'nr-cell');
 
-  // Help overlay likewise spared (no cell focus while help is the active screen).
+  // Help overlay lands on 戻る (no cell focus while help is the active screen).
   b.render('help', {cells: []});
-  const helpBack = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === '戻る');
-  helpBack.focus();
-  assert.equal(b.document.activeElement, helpBack, 'help keeps back-button focus');
+  const helpScreen = walk(b.app).find(n => n.dataset && n.dataset.screen === 'help');
+  const helpBack = walk(helpScreen).find(n => n.tagName === 'BUTTON' && n.textContent === '戻る');
+  assert.equal(b.document.activeElement, helpBack, 'help entry focuses 戻る');
 
   // finished still prefers replay (do not steal with cell focus).
   b.render('playing', {cells: cellsState});
@@ -685,11 +685,10 @@ test('pause resume restores prior keyboardCell instead of play-start first cell'
   b.app.emit('keydown', {key: 'ArrowRight'});
   assert.equal(b.document.activeElement, cells[4], 'pre-pause keyboard cell is mid-board');
 
-  // Pause overlay: board hides; do not keep cell focus.
+  // Pause overlay: board hides; entry focuses resume (not prior cell / hidden yes).
   b.render('confirm', {confirm_action: 'pause', cells: []});
   const resumeBtn = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'プレイを続ける');
-  resumeBtn.focus();
-  assert.equal(b.document.activeElement, resumeBtn);
+  assert.equal(b.document.activeElement, resumeBtn, 'pause entry focuses プレイを続ける');
 
   // Countdown resume screen, then back to playing — must restore cell 4, not cell 1 (#41).
   b.render('resuming', {cells: []});
@@ -716,6 +715,64 @@ test('pause resume restores prior keyboardCell instead of play-start first cell'
   assert.equal(after[4].disabled, true);
   assert.equal(b.document.activeElement.className, 'nr-cell');
   assert.equal(b.document.activeElement.disabled, false, 'claimed prior cell falls back to a playable cell');
+});
+
+test('confirm/help entry focuses primary dialog control without Tab hunting', () => {
+  const b = browserHarness();
+  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (screen, text) => walk(screen).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+
+  // playing → pause: visible resume, not hidden nr-primary yes.
+  b.render('playing', {cells: cellsState});
+  const cells = b.cells();
+  cells[3].focus();
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const confirmScreen = screenOf('confirm');
+  const resume = btnIn(confirmScreen, 'プレイを続ける');
+  const hiddenYes = walk(confirmScreen).find(n => n.tagName === 'BUTTON' && String(n.className).includes('nr-primary') && n.hidden);
+  assert.ok(resume, 'pause exposes プレイを続ける');
+  assert.ok(hiddenYes, 'pause keeps affirmative yes hidden');
+  assert.equal(b.document.activeElement, resume, 'pause entry focuses プレイを続ける');
+  assert.notEqual(b.document.activeElement, hiddenYes, 'pause must not focus hidden yes');
+
+  // Same-screen confirm updates leave mouse/keyboard focus alone.
+  const retryExtra = btnIn(confirmScreen, '新しい配置でやり直す');
+  retryExtra.focus();
+  b.render('confirm', {confirm_action: 'pause', cells: [], sfx: false});
+  assert.equal(b.document.activeElement, retryExtra, 'confirm→confirm keeps current focus');
+
+  // retry/title: affirmative primary (はい path → やり直す / 戻る labels).
+  b.render('playing', {cells: cellsState});
+  cells[2].focus();
+  b.render('confirm', {confirm_action: 'retry', cells: []});
+  const retryYes = btnIn(screenOf('confirm'), 'やり直す');
+  assert.equal(b.document.activeElement, retryYes, 'retry entry focuses affirmative yes');
+  assert.equal(retryYes.hidden, false);
+  assert.ok(String(retryYes.className).includes('nr-primary'));
+
+  b.render('playing', {cells: cellsState});
+  cells[1].focus();
+  b.render('confirm', {confirm_action: 'title', cells: []});
+  const titleYes = walk(screenOf('confirm')).find(n => n.tagName === 'BUTTON' && n.textContent === '戻る' && String(n.className).includes('nr-primary'));
+  assert.equal(b.document.activeElement, titleYes, 'title entry focuses affirmative yes');
+
+  // ready → help: 戻る primary (scoped to help screen; confirm also has a 戻る label).
+  b.render('ready', {cells: []});
+  const helpBtn = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === '遊び方');
+  helpBtn.focus();
+  b.render('help', {cells: []});
+  const helpBack = btnIn(screenOf('help'), '戻る');
+  assert.equal(b.document.activeElement, helpBack, 'help entry focuses 戻る');
+  assert.ok(String(helpBack.className).includes('nr-primary'));
+
+  // Esc on pause still resumes (#16); focus target does not change Esc wiring.
+  const before = b.queue().length;
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  assert.equal(b.document.activeElement, resume, 're-entry still focuses resume');
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().at(-1).action, 'yes', 'Esc on pause still resumes via yes');
+  assert.equal(b.queue().length, before + 1);
 });
 
 test('Escape toggles pause confirm and dismisses retry/title without quitting', () => {
