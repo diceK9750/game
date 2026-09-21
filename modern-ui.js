@@ -229,6 +229,22 @@
   const youGoal = E('span', 'nr-score-note');
   const youHud = add(E('div', 'nr-score-card nr-you'), add(E('div'), E('span', 'nr-overline', 'YOU / リン'), youGoal), youScore);
   const cpuHud = add(E('div', 'nr-score-card nr-cpu'), add(E('div'), E('span', 'nr-overline', 'CPU / ルナ'), E('span', 'nr-score-note', '同じお題を探しています')), cpuScore);
+  // YOU score cue: gold pulse when player_points / completed increments mid-play (parity #68/#69).
+  // Full motion: CSS animationend; reduced: static brighter ring until next increment / leave play.
+  youHud.dataset.cue = 'false';
+  youHud.dataset.pulse = '0';
+  let prevYouScoreKey = null;
+  function clearYouScoreCue() {
+    youHud.dataset.cue = 'false';
+  }
+  function flashYouScoreCue() {
+    youHud.dataset.cue = 'true';
+    youHud.dataset.pulse = youHud.dataset.pulse === '0' ? '1' : '0';
+  }
+  youHud.addEventListener('animationend', (event) => {
+    if (event.target !== youHud) return;
+    clearYouScoreCue();
+  });
   const target = E('strong', 'nr-target-number', '1');
   const targetWrap = add(E('div', 'nr-target'), E('span', 'nr-overline', 'この数字をさがそう'), target);
   // お題 change cue: pulse HUD when target flips so players notice the new goal.
@@ -410,7 +426,15 @@
       if (prevTargetKey !== null || targetWrap.dataset.cue === 'true') clearTargetCue();
       prevTargetKey = null;
     }
-    youScore.textContent = battle ? integer(state.player_points) : integer(state.completed);
+    const youValue = battle ? integer(state.player_points) : integer(state.completed);
+    youScore.textContent = String(youValue);
+    if (playing) {
+      if (prevYouScoreKey !== null && youValue > prevYouScoreKey) flashYouScoreCue();
+      prevYouScoreKey = youValue;
+    } else {
+      if (prevYouScoreKey !== null || youHud.dataset.cue === 'true') clearYouScoreCue();
+      prevYouScoreKey = null;
+    }
     cpuScore.textContent = battle ? integer(state.cpu_points) : integer(state.max_number);
     youGoal.textContent = battle ? `${integer(state.goal)}点で勝利` : '見つけた数字';
     cpuHud.hidden = !battle; youHud.dataset.practice = String(!battle);
