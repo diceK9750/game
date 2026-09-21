@@ -263,6 +263,18 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 @keyframes nr-spark { 0% { transform: scale(.3) rotate(-30deg); opacity: 0; } 30% { transform: scale(1); opacity: 1; } 100% { transform: translateY(-18px) scale(.5); opacity: 0; } }
 @keyframes nr-joy { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-6px) rotate(-2deg); } }
 @keyframes nr-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 60% { transform: translateX(4px); } }
+/* Pose joy/shake reduced-motion: kill bounce/wobble. Static fallback is the
+   data-pose sprite frame (background-position already swaps celebrate/victory/hurt);
+   no held transform — the portrait art is the durable non-motion cue. Same rationale
+   as .rival-portrait in character-layer.css; mirrors chain-tier locality above. */
+@media (prefers-reduced-motion: reduce) {
+  .nr-character-art[data-pose='celebrate'],
+  .nr-character-art[data-pose='victory'],
+  .nr-character-art[data-pose='hurt'] { animation: none !important; }
+}
+#modern-app[data-reduced='true'] .nr-character-art[data-pose='celebrate'],
+#modern-app[data-reduced='true'] .nr-character-art[data-pose='victory'],
+#modern-app[data-reduced='true'] .nr-character-art[data-pose='hurt'] { animation: none !important; }
 @media (min-height: 850px) { .nr-play { max-height: 850px; } .nr-play-stage { min-height: 150px; } .nr-play-stage .nr-character { width: 145px; } }
 @media (max-width: 850px) { .nr-header-context { display: none; } .nr-ready { gap: 20px; } .nr-intro h1 { font-size: 26px; } .nr-intro-copy { font-size: 12px; }
   .nr-setup { padding: 20px; } .nr-score-card { padding: 8px 12px; } .nr-score-note { font-size: 9px; } .nr-target { gap: 8px; } .nr-target .nr-overline { font-size: 10px; }
