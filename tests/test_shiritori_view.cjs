@@ -353,3 +353,52 @@ test('arrow keys are inert outside playing and when no playable cards remain', (
   view.page.emit('keydown', {key: 'ArrowRight'});
   assert.equal(doc.activeElement, cards[0], 'no move when every card is disabled');
 });
+
+test('play start focuses first playable sh-card for arrow nav; overlays and CPU turn spared', () => {
+  const {view, state, queue, doc} = harness();
+  const cards12 = Array.from({length: 12}, (_, i) => ({
+    id: 'apple', icon: '🍎', words: ['りんご'], owner: i === 0 ? 'you' : null
+  }));
+
+  // intro → playing: skip owned card 0, land on first playable (index 1).
+  view.update({...state, phase: 'intro', cards: []});
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const cards = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden);
+  assert.equal(cards[0].disabled, true);
+  assert.equal(cards[1].disabled, false);
+  assert.equal(doc.activeElement, cards[1], 'play start focuses first playable card');
+
+  // Arrow nav continues from that origin without Tab.
+  view.page.emit('keydown', {key: 'ArrowRight'});
+  assert.equal(doc.activeElement, cards[2], 'arrows work from auto-focused start card');
+
+  // Same-phase updates must not yank focus (mouse/touch users mid-board).
+  cards[5].focus();
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you', remaining: 19});
+  assert.equal(doc.activeElement, cards[5], 'playing→playing keeps current focus');
+
+  // Mouse path still queues sh_card.
+  const before = queue.length;
+  cards[2].click();
+  assert.equal(queue.length, before + 1);
+  assert.deepEqual(queue.at(-1), {action: 'sh_card', value: 2});
+
+  // CPU turn: no playable cards → fall back to HUD prompt (do not leave focus nowhere).
+  view.update({...state, phase: 'paused'});
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'cpu'});
+  assert.equal(doc.activeElement, view.page.querySelector('.sh-prompt'), 'CPU turn falls back to HUD prompt');
+
+  // finished still prefers replay (do not steal with card focus).
+  view.update({...state, phase: 'finished', winner: 'you', history: [], cards: cards12});
+  assert.equal(doc.activeElement, view.page.querySelectorAll('button').find(b => b.textContent === 'もう一度遊ぶ'));
+
+  // Dictionary overlay: keep dict chrome focused; do not yank to a card.
+  view.update({...state, phase: 'intro', cards: []});
+  const open = view.page.querySelectorAll('.sh-dict-open')[0];
+  open.events.click();
+  const dictFocus = doc.activeElement;
+  // Force playing while dictionary still open (overlay guard).
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  assert.equal(view.isOverlayOpen(), true);
+  assert.equal(doc.activeElement, dictFocus, 'open dictionary keeps focus (no card steal)');
+});
