@@ -693,18 +693,30 @@ class VisualFeedbackTests(unittest.TestCase):
         self.app.play_sfx = lambda *args, **kwargs: None
         self.app.update_battle_progress = lambda: None
         self.app.finish_battle = lambda: None
-        wrong_index = 0
-        self.app.cell_effects = [("wrong", wrong_index, 90), ("correct", 1, 95)]
-        self.app.wrong_cell = wrong_index
-        self.app.correct_cell = 1
 
         claimed = self.app.round.current_target
+        claimed_index = self.app.round.board_cells.index(claimed)
+        # Miss outline must not share the CPU claim cell; board shuffle can put
+        # current_target at index 0, so never hardcode wrong_index=0.
+        wrong_index = next(
+            i for i in range(len(self.app.round.board_cells)) if i != claimed_index
+        )
+        correct_index = next(
+            i
+            for i in range(len(self.app.round.board_cells))
+            if i not in {wrong_index, claimed_index}
+        )
+        self.app.cell_effects = [("wrong", wrong_index, 90), ("correct", correct_index, 95)]
+        self.app.wrong_cell = wrong_index
+        self.app.correct_cell = correct_index
+
         # Force a CPU claim on the live target without waiting on the clock.
         self.app.round.update_cpu = lambda: claimed
         self.app.update_cpu_turn()
 
         kinds = {index: kind for kind, index, _ in self.app.cell_effects}
         self.assertEqual(kinds[wrong_index], "wrong")
+        self.assertEqual(kinds[claimed_index], "cpu")
         self.assertIn("cpu", kinds.values())
         self.assertNotIn("correct", kinds.values())
         self.assertIsNone(self.app.wrong_cell)
