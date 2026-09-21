@@ -998,6 +998,83 @@ test('home entry focuses first enabled game card; same-screen and ready spared',
   assert.equal(b.document.activeElement, helpBack, 'help entry still focuses 戻る');
 });
 
+test('home Tab cycles enabled game cards and does not escape to chrome', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const homeScreen = () => screenOf('home');
+  const pictureGame = () => walk(homeScreen()).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-picture-game'));
+  const numberGame = () => walk(homeScreen()).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-number-game'));
+  const headerSound = walk(b.app).find(n =>
+    n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
+  const gamesBack = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'ゲーム選択');
+
+  // ready → home: entry first card (#51); Tab cycles cards only, never ♪ chrome.
+  b.render('ready', {cells: []});
+  gamesBack.focus();
+  b.render('home', {cells: []});
+  assert.equal(b.document.activeElement, pictureGame(), 'home entry still focuses first card (#51)');
+  assert.ok(pictureGame() && !pictureGame().disabled, 'harness enables 絵しりとり');
+
+  const homeStops = [];
+  (function visit(node) {
+    if (!node || node.hidden) return;
+    if (node.tagName === 'BUTTON' && !node.disabled) homeStops.push(node);
+    for (const child of node.children || []) visit(child);
+  })(walk(homeScreen()).find(n => String(n.className).includes('nr-game-choices')));
+  assert.deepEqual(homeStops, [pictureGame(), numberGame()], 'home trap is enabled game cards only');
+  assert.ok(!homeStops.includes(headerSound), 'header BGM is outside the trap');
+  assert.ok(!homeStops.includes(gamesBack), 'ゲーム選択 is outside the trap');
+
+  for (let i = 0; i < homeStops.length; i++) {
+    const expected = homeStops[(i + 1) % homeStops.length];
+    b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(b.document.activeElement, expected, `Tab step ${i + 1} stays on game cards`);
+    assert.notEqual(b.document.activeElement, headerSound, 'Tab must not escape to ♪ chrome');
+  }
+  pictureGame().focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, numberGame(), 'Shift+Tab wraps inside chooser');
+  assert.notEqual(b.document.activeElement, headerSound);
+
+  // Focus already on chrome: Tab pulls back into the chooser (first enabled card).
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, homeStops[0], 'Tab from chrome re-enters chooser');
+
+  // Disabled picture: single-stop Tab stays on 数字さがし (no chrome escape).
+  pictureGame().disabled = true;
+  b.render('ready', {cells: []});
+  gamesBack.focus();
+  b.render('home', {cells: []});
+  assert.equal(b.document.activeElement, numberGame(), 'disabled picture still focuses 数字さがし (#51)');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, numberGame(), 'single-card Tab stays on 数字さがし');
+  assert.notEqual(b.document.activeElement, headerSound);
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, numberGame(), 'single-card Shift+Tab stays on 数字さがし');
+  pictureGame().disabled = false;
+
+  // Ready trap still works after home (#52 regression guard).
+  b.render('ready', {cells: []});
+  const ordered = walk(screenOf('ready')).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
+  assert.equal(b.document.activeElement, ordered, 'ready entry still focuses 1から順番 (#50)');
+  ordered.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.notEqual(b.document.activeElement, headerSound, 'ready Tab still trapped after home');
+  assert.notEqual(b.document.activeElement, ordered, 'ready Tab moves inside setup');
+
+  // Playing leaves Tab alone (no home trap bleed).
+  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
+  b.render('playing', {cells: cellsState});
+  const cell = b.cells()[0];
+  cell.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, cell, 'playing leaves Tab alone after home trap');
+});
+
 
 test('confirm Tab cycles dialog controls and does not escape to chrome', () => {
   const b = browserHarness();
