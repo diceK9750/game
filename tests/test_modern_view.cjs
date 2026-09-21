@@ -1796,7 +1796,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
-  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-result-cast-1/);
   assert.match(player, /mobile-layout\.css\?v=result-actions-dict-ls-1/);
 });
 
@@ -1872,7 +1872,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
-  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-result-cast-1/);
   assert.match(player, /mobile-layout\.css\?v=result-actions-dict-ls-1/);
 });
 
@@ -1937,4 +1937,52 @@ test('finished result still focuses primary replay after award/record contrast (
   });
   const retry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
   assert.equal(b.document.activeElement, retry, 'result entry focuses primary replay (#17)');
+});
+
+
+test('practice finished hides CPU/LUNA result cast; battle keeps it', () => {
+  const b = browserHarness();
+  const kohOf = () => {
+    const duo = walk(b.app).find(n => String(n.className).includes('nr-result-duo'));
+    assert.ok(duo, 'result duo mounted');
+    return walk(duo).find(n => String(n.className).includes('nr-character') && String(n.className).includes('nr-koh'));
+  };
+  const rinOf = () => {
+    const duo = walk(b.app).find(n => String(n.className).includes('nr-result-duo'));
+    return walk(duo).find(n => String(n.className).includes('nr-character') && String(n.className).includes('nr-rin'));
+  };
+
+  b.render('playing', {kind: 'practice', completed: 19, max_number: 20});
+  b.render('finished', {
+    kind: 'practice', perfect: false, won: true,
+    completed: 20, max_number: 20, elapsed: 40, mistakes: 1, max_streak: 5,
+  });
+  const practiceKoh = kohOf();
+  const practiceRin = rinOf();
+  assert.ok(practiceKoh, 'CPU portrait wrap exists');
+  assert.ok(practiceRin, 'YOU portrait wrap exists');
+  assert.equal(practiceKoh.hidden, true, 'practice finished hides LUNA/CPU cast');
+  assert.equal(practiceRin.hidden, false, 'practice still shows RIN/YOU cast');
+  const practiceRetry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
+  assert.equal(b.document.activeElement, practiceRetry, 'practice result still focuses replay (#17)');
+
+  b.render('playing', {kind: 'battle', player_points: 11, cpu_points: 5});
+  b.render('finished', {
+    kind: 'battle', won: true, perfect: false,
+    player_points: 12, cpu_points: 5, completed: 12, max_number: 20,
+    elapsed: 42, mistakes: 1, max_streak: 4,
+  });
+  assert.equal(kohOf().hidden, false, 'battle finished keeps LUNA/CPU cast');
+  assert.equal(rinOf().hidden, false, 'battle finished keeps RIN/YOU cast');
+  const battleRetry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
+  assert.equal(b.document.activeElement, battleRetry, 'battle result still focuses replay (#17)');
+});
+
+test('practice result cast hide wiring + cache-bust practice-result-cast-1', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(js, /resultKoh\.wrap\.hidden\s*=\s*!battle/);
+  assert.match(player, /modern-ui\.js\?v=practice-result-cast-1/);
+  assert.match(index, /player\.html\?v=practice-result-cast-1/);
 });

@@ -548,6 +548,8 @@
     }
     record.dataset.record = recordKind;
     reviewButton.hidden = !battle;
+    // Practice has no rival — hide LUNA/CPU cast (play stage already hides .nr-koh).
+    resultKoh.wrap.hidden = !battle;
     if (state.screen === 'review') {
       const rows = Array.isArray(state.history) ? state.history : [];
       const key = JSON.stringify(rows);
