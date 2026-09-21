@@ -528,7 +528,7 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
-  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review so focus
+  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/ready so focus
   // cannot escape to header chrome (♪) or a hidden board behind the overlay.
   function dialogTabStops(root) {
     const stops = [];
@@ -545,7 +545,24 @@
     if (screen === 'help') return helpScreen;
     if (screen === 'finished') return finished;
     if (screen === 'review') return review;
+    if (screen === 'ready') return setup;
     return null;
+  }
+  function dialogTrapStops(screen) {
+    if (screen === 'ready') {
+      // Mode select: cycle kind / range / difficulty / start only. Header chrome
+      // (♪ / 遊び方 / ゲーム選択) and ready settings stay outside the ring so Tab
+      // cannot escape setup. difficultyWrap is hidden in practice — dialogTabStops
+      // already skips [hidden]. Entry focus stays on 「1から順番」 (#50).
+      return [].concat(
+        dialogTabStops(kindGroup),
+        dialogTabStops(ranges),
+        dialogTabStops(difficultyWrap),
+        dialogTabStops(startGroup)
+      );
+    }
+    const root = dialogTrapRoot(screen);
+    return root ? dialogTabStops(root) : [];
   }
   app.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
@@ -556,10 +573,10 @@
         command(state?.confirm_action === 'pause' ? 'yes' : 'no');
       }
     } else if (dialogTrapRoot(state?.screen) && event.key === 'Tab') {
-      // Cycle visible confirm/help/finished/review controls only (#45/#47/#48).
-      // Esc (#16), entry (#43 help→戻る), finished replay focus+Enter (#17), and
-      // pause→resume cell restore (#42) stay intact.
-      const stops = dialogTabStops(dialogTrapRoot(state.screen));
+      // Cycle visible confirm/help/finished/review/ready controls only (#45/#47/#48/#52).
+      // Esc (#16), entry (#43 help→戻る), finished replay focus+Enter (#17),
+      // ready 「1から順番」 entry (#50), and pause→resume cell restore (#42) stay intact.
+      const stops = dialogTrapStops(state.screen);
       if (stops.length) {
         event.preventDefault();
         const active = document.activeElement;
