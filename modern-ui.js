@@ -510,7 +510,7 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
-  // Keep Tab/Shift+Tab cycling inside the open confirm dialog so focus cannot
+  // Keep Tab/Shift+Tab cycling inside open confirm/help overlays so focus cannot
   // escape to header chrome (♪) or a hidden board behind the overlay.
   function dialogTabStops(root) {
     const stops = [];
@@ -530,10 +530,10 @@
         event.preventDefault();
         command(state?.confirm_action === 'pause' ? 'yes' : 'no');
       }
-    } else if (state?.screen === 'confirm' && event.key === 'Tab') {
-      // Cycle visible dialog buttons only (#45). Esc (#16), entry focus (#43),
-      // and pause→resume cell restore (#42) stay on their existing paths.
-      const stops = dialogTabStops(confirm);
+    } else if ((state?.screen === 'confirm' || state?.screen === 'help') && event.key === 'Tab') {
+      // Cycle visible confirm/help controls only (#45/#47). Esc (#16), entry
+      // focus (#43 help→戻る), and pause→resume cell restore (#42) stay intact.
+      const stops = dialogTabStops(state.screen === 'confirm' ? confirm : helpScreen);
       if (stops.length) {
         event.preventDefault();
         const active = document.activeElement;
