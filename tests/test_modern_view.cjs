@@ -730,6 +730,87 @@ test('pause resume restores prior keyboardCell instead of play-start first cell'
   assert.equal(b.document.activeElement.disabled, false, 'claimed prior cell falls back to a playable cell');
 });
 
+test('countdown/resuming entry focuses モード選択へ or reclaim heading; play-start #41 intact', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (root, text) => walk(root).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+  const cellsState = (owners = {}) => Array.from({length: 40}, (_, i) => ({
+    n: i + 1, owner: owners[i] || null,
+  }));
+
+  // ready → countdown: land on 「モード選択へ」 (not ready start / ♪ chrome).
+  b.render('ready', {cells: []});
+  const ordered = walk(screenOf('ready')).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
+  ordered.focus();
+  b.render('countdown', {cells: [], countdown: 3});
+  const countScreen = screenOf('countdown');
+  // resuming shares the same DOM section as countdown.
+  const countTitle = btnIn(countScreen, 'モード選択へ');
+  const countLabel = walk(countScreen).find(n => n.tagName === 'H1');
+  const headerSound = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
+  assert.ok(countTitle && countLabel, 'countdown exposes モード選択へ + heading');
+  assert.equal(countTitle.hidden, false, 'countdown shows モード選択へ');
+  assert.equal(b.document.activeElement, countTitle, 'countdown entry focuses モード選択へ');
+  assert.notEqual(b.document.activeElement, ordered);
+  assert.notEqual(b.document.activeElement, headerSound);
+
+  // Same-screen countdown ticks must not yank focus (user may Tab elsewhere briefly).
+  headerSound.focus();
+  b.render('countdown', {cells: [], countdown: 2});
+  assert.equal(b.document.activeElement, headerSound, 'countdown→countdown keeps current focus');
+
+  // Re-enter countdown (e.g. after a brief leave via home path simulation): explicit again.
+  b.render('ready', {cells: []});
+  b.render('countdown', {cells: [], countdown: 3});
+  assert.equal(b.document.activeElement, countTitle, 're-entry still focuses モード選択へ');
+
+  // countdown → playing still prefers first playable cell (#41), not leftover cancel.
+  const owners = {0: 'you'};
+  countTitle.focus();
+  b.render('playing', {cells: cellsState(owners), target: 2});
+  const cells = b.cells();
+  assert.equal(b.document.activeElement, cells[1], 'countdown→playing still focuses first playable (#41)');
+
+  // Pause → resuming: モード選択へ is hidden; reclaim onto heading (not hidden yes / ♪).
+  cells[4].focus();
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const resumeBtn = btnIn(screenOf('confirm'), 'プレイを続ける');
+  assert.equal(b.document.activeElement, resumeBtn, 'pause entry still focuses プレイを続ける');
+  b.render('resuming', {cells: [], countdown: 2});
+  assert.equal(countTitle.hidden, true, 'resuming hides モード選択へ');
+  assert.equal(b.document.activeElement, countLabel, 'resuming entry reclaims onto countdown heading');
+  assert.notEqual(b.document.activeElement, countTitle, 'must not focus hidden モード選択へ');
+  assert.notEqual(b.document.activeElement, headerSound);
+
+  // Same-screen resuming ticks leave focus alone.
+  headerSound.focus();
+  b.render('resuming', {cells: [], countdown: 1});
+  assert.equal(b.document.activeElement, headerSound, 'resuming→resuming keeps current focus');
+
+  // resuming → playing restores prior keyboardCell (#42), not play-start first cell.
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  b.render('resuming', {cells: [], countdown: 1});
+  assert.equal(b.document.activeElement, countLabel, 're-entry still reclaims heading');
+  b.render('playing', {cells: cellsState(owners), target: 2});
+  assert.equal(b.document.activeElement, cells[4], 'resuming→playing still restores prior keyboardCell (#42)');
+
+  // ready entry / confirm entry still win over countdown leftovers.
+  b.render('ready', {cells: []});
+  assert.equal(
+    b.document.activeElement,
+    walk(screenOf('ready')).find(n => n.tagName === 'BUTTON' && String(n.className).includes('nr-primary')),
+    'ready entry still focuses 1から順番 (#50)'
+  );
+  b.render('playing', {cells: cellsState()});
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  assert.equal(
+    b.document.activeElement,
+    btnIn(screenOf('confirm'), 'プレイを続ける'),
+    'pause entry still focuses プレイを続ける (#43)'
+  );
+});
+
 test('confirm/help entry focuses primary dialog control without Tab hunting', () => {
   const b = browserHarness();
   const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
