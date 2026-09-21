@@ -61,7 +61,8 @@
     const choices = E('div','sh-dict-choices');
     let pending = null, solved = false, onlyMissing = false, lastKey = '';
     function localButton(label, action) { const b=E('button','nr-button',label); b.type='button'; b.addEventListener('click',action); return b; }
-    const back = localButton('← 絵しりとりに戻る',()=>{ page.hidden=true; onClose(); });
+    function close() { if (page.hidden) return; page.hidden=true; onClose(); }
+    const back = localButton('← 絵しりとりに戻る', close);
     const filter = localButton('未完成の絵だけ表示',()=>{ onlyMissing=!onlyMissing; lastKey=''; render(); });
     const challenge = localButton('発見チャレンジ',newChallenge);
     const next = localButton('次の未発見をさがす',newChallenge); next.hidden=true;
@@ -103,6 +104,7 @@
     }
     return {page, collection,
       open() { lastKey=''; quiz.hidden=true; page.hidden=false; render(); back.focus({preventScroll: true}); },
+      close,
       refresh:render
     };
   };

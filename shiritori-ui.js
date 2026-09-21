@@ -227,6 +227,9 @@
     }
     page.addEventListener('keydown', event => {
       if (event.key === 'Escape') {
+        // Dismiss dictionary via close()/back path (parity help Esc / numbers help #63).
+        // Tab trap (#46) and entry focus on ←戻る (#44) stay intact.
+        if (dictionaryOpen && dictionary) { dictionary.close(); event.preventDefault(); return; }
         if (helpOpen) { closeHelp.click(); event.preventDefault(); return; }
         if (restartRequested && latest?.phase==='paused') { cancelRestart.click(); event.preventDefault(); return; }
         if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');

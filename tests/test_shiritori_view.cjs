@@ -626,6 +626,17 @@ test('shiritori overlay Tab cycles dialog controls and does not escape (parity #
     view.page.emit('keydown', {key: 'Tab', shiftKey: false});
     assert.equal(doc.activeElement, dictStops[(i + 1) % dictStops.length], `dict Tab step ${i + 1}`);
   }
+  // Esc dismisses dict via close()/back (parity help Esc / numbers help #63).
+  // Re-land on back then Esc; Tab trap (#46) + entry (#44) stay intact above.
+  dictBack.focus();
+  const dictOpenBtn = view.page.querySelectorAll('.sh-dict-open')[0];
+  view.page.emit('keydown', {key: 'Escape'});
+  assert.equal(dict.hidden, true, 'Esc closes dictionary via close()/back');
+  assert.equal(view.isOverlayOpen(), false, 'Esc clears dictionary overlay flag');
+  assert.equal(doc.activeElement, dictOpenBtn, 'Esc restores intro 読み方ずかん focus (onClose)');
+  // Re-open for help section independence.
+  dictOpenBtn.events.click();
+  assert.equal(dict.hidden, false);
   dictBack.events.click();
 
   // Help: entry 戻る; single-stop Tab stays on 戻る (no escape to intro setup).
@@ -890,5 +901,56 @@ test('result history details summary is in Tab ring and keeps 44px hit target', 
   assert.match(sh, /else if \(node\.tagName === 'SUMMARY'\)/);
   assert.match(sh, /onHistorySummary/);
   assert.match(css, /\.sh-result-history summary \{[^}]*min-height: 44px/);
+});
+
+test('dictionary Esc dismisses via close()/back path (parity help Esc / #63)', () => {
+  const {view, state, queue, doc} = harness();
+  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
+
+  // Intro: open dict (entry #44 on back), Esc closes via same onClose as ←戻る.
+  view.update({...state, phase: 'intro', cards: []});
+  const introDict = view.page.querySelectorAll('.sh-dict-open')[0];
+  introDict.events.click();
+  const dict = view.page.querySelector('.sh-dictionary');
+  assert.equal(dict.hidden, false);
+  assert.equal(view.isOverlayOpen(), true);
+  const dictBack = btn(dict, '← 絵しりとりに戻る');
+  assert.equal(doc.activeElement, dictBack, 'dict entry still focuses back (#44)');
+
+  // Tab trap still works before Esc (#46 regression guard).
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.ok(dict.contains(doc.activeElement), 'dict Tab stays inside before Esc');
+  assert.notEqual(doc.activeElement, introDict, 'Tab must not escape to intro dict button');
+
+  const beforeEsc = queue.length;
+  view.page.emit('keydown', {key: 'Escape'});
+  assert.equal(dict.hidden, true, 'Esc hides dictionary page');
+  assert.equal(view.isOverlayOpen(), false, 'Esc clears dictionaryOpen');
+  assert.equal(doc.activeElement, introDict, 'Esc restores intro 読み方ずかん via onClose');
+  assert.equal(queue.length, beforeEsc, 'Esc on dict does not enqueue game commands');
+
+  // Finished: same Esc→close()/back path restores result dict button.
+  view.update({
+    ...state,
+    phase: 'finished',
+    winner: 'you',
+    history: [{id: 'apple', word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+  });
+  const resultDict = view.page.querySelectorAll('.sh-dict-open')[1];
+  resultDict.events.click();
+  assert.equal(dict.hidden, false);
+  assert.equal(doc.activeElement, dictBack, 'result dict entry focuses back (#44)');
+  view.page.emit('keydown', {key: 'Escape'});
+  assert.equal(dict.hidden, true, 'Esc closes dictionary from result');
+  assert.equal(view.isOverlayOpen(), false);
+  assert.equal(doc.activeElement, resultDict, 'Esc restores result 読み方ずかん focus');
+
+  // Help Esc still works (parity / no regression).
+  view.update({...state, phase: 'intro', cards: []});
+  view.headerAction('help');
+  const helpPage = view.page.querySelector('.nr-help-card');
+  assert.equal(helpPage.hidden, false);
+  view.page.emit('keydown', {key: 'Escape'});
+  assert.equal(helpPage.hidden, true, 'help Esc still dismisses via 戻る');
 });
 

@@ -49,3 +49,30 @@ test('dictionary ships before its consumer and is included in Pages',()=>{
   assert.ok(html.indexOf('shiritori-dictionary.js')<html.indexOf('shiritori-ui.js'));
   assert.ok(fs.readFileSync(require.resolve('../.github/workflows/pages.yml'),'utf8').includes('shiritori-dictionary.js'));
 });
+
+test('dictionary close() mirrors back and is idempotent',()=>{
+  const {window,catalog}=harness();
+  const els=[];
+  const E=(tag,cls='',text='')=>{
+    const n={tagName:String(tag).toUpperCase(),className:cls,textContent:text,hidden:false,children:[],
+      style:{},dataset:{},attributes:{},
+      setAttribute(k,v){this.attributes[k]=v;},getAttribute(k){return this.attributes[k];},
+      addEventListener(type,fn){(this.events||(this.events={}))[type]=fn;},
+      focus(){n._focused=true;},click(){this.events?.click?.();},
+      replaceChildren(...kids){this.children=kids;},
+      querySelector(){return null;},querySelectorAll(){return [];},
+    };
+    els.push(n); return n;
+  };
+  const add=(parent,...kids)=>{for(const k of kids){parent.children.push(k); if(k&&typeof k==='object')k.parent=parent;} return parent;};
+  let closed=0;
+  const dict=window.createShiritoriDictionary({E,add,onClose(){closed++;}});
+  dict.collection.configure(catalog);
+  dict.open();
+  assert.equal(dict.page.hidden,false);
+  dict.close();
+  assert.equal(dict.page.hidden,true);
+  assert.equal(closed,1,'close invokes onClose once');
+  dict.close();
+  assert.equal(closed,1,'second close is idempotent');
+});
