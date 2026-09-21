@@ -66,7 +66,7 @@ test('leaving an unfinished round for setup requires confirmation',()=>{
   view.update({...state,phase:'paused'});
   const dialog=view.page.querySelectorAll('.nr-dialog').find(d=>d.querySelectorAll('h1').some(h=>h.textContent==='モード選択に戻りますか？'));
   assert.equal(dialog.hidden,false);
-  assert.equal(doc.activeElement.textContent,'モード選択に戻りますか？');
+  assert.equal(doc.activeElement.textContent,'戻る', 'setup-confirm entry focuses affirmative primary');
   assert.ok(!queue.some(c=>c.action==='sh_setup'));
   dialog.querySelectorAll('button').find(b=>b.textContent==='戻る').click();
   assert.equal(queue.at(-1).action,'sh_setup');
@@ -392,13 +392,68 @@ test('play start focuses first playable sh-card for arrow nav; overlays and CPU 
   view.update({...state, phase: 'finished', winner: 'you', history: [], cards: cards12});
   assert.equal(doc.activeElement, view.page.querySelectorAll('button').find(b => b.textContent === 'もう一度遊ぶ'));
 
-  // Dictionary overlay: keep dict chrome focused; do not yank to a card.
+  // Dictionary overlay: entry focuses back; keep that focus (no card steal).
   view.update({...state, phase: 'intro', cards: []});
   const open = view.page.querySelectorAll('.sh-dict-open')[0];
   open.events.click();
   const dictFocus = doc.activeElement;
+  assert.equal(dictFocus && dictFocus.textContent, '← 絵しりとりに戻る', 'dict entry focuses back');
   // Force playing while dictionary still open (overlay guard).
   view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
   assert.equal(view.isOverlayOpen(), true);
   assert.equal(doc.activeElement, dictFocus, 'open dictionary keeps focus (no card steal)');
+});
+
+
+test('shiritori overlay entry focuses primary dialog control (parity with numbers #43)', () => {
+  const {view, state, queue, doc} = harness();
+  const cards12 = Array.from({length: 12}, (_, i) => ({
+    id: 'apple', icon: '🍎', words: ['りんご'], owner: null
+  }));
+  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
+
+  // playing → pause: land on プレイを続ける (nr-primary), not the dialog title.
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const cards = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden);
+  cards[2].focus();
+  view.update({...state, total: 12, cards: [], phase: 'paused'});
+  const resume = btn(view.page, 'プレイを続ける');
+  assert.ok(resume && String(resume.className).includes('nr-primary'));
+  assert.equal(doc.activeElement, resume, 'pause entry focuses プレイを続ける');
+
+  // Same-phase pause updates leave mouse/keyboard focus alone.
+  const extras = btn(view.page, '新しい配置でやり直す');
+  extras.focus();
+  view.update({...state, total: 12, cards: [], phase: 'paused', message: 'still paused'});
+  assert.equal(doc.activeElement, extras, 'paused→paused keeps current focus');
+
+  // Restart confirm (from header retry): affirmative primary, not the h1 title.
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  view.headerAction('retry');
+  assert.equal(queue.at(-1).action, 'sh_pause');
+  view.update({...state, total: 12, cards: [], phase: 'paused'});
+  const confirm = view.page.querySelectorAll('.nr-dialog').find(n =>
+    n.querySelectorAll('h1').some(h => h.textContent === 'やり直しますか？'));
+  assert.equal(confirm.hidden, false);
+  const yes = btn(confirm, 'やり直す');
+  assert.ok(yes && String(yes.className).includes('nr-primary'));
+  assert.equal(doc.activeElement, yes, 'restart entry focuses affirmative primary');
+
+  // Mode-select confirm from pause extras: affirmative 戻る primary.
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  view.update({...state, total: 12, cards: [], phase: 'paused'});
+  assert.equal(doc.activeElement, resume, 're-pause focuses resume again');
+  btn(view.page, 'モード選択へ').click();
+  view.update({...state, total: 12, cards: [], phase: 'paused'});
+  const setupConfirm = view.page.querySelectorAll('.nr-dialog').find(n =>
+    n.querySelectorAll('h1').some(h => h.textContent === 'モード選択に戻りますか？'));
+  assert.equal(setupConfirm.hidden, false);
+  const setupYes = btn(setupConfirm, '戻る');
+  assert.equal(doc.activeElement, setupYes, 'setup-confirm entry focuses affirmative 戻る');
+
+  // Help overlay already lands on 戻る primary (kept). Esc wiring unchanged (#16 family).
+  view.update({...state, phase: 'intro', cards: []});
+  view.headerAction('help');
+  const helpBack = view.page.querySelectorAll('button').find(b => b.textContent === '戻る' && String(b.className).includes('nr-primary'));
+  assert.equal(doc.activeElement, helpBack, 'help entry focuses 戻る');
 });

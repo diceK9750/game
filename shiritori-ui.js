@@ -96,8 +96,9 @@
     if (timedChain) stage.append(timedChain.root);
     const pause = E('div', 'sh-intro nr-dialog nr-surface');
     const endSolo = button('ここまでの結果を見る', 'sh_end');
+    const pauseResume = button('プレイを続ける', 'sh_resume', undefined, 'nr-primary');
     add(pause, E('h1', '', 'ひと休みしよう'), E('p', '', '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'),
-      add(E('div', 'nr-dialog-actions'), button('プレイを続ける', 'sh_resume', undefined, 'nr-primary')),
+      add(E('div', 'nr-dialog-actions'), pauseResume),
       add(E('div', 'nr-pause-extras'), button('新しい配置でやり直す', () => { restartRequested='sh_restart'; return 'sh_pause'; }), button('モード選択へ', () => { restartRequested='sh_setup'; return 'sh_pause'; })), endSolo);
     if (settingsControls) pause.append(settingsControls());
     const result = E('div', 'sh-intro sh-result nr-surface');
@@ -204,7 +205,8 @@
       confirmTitle.textContent=restartRequested==='sh_setup'?'モード選択に戻りますか？':'やり直しますか？';
       confirmCopy.textContent=restartRequested==='sh_setup'?'現在のプレイを終了します。':'現在のプレイを終了し、新しい配置で始めます。';
       confirmAction.textContent=restartRequested==='sh_setup'?'戻る':'やり直す';
-      if (wasConfirmHidden && !restartPage.hidden) { confirmTitle.tabIndex=-1; confirmTitle.focus(); }
+      // Restart confirm entry: land on affirmative primary (やり直す/戻る), parity with numbers #43.
+      if (wasConfirmHidden && !restartPage.hidden) confirmAction.focus({preventScroll: true});
       if (!restartPage.hidden) pause.hidden=true;
       if (dictionaryOpen || helpOpen) intro.hidden=result.hidden=true;
       pressed(modeButtons, ['battle','solo'], s.mode); pressed(countButtons, counts, s.total); pressed(levelButtons, ['easy','normal','hard'], s.difficulty);
@@ -263,7 +265,7 @@
         log.replaceChildren(...s.history.map(row => add(E('li'), E('strong', '', `${row.relinked ? '↪ つなぎ直し · ' : ''}${row.owner === 'you' ? 'リン' : 'ルナ'}：${row.icon} ${row.word}`), E('small', '', `読み方：${(row.readings || [row.word]).join(' ／ ')}`))));
       }
       if (lastPhase !== s.phase) {
-        // Never yank focus away from help/dictionary overlays (or restart confirm title).
+        // Never yank focus away from help/dictionary overlays (or restart confirm primary).
         if (!dictionaryOpen && !helpOpen && restartPage.hidden) {
           // Result→replay: land on primary もう一度遊ぶ so Enter/Space restarts without Tab hunting.
           if (s.phase === 'finished') {
@@ -279,8 +281,12 @@
               const heading = hud.querySelector('h1, strong');
               if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
             }
+          } else if (s.phase === 'paused') {
+            // Pause entry: land on visible resume 「プレイを続ける」 (parity with numbers #43).
+            // Restart confirm uses its own open path above; Esc cancel (#16 family) stays key-driven.
+            pauseResume.focus({preventScroll: true});
           } else {
-            const heading = (s.phase === 'intro' ? intro : s.phase === 'paused' ? (restartRequested ? restartPage : pause) : hud).querySelector('h1, strong');
+            const heading = (s.phase === 'intro' ? intro : hud).querySelector('h1, strong');
             if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
           }
         }

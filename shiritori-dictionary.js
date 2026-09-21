@@ -102,7 +102,7 @@
       }));
     }
     return {page, collection,
-      open() { lastKey=''; quiz.hidden=true; page.hidden=false; render(); title.tabIndex=-1; title.focus(); },
+      open() { lastKey=''; quiz.hidden=true; page.hidden=false; render(); back.focus({preventScroll: true}); },
       refresh:render
     };
   };
