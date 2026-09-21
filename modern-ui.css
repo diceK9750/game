@@ -386,7 +386,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 @keyframes nr-award-in { 0% { transform: translateY(12px) scale(.92); opacity: 0; }
   65% { transform: translateY(-2px) scale(1.02); opacity: 1; } 100% { transform: none; opacity: 1; } }
 /* High-contrast / forced-colors: keep miss/CPU/correct/hint/cpu-selecting outlines
-   readable when soft pastels and glow shadows are remapped or dropped. */
+   and static ring/spark/CPU/miss FX cues (#36/#37) readable when soft pastels and
+   glow shadows are remapped or dropped. System colors match #29 outline semantics. */
 @media (prefers-contrast: more) {
   #modern-app .nr-cell[data-feedback='wrong'] {
     outline: 4px solid #d0181c; outline-offset: -3px; background: #ffd0d0;
@@ -416,6 +417,20 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px #c9a227;
   }
+  /* Static ring/spark/CPU/miss cues (#36/#37): readable under higher contrast; no glow. */
+  #modern-app .nr-ring {
+    border-color: #0a8f55; border-width: 4px;
+  }
+  #modern-app .nr-ring-cpu { border-color: #b01878; }
+  #modern-app .nr-spark {
+    color: #0a8f55; text-shadow: none;
+  }
+  #modern-app .nr-cpu-claim {
+    color: #fff; background: #6a1048; box-shadow: none;
+  }
+  #modern-app .nr-miss-badge {
+    color: #fff; background: #8a1010; box-shadow: none;
+  }
 }
 @media (forced-colors: active) {
   #modern-app .nr-cell[data-feedback='wrong'] {
@@ -440,6 +455,21 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   }
   #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px Highlight;
+  }
+  /* Static ring/spark/CPU/miss cues (#36/#37): system colors parity with #29 outlines.
+     Soft pastels/glow remapped away in Windows HC; pointer-events stay none via base. */
+  #modern-app .nr-ring {
+    border-color: Highlight; border-width: 4px;
+  }
+  #modern-app .nr-ring-cpu { border-color: ButtonText; }
+  #modern-app .nr-spark {
+    color: Highlight; text-shadow: none;
+  }
+  #modern-app .nr-cpu-claim {
+    color: Canvas; background: ButtonText; box-shadow: none;
+  }
+  #modern-app .nr-miss-badge {
+    color: Canvas; background: LinkText; box-shadow: none;
   }
 }
 /* Effects remain understandable when animations are turned off.
