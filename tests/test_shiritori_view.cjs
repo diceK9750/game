@@ -40,7 +40,7 @@ function harness() {
     mode:'battle', total:24, stock:0, completed:0, relinks:2, seen:[],
     catalog:[{id:'apple',icon:'🍎',words:['りんご','くだもの','たべもの']}],
     cards: Array.from({length:24}, () => ({id:'apple', icon:'🍎', words:['りんご','くだもの'], owner:null}))};
-  return {view, state, queue, doc};
+  return {view, state, queue, doc, window};
 }
 
 test('setup shares number-game hero and controls without story exposition', () => {
@@ -670,114 +670,44 @@ test('shiritori overlay Tab cycles dialog controls and does not escape (parity #
 });
 
 
-test('intro setup Tab cycles mode/count/difficulty/start only (parity ready #52)', () => {
-  const {view, state, doc} = harness();
-  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
-  const stopsOf = (roots) => {
-    const stops = [];
-    const visit = (node) => {
-      if (!node || node.hidden) return;
-      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
-      for (const child of node.children || []) visit(child);
-    };
-    for (const root of roots) visit(root);
-    return stops;
-  };
-  const setupRoots = () => {
-    const intro = view.page.querySelector('.sh-ready');
-    const modeGroup = intro.querySelector('.sh-modes');
-    const countGroup = intro.querySelector('.sh-counts');
-    const levels = intro.querySelector('.sh-level-settings');
-    const startGroup = intro.querySelector('.sh-start-actions');
-    const start = startGroup && startGroup.querySelectorAll('button')[0];
-    return {intro, modeGroup, countGroup, levels, startGroup, start};
-  };
-
-  // Battle intro: entry focuses intro h1; Tab cycles mode/count/difficulty/start only.
-  view.update({...state, phase: 'intro', mode: 'battle', cards: []});
-  const roots = setupRoots();
-  const heading = roots.intro.querySelector('h1');
-  assert.equal(doc.activeElement, heading, 'intro entry still focuses heading h1');
-  assert.equal(roots.levels.hidden, false, 'battle shows difficulty');
-  assert.equal(roots.start.textContent, '対戦スタート', 'battle start label');
-
-  const battleStops = stopsOf([roots.modeGroup, roots.countGroup, roots.levels, roots.startGroup]);
-  // 2 modes + 4 counts + 3 levels + 1 start = 10
-  assert.equal(battleStops.length, 10, 'battle setup exposes mode+count+difficulty+start');
-  assert.ok(battleStops.includes(roots.start));
-  assert.deepEqual(
-    battleStops.slice(0, 2).map(b => b.textContent),
-    ['CPUと対戦', 'ひとりで練習']
-  );
-  assert.equal(battleStops[battleStops.length - 1], roots.start);
-
-  const dictOpen = view.page.querySelectorAll('.sh-dict-open')[0];
-  assert.ok(dictOpen, 'intro still exposes 読み方ずかん');
-  assert.ok(!battleStops.includes(dictOpen), '読み方ずかん stays outside the setup trap');
-
-  // From entry heading (outside ring): Tab enters first mode control.
-  heading.focus();
-  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(doc.activeElement, battleStops[0], 'Tab from heading enters first mode');
-
-  const startIdx = battleStops.indexOf(roots.start);
-  roots.start.focus();
-  for (let i = 0; i < battleStops.length; i++) {
-    const expected = battleStops[(startIdx + i + 1) % battleStops.length];
-    view.page.emit('keydown', {key: 'Tab', shiftKey: false});
-    assert.equal(doc.activeElement, expected, `battle Tab step ${i + 1} stays in setup`);
-    assert.notEqual(doc.activeElement, dictOpen, 'Tab must not escape to 読み方ずかん');
-  }
-  roots.start.focus();
-  view.page.emit('keydown', {key: 'Tab', shiftKey: true});
-  assert.equal(
-    doc.activeElement,
-    battleStops[(startIdx - 1 + battleStops.length) % battleStops.length],
-    'Shift+Tab wraps inside setup'
-  );
-
-  // Focus already on dict (outside ring): Tab pulls back into setup (first mode).
-  dictOpen.focus();
-  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(doc.activeElement, battleStops[0], 'Tab from dict re-enters setup');
-
-  // Solo hides difficulty; Tab still cycles remaining setup controls only.
-  // Leave and re-enter intro so entry focus runs (same-phase keeps focus).
-  view.update({...state, phase: 'playing', cards: []});
-  view.update({...state, phase: 'intro', mode: 'solo', cards: []});
-  assert.equal(doc.activeElement, roots.intro.querySelector('h1'), 'solo intro still focuses heading');
-  assert.equal(roots.levels.hidden, true, 'solo hides difficulty');
-  const soloStops = stopsOf([roots.modeGroup, roots.countGroup, roots.levels, roots.startGroup]);
-  assert.equal(soloStops.length, 7, 'solo setup omits hidden difficulty');
-  assert.ok(!soloStops.some(n => {
-    let cur = n;
-    while (cur) {
-      if (cur === roots.levels) return true;
-      cur = cur.parentElement;
+test('intro allows native Tab while overlays retain their trap', () => {
+  const {view,state,doc}=harness();
+  for(const mode of ['battle','solo']) {
+    view.update({...state,phase:'intro',mode,cards:[]});
+    for(const control of view.page.querySelectorAll('button')) for(const shiftKey of [false,true]) {
+      control.focus(); let prevented=false;
+      view.page.emit('keydown',{key:'Tab',shiftKey,preventDefault(){prevented=true;}});
+      assert.equal(prevented,false); assert.equal(doc.activeElement,control);
+      assert.equal(view.trapOverlayTab({key:'Tab',shiftKey,preventDefault(){throw Error('setup trap');}}),false);
     }
-    return false;
-  }), 'solo stops exclude difficulty buttons');
-  roots.start.focus();
-  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(doc.activeElement, soloStops[0], 'solo Tab wraps to first mode');
-  assert.notEqual(doc.activeElement, dictOpen);
-
-  // Overlay trap still wins over intro when help is open (#46 regression).
+  }
   view.headerAction('help');
-  const helpPage = view.page.querySelector('.nr-help-card');
-  const helpBack = btn(helpPage, '戻る');
-  assert.equal(doc.activeElement, helpBack, 'help entry still focuses 戻る');
-  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(doc.activeElement, helpBack, 'help Tab stays on 戻る (intro trap idle)');
-  assert.notEqual(doc.activeElement, roots.start, 'help Tab must not escape to setup');
+  const back=view.page.querySelector('.nr-help-card').querySelectorAll('button').find(b=>b.textContent==='戻る');
+  for(const shiftKey of [false,true]) {
+    let prevented=false;
+    view.page.emit('keydown',{key:'Tab',shiftKey,preventDefault(){prevented=true;}});
+    assert.equal(prevented,true); assert.equal(doc.activeElement,back);
+  }
+});
 
-  // Playing: Tab is not trapped (no intro bleed).
-  const cards12 = Array.from({length: 12}, () => ({id: 'apple', icon: '🍎', words: ['りんご'], owner: null}));
-  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
-  const first = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden)[0];
-  first.focus();
-  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no intro trap bleed)');
+test('container-selected columns drive arrows and CPU cursor, including rotation before update', () => {
+  const {view,state,doc,window}=harness();
+  let columns=6, observed;
+  window.getComputedStyle=element=>({getPropertyValue:key=>{
+    assert.equal(element.className,'sh-board');
+    assert.equal(key,'--board-cols');
+    return String(columns);
+  }});
+  window.rivalCursor=(count,cols)=>{observed=cols;return null;};
+  view.update(state);
+  const cards=view.page.querySelectorAll('.sh-card');
+  cards[0].focus();view.page.emit('keydown',{key:'ArrowDown'});
+  assert.equal(doc.activeElement,cards[6]);
+  columns=4; // CSS orientation/container change, no new engine snapshot yet.
+  cards[0].focus();view.page.emit('keydown',{key:'ArrowDown'});
+  assert.equal(doc.activeElement,cards[4]);
+  view.update({...state,turn:'cpu'});
+  assert.equal(observed,4);
 });
 
 test('finished result Tab cycles replay/mode/history/dict and does not escape (parity #48/#58)', () => {
@@ -993,7 +923,7 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1037,8 +967,8 @@ test('wrong-card miss outline stays non-live while statusLive carries guidance (
   assert.match(live.textContent, /ちがう絵！お題を確認して、すぐ押し直そう/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1055,7 +985,7 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1134,7 +1064,7 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.match(js, /taskWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1194,7 +1124,7 @@ test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
   assert.match(sh, /\.sh-result-cast > \.nr-result-score/);
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1262,9 +1192,9 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   assert.match(js, /もう一度遊ぶ/);
 
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const {view, state, doc} = harness();
   view.update({
@@ -1312,18 +1242,18 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
 });
 
 
-test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #83)', () => {
+test('shiritori solo keeps shared arena slots and hides only its absent rival', () => {
   const layout = fs.readFileSync(require.resolve('../character-layout.css'), 'utf8');
   const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
 
-  assert.match(layout, /\.sh-arena:has\(> \.nr-koh\[hidden\]\) \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\);/);
-  assert.match(layout, /@media \(orientation: portrait\) \{[\s\S]*?\.sh-arena:has\(> \.nr-koh\[hidden\]\) \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);[\s\S]*?grid-template-rows: var\(--cast-height\) minmax\(0, 1fr\);/);
-  assert.match(layout, /\.sh-arena \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\) clamp\(40px, 15vw, 180px\);/);
+  assert.ok(layout.includes('grid-template-columns: var(--cast-lane) minmax(0, 1fr) var(--cast-lane)'));
+  assert.ok(layout.includes('[data-arena] > .nr-rin { grid-row: 3; }'));
+  assert.ok(layout.includes('[data-arena] > .nr-koh { grid-row: 1; }'));
   assert.match(js, /koh\.wrap\.hidden = solo/);
-  assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /character-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const {view, state} = harness();
   view.update({
@@ -1358,8 +1288,8 @@ test('shiritori solo hides LUNA+VS on ready hero-cast (parity #86 numbers; #88)'
   assert.match(js, /koh\.wrap\.hidden = solo;\s*resultKoh\.wrap\.hidden = solo/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const {view, state, doc} = harness();
   const heroCast = () => view.page.querySelector('.nr-hero-cast');
@@ -1421,10 +1351,10 @@ test('shiritori ready solo hero-cast denser/centered after LUNA+VS hide (parity 
   assert.match(character, /\.nr-ready \.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \.nr-character \{ width: min\(56cqw, calc\(100cqh - 18px\), 320px\); \}/);
   // Cache-bust CSS + iframe; JS hide from #88 unchanged.
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(player, /character-layout\.css\?v=shared-arena-114-2/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
   assert.match(fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8'),
     /heroRival\.wrap\.hidden = solo;\s*heroVersus\.hidden = solo;/);
 
@@ -1467,8 +1397,8 @@ test('shiritori solo help/pause omits phantom rival/CPU; battle keeps them (#111
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const {view, state} = harness();
   const guidePs = () => view.page.querySelector('.sh-guide').querySelectorAll('p');

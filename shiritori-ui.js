@@ -80,6 +80,7 @@
     add(intro, hero, setup);
     if (settingsControls) setup.append(settingsControls());
     const stage = E('div', 'sh-stage');
+    stage.dataset.gameLayout = 'true';
     const rin = portrait('rin', 'RIN / あなた'), koh = portrait('koh', 'LUNA / CPU');
     const hud = E('div', 'sh-hud nr-surface');
     const prompt = E('strong', 'sh-prompt'), turn = E('span'), clock = E('strong', 'sh-clock');
@@ -110,6 +111,10 @@
     const stock = E('span', 'sh-stock'), completed = E('span');
     const board = E('div', 'sh-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', 'しりとりの絵札');
     const boardSpace = add(E('div', 'sh-board-space'), board);
+    boardSpace.dataset.boardSpace = 'true';
+    // Read the same container-selected columns as the rendered cards. Reading
+    // at input time also covers rotation between two engine snapshots.
+    const renderedColumns = () => Number(window.getComputedStyle?.(board).getPropertyValue('--board-cols')) || boardCols;
     const slots = Array.from({length:24}, (_, i) => {
       const card = button('', 'sh_card', i, 'sh-card');
       const icon = E('span', 'sh-icon'), mark = E('small'); icon.setAttribute('aria-hidden', 'true');
@@ -121,8 +126,11 @@
     const relink = button('つなぎ直す', 'sh_relink', undefined, 'nr-primary');
     const toolbar = add(E('div', 'sh-actions sh-play-actions'), hint, relink);
     const arena = add(E('div', 'sh-arena'), rin.wrap, boardSpace, koh.wrap);
-    add(stage, hud, add(E('div', 'sh-progress'), completed, stock), status, arena, toolbar);
-    if (timedChain) stage.append(timedChain.root);
+    arena.dataset.arena = 'true';
+    const information = add(E('div', 'game-information'), hud, add(E('div', 'sh-progress'), completed, stock), status);
+    const auxiliary = add(E('div', 'game-auxiliary'), toolbar);
+    if (timedChain) auxiliary.append(timedChain.root);
+    add(stage, add(E('div', 'game-hud'), information, auxiliary), arena);
     const pause = E('div', 'sh-intro nr-dialog nr-surface');
     const endSolo = button('ここまでの結果を見る', 'sh_end');
     const pauseResume = button('プレイを続ける', 'sh_resume', undefined, 'nr-primary');
@@ -211,18 +219,6 @@
       if (latest?.phase === 'paused' && !pause.hidden) return pause;
       return null;
     }
-    // Intro/setup Tab ring (#52 parity): mode / count / difficulty / start only.
-    // Settings + 読み方ずかん stay outside (pointer still works). Solo hides levels
-    // via [hidden] skip. Entry focus stays on intro h1 (unchanged).
-    function introSetupTabStops() {
-      if (latest?.phase !== 'intro' || dictionaryOpen || helpOpen) return [];
-      return [].concat(
-        dialogTabStops(modeGroup),
-        dialogTabStops(countGroup),
-        dialogTabStops(levels),
-        dialogTabStops(startGroup)
-      );
-    }
     // Finished result Tab ring (#48/#58): もう一度遊ぶ / モード選択 / history
     // <summary> / 読み方ずかん. Header ♪ chrome stays outside (reclaim via
     // modern-ui). Overlays (#46) win when dict/help/restart/pause are open.
@@ -267,8 +263,9 @@
       if (latest?.phase === 'finished') return cycleTabStops(event, resultTabStops());
       // Blocked rescue when no overlay: reclaim from ♪ chrome onto つなぎ直す.
       if (latest?.phase === 'blocked') return cycleTabStops(event, blockedTabStops());
-      // Intro setup when no overlay: reclaim from ♪ chrome / settings / dict.
-      return cycleTabStops(event, introSetupTabStops());
+      // Setup is not modal. Preserve native Tab/Shift+Tab through every control,
+      // including the shared header, settings and dictionary.
+      return false;
     }
     page.addEventListener('keydown', event => {
       if (event.key === 'Escape') {
@@ -280,8 +277,8 @@
         if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');
         return;
       }
-      // Overlay Tab trap (#46) + intro setup (#52/#56) + finished result (#48 parity)
-      // + blocked rescue (#60 follow-up): cycle dialog / setup / result / rescue
+      // Overlay Tab trap (#46) + finished result (#48 parity)
+      // + blocked rescue (#60 follow-up): cycle dialog / result / rescue
       // controls only. Entry (#44 overlays / intro h1 / #19 replay / #60 rescue),
       // Esc, and play-start card focus (#35) stay unchanged.
       if (trapOverlayTab(event)) return;
@@ -293,7 +290,7 @@
         const visible = Math.min(cards.length, latest.cards?.length || cards.filter(c => !c.hidden).length);
         const available = cards.slice(0, visible).map(c => !c.disabled && !c.hidden);
         const focused = cards.findIndex(c => c === document.activeElement);
-        const next = nextPlayableShCard(available, focused >= 0 ? focused : keyboardCard, event.key, boardCols);
+        const next = nextPlayableShCard(available, focused >= 0 ? focused : keyboardCard, event.key, renderedColumns());
         if (next >= 0) { keyboardCard = next; cards[next].focus({preventScroll: true}); }
         return;
       }
@@ -411,7 +408,8 @@
         if (!live || solo || mine) item.card.dataset.cpuSelecting = 'false';
         if (!live) item.card.dataset.feedback = '';
       });
-      const columns=Number(window.getComputedStyle?.(boardSpace).getPropertyValue('--sh-cols')) || (s.total>12?8:4);
+      boardCols = s.total>12?8:4;
+      const columns=renderedColumns();
       boardCols = columns;
       const cpuCursor=!solo && live && !mine ? window.rivalCursor?.(s.cards.length,columns,s.cpu_target,s.cpu_progress) : null;
       s.cards.forEach((data, i) => {

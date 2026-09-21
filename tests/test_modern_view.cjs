@@ -470,7 +470,7 @@ test('practice play HUD densifies YOU+お題 after CPU score-card hide (#100)', 
   // JS still hides CPU score-card in practice (drives :has).
   assert.match(js, /cpuHud\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const hudOf = () => walk(b.app).find(n => n.className === 'nr-hud');
@@ -496,8 +496,8 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -532,8 +532,8 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -583,9 +583,9 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -607,22 +607,21 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   assert.equal(kohIn(resultDuo()).hidden, false, 'battle result still shows LUNA');
 });
 
-test('practice play-stage solo cast centers RIN with absolute+left after LUNA hide (#83)', () => {
+test('practice uses the same player-side arena slot as battle', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const layout = fs.readFileSync(require.resolve('../character-layout.css'), 'utf8');
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  // Solo play: center RIN via absolute+left (parity denser result #82); battle duo left/right intact.
-  assert.match(css, /\.nr-play-stage:has\(> \.nr-koh\[hidden\]\) \{ justify-content: center; position: relative; \}/);
-  assert.match(css, /\.nr-play-stage:has\(> \.nr-koh\[hidden\]\) \.nr-rin \{[\s\S]*?position: absolute;[\s\S]*?left: 0;[\s\S]*?right: 0;[\s\S]*?margin-inline: auto/);
-  // Absolute media still pins battle RIN left / LUNA right.
-  assert.match(css, /\.nr-play-stage \.nr-rin \{ left: 0; \} \.nr-play-stage \.nr-koh \{ right: 0; \}/);
+  assert.ok(layout.includes('[data-arena] > .nr-rin { grid-column: 1; }'));
+  assert.ok(layout.includes('[data-arena] > .nr-rin { grid-row: 3; }'));
+  assert.ok(layout.includes('[data-arena] > .nr-koh { grid-row: 1; }'));
   // #80/#82 keep: JS hide + denser result solo-cast.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -1278,106 +1277,21 @@ test('ready entry focuses primary start 1から順番; same-screen and overlays 
   assert.equal(b.document.activeElement, resume, 'pause entry still focuses プレイを続ける');
 });
 
-test('ready Tab cycles setup controls and does not escape to chrome', () => {
-  const b = browserHarness();
-  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
-  const headerSound = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
-  const headerHelp = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === '遊び方');
-  const gamesBack = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'ゲーム選択');
-  const collectStops = (roots) => {
-    const stops = [];
-    const visit = (node) => {
-      if (!node || node.hidden) return;
-      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
-      for (const child of node.children || []) visit(child);
-    };
-    for (const root of roots) visit(root);
-    return stops;
-  };
-  const setupRoots = (readyScreen) => {
-    const kind = walk(readyScreen).find(n => n.getAttribute && n.getAttribute('aria-label') === '遊び方を選ぶ');
-    const ranges = walk(readyScreen).find(n => n.getAttribute && n.getAttribute('aria-label') === '数字の範囲');
-    const levels = walk(readyScreen).find(n => n.getAttribute && n.getAttribute('aria-label') === 'CPUの強さ');
-    const difficultyWrap = levels && levels.parentElement;
-    const ordered = walk(readyScreen).find(n =>
-      n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
-    const random = walk(readyScreen).find(n =>
-      n.tagName === 'BUTTON' && String(n.className).includes('nr-secondary'));
-    const startGroup = ordered && ordered.parentElement;
-    return {kind, ranges, difficultyWrap, startGroup, ordered, random};
-  };
-
-  // Battle ready: entry 「1から順番」 (#50); Tab cycles kind/range/difficulty/start only.
-  b.render('home', {cells: []});
-  b.render('ready', {cells: [], kind: 'battle', max_number: 10, difficulty: 'normal'});
-  const readyScreen = screenOf('ready');
-  const roots = setupRoots(readyScreen);
-  assert.equal(b.document.activeElement, roots.ordered, 'ready entry still focuses 1から順番 (#50)');
-  assert.equal(roots.difficultyWrap.hidden, false, 'battle shows difficulty');
-
-  const battleStops = collectStops([roots.kind, roots.ranges, roots.difficultyWrap, roots.startGroup]);
-  assert.equal(battleStops.length, 11, 'battle setup exposes kind+range+difficulty+start');
-  assert.ok(battleStops.includes(roots.ordered) && battleStops.includes(roots.random));
-  assert.ok(!battleStops.includes(headerSound), 'header BGM is outside the trap');
-  assert.ok(!battleStops.includes(headerHelp), 'header 遊び方 is outside the trap');
-  assert.ok(!battleStops.includes(gamesBack), 'header ゲーム選択 is outside the trap');
-  const settings = walk(readyScreen).filter(n =>
-    n.tagName === 'BUTTON' && String(n.className).includes('nr-setting'));
-  assert.ok(settings.length >= 2, 'ready still exposes sfx/motion settings');
-  for (const btn of settings) {
-    assert.ok(!battleStops.includes(btn), 'ready settings stay outside the setup trap');
+test('ready allows native Tab and Shift+Tab through all controls', () => {
+  const b=browserHarness();
+  for(const kind of ['battle','practice']) {
+    b.render('ready',{kind,cells:[]});
+    for(const control of walk(b.app).filter(n=>n.tagName==='BUTTON')) for(const shiftKey of [false,true]) {
+      control.focus(); let prevented=false;
+      b.app.emit('keydown',{key:'Tab',shiftKey,preventDefault(){prevented=true;}});
+      assert.equal(prevented,false,'ready must let browser visit every visible control');
+      assert.equal(b.document.activeElement,control,'handler must not redirect native focus');
+    }
   }
-
-  const orderedIdx = battleStops.indexOf(roots.ordered);
-  roots.ordered.focus();
-  for (let i = 0; i < battleStops.length; i++) {
-    const expected = battleStops[(orderedIdx + i + 1) % battleStops.length];
-    b.app.emit('keydown', {key: 'Tab', shiftKey: false});
-    assert.equal(b.document.activeElement, expected, `battle Tab step ${i + 1} stays in setup`);
-    assert.notEqual(b.document.activeElement, headerSound, 'Tab must not escape to ♪ chrome');
-  }
-  roots.ordered.focus();
-  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
-  assert.equal(
-    b.document.activeElement,
-    battleStops[(orderedIdx - 1 + battleStops.length) % battleStops.length],
-    'Shift+Tab wraps inside setup'
-  );
-
-  // Focus already on chrome: Tab pulls back into setup (first kind control).
-  headerSound.focus();
-  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(b.document.activeElement, battleStops[0], 'Tab from chrome re-enters setup');
-
-  // Practice hides difficulty; Tab still cycles remaining setup controls only.
-  // Leave and re-enter ready so #50 entry focus runs (same-screen ready keeps focus).
-  b.render('home', {cells: []});
-  b.render('ready', {cells: [], kind: 'practice', max_number: 20});
-  assert.equal(b.document.activeElement, roots.ordered, 'practice ready still focuses 1から順番 (#50)');
-  assert.equal(roots.difficultyWrap.hidden, true, 'practice hides difficulty');
-  const practiceStops = collectStops([roots.kind, roots.ranges, roots.difficultyWrap, roots.startGroup]);
-  assert.equal(practiceStops.length, 8, 'practice setup omits hidden difficulty');
-  assert.ok(!practiceStops.some(n => walk(roots.difficultyWrap).includes(n)));
-  roots.ordered.focus();
-  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(b.document.activeElement, roots.random, 'practice Tab moves to ランダム');
-  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(b.document.activeElement, practiceStops[0], 'practice Tab wraps to first kind');
-  assert.notEqual(b.document.activeElement, headerSound);
-
-  // Confirm trap still works after ready (#45 regression guard).
-  const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
-  b.render('playing', {cells: cellsState});
-  b.render('confirm', {confirm_action: 'pause', cells: []});
-  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.notEqual(b.document.activeElement, headerSound, 'confirm Tab still trapped after ready');
-
-  // Playing leaves Tab alone (no ready trap bleed).
-  b.render('playing', {cells: cellsState});
-  const cell = b.cells()[0];
-  cell.focus();
-  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
-  assert.equal(b.document.activeElement, cell, 'playing leaves Tab alone (no preventDefault cycle)');
+  b.render('confirm',{confirm_action:'pause',cells:[]});
+  let prevented=false;
+  b.app.emit('keydown',{key:'Tab',preventDefault(){prevented=true;}});
+  assert.equal(prevented,true,'real pause modal retains its trap');
 });
 
 test('home entry focuses first enabled game card; same-screen and ready spared', () => {
@@ -1492,7 +1406,7 @@ test('home Tab cycles enabled game cards and does not escape to chrome', () => {
   ordered.focus();
   b.app.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.notEqual(b.document.activeElement, headerSound, 'ready Tab still trapped after home');
-  assert.notEqual(b.document.activeElement, ordered, 'ready Tab moves inside setup');
+  assert.equal(b.document.activeElement, ordered, 'ready leaves native Tab to the browser after home');
 
   // Playing leaves Tab alone (no home trap bleed).
   const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));
@@ -2087,8 +2001,8 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -2122,7 +2036,7 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
 });
 
 test('finished result still focuses primary replay after score hierarchy (#17)', () => {
@@ -2163,8 +2077,8 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
 });
 
 test('finished result sets record data-record kinds for contrast styling', () => {
@@ -2244,9 +2158,9 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -2282,8 +2196,8 @@ test('practice pause copy omits rival/CPU; battle keeps rival stopped (#90)', ()
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const mutedIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-muted'));
@@ -2310,8 +2224,8 @@ test('practice ready intro-copy omits rival; battle keeps ライバル (#92)', (
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const introIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-intro-copy'));
@@ -2338,8 +2252,8 @@ test('practice PERFECT award blurb omits 先取; battle keeps it (#93)', () => {
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const awardOf = () => walk(b.app).find(n => n.className === 'nr-award');
@@ -2376,8 +2290,8 @@ test('practice help pause clause omits CPU; battle keeps it (#94)', () => {
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2413,8 +2327,8 @@ test('practice help rival bullet uses pace copy; battle keeps rival (#95)', () =
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2451,6 +2365,6 @@ test('numbers play HUD localizes TIME label to タイム (parity with result #10
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });

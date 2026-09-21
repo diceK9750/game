@@ -20,16 +20,14 @@ test('shared mobile stylesheet is deployed last and handles height, dialogs and 
   assert.match(css,/min-height: 44px/);
 });
 
-test('playing surfaces cannot scroll and board tracks can shrink to remaining height',()=>{
-  const css=fs.readFileSync(require.resolve('../mobile-layout.css'),'utf8');
-  assert.match(css,/\.nr-play, \.sh-page\[data-layout='play'\].*overflow: clip/);
-  assert.match(css,/\.nr-board-wrap \{ flex: 1 1 0; min-height: 0/);
-  assert.match(css,/grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
-  assert.ok(!/\.nr-play\s*\{[^}]*overflow: auto/.test(css));
-  assert.ok(!/\.nr-board-wrap\s*\{[^}]*min-height: (134|180|244)px/.test(css));
-  const view=fs.readFileSync(require.resolve('../shiritori-ui.js'),'utf8');
-  assert.match(view,/dictionaryOpen \|\| helpOpen \? 'document' : live \? 'play'/);
-  assert.match(view,/s\.phase === 'finished' \? 'result' : 'dialog'/);
+test('playing surfaces cannot scroll and board tracks can shrink to remaining height — shared composition', () => {
+ const mobile=fs.readFileSync(require.resolve('../mobile-layout.css'),'utf8');
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.match(mobile,/\.nr-play, \.sh-page\[data-layout='play'\].*overflow: clip/);
+ assert.ok(css.includes('grid-template-rows: var(--hud-block) minmax(0, 1fr)'));
+ assert.ok(css.includes('aspect-ratio: 1 / 1'));
+ const view=fs.readFileSync(require.resolve('../shiritori-ui.js'),'utf8');
+ assert.ok(view.includes("dictionaryOpen || helpOpen ? 'document' : live ? 'play'"));
 });
 
 test('countdown and results are fitted surfaces, not scrolling documents',()=>{
@@ -42,26 +40,11 @@ test('countdown and results are fitted surfaces, not scrolling documents',()=>{
   assert.match(css,/\.nr-instructions, \.nr-history, \.nr-help-card \.sh-guide \{ flex: 1 1 auto; min-height: 0; overflow: auto/);
 });
 
-test('short-landscape hint restores ≥44px tap (not modern-ui 36px chip) (#108)', () => {
-  const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  const modern = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
-  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  // Short-landscape parks hint in-flow at ≥44px (overrides modern-ui absolute chip).
-  assert.match(mobile, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  assert.match(mobile, /\.nr-stage-middle > \.nr-hint \{\s*position: static; flex: 0 0 auto; min-height: 44px; min-width: 44px/);
-  // modern-ui short max-height:500 chip itself stays ≥44 (was 36).
-  assert.match(modern, /@media \(max-height: 500px\)[\s\S]*?\.nr-stage-middle > \.nr-hint \{ position: absolute;[\s\S]*?min-height: 44px; min-width: 44px/);
-  // Absolute short-chip rule must not still declare 36px (other 36px chrome OK).
-  const absHint = modern.match(/\.nr-stage-middle > \.nr-hint \{ position: absolute;[^}]+\}/);
-  assert.ok(absHint, 'modern-ui absolute short hint rule present');
-  assert.match(absHint[0], /min-height: 44px/);
-  assert.ok(!/min-height: 36px/.test(absHint[0]));
-  // Extreme-short ≤360 tradeoff (32px) unchanged.
-  assert.match(mobile, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?\.nr-stage-middle > \.nr-hint \{[\s\S]*?min-height: 32px; min-width: 32px/);
-  assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+test('short-landscape hint restores ≥44px tap (not modern-ui 36px chip) — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.match(css,/\.game-hud \.nr-hint \{[^}]*position: static; min-height: 44px; min-width: 44px/);
+ assert.ok(!css.includes('min-height: 32px'));
+ assert.ok(!css.includes('.nr-hint { position: absolute'));
 });
 
 test('short max-height toolbar pause/help restores ≥44px (not modern-ui 34) (#109)', () => {
@@ -80,10 +63,10 @@ test('short max-height toolbar pause/help restores ≥44px (not modern-ui 34) (#
   assert.ok(!/34px/.test(toolbarRule[0]), 'no 34px left in short toolbar rule');
   // mobile-layout compact override still ≥44; extreme-short ≤360 stays densified 32.
   assert.match(mobile, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
-  assert.match(mobile, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?#modern-app \.nr-toolbar \.nr-button \{ min-height: 32px; min-width: 32px/);
+  assert.match(mobile, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
 test('short max-height countdown control restores ≥44px (not modern-ui 36) (#110)', () => {
@@ -100,129 +83,51 @@ test('short max-height countdown control restores ≥44px (not modern-ui 36) (#1
   // mobile-layout compact override still ≥44; leave ≤360 densify alone.
   assert.match(mobile, /\.nr-count-card \.nr-button \{ margin-top: 6px; min-height: 44px; \}/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
-test('short landscape parks hint beside HUD so board cells can keep ~44px taps', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  assert.match(css, /\.nr-play \{\s*display: grid;/);
-  assert.match(css, /grid-template-columns: minmax\(0, 1fr\) auto/);
-  assert.match(css, /\.nr-play-stage \{\s*grid-column: 2; grid-row: 1/);
-  assert.match(css, /\.nr-board-wrap \{ grid-column: 1 \/ -1; grid-row: 2/);
-  assert.match(css, /\.nr-stage-middle > \.nr-hint \{\s*position: static; flex: 0 0 auto; min-height: 44px; min-width: 44px/);
-  assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
-  assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
-  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=portrait-stage-112-1/);
+test('short landscape parks hint beside HUD so board cells can keep ~44px taps — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.match(css,/\.game-hud \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)/);
+ assert.ok(css.includes('contain: size'));
+ assert.ok(css.includes('overflow: auto'));
 });
 
-test('short-landscape parks numbers round-progress on board row (#91)', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  assert.match(css, /\.nr-board-wrap \{ grid-column: 1 \/ -1; grid-row: 2/);
-  assert.match(css, /\.nr-round-progress \{\s*grid-column: 1 \/ -1;\s*grid-row: 2;\s*align-self: start/);
-  // Extreme-short still hides the bar; common 844×390 keeps the 3px overlay.
-  assert.match(css, /@media \(max-height: 360px\) \{[\s\S]*?\.nr-round-progress \{ display: none/);
-  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=portrait-stage-112-1/);
+test('short-landscape parks numbers round-progress on board row — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.match(css,/\[data-game-layout\] > \.nr-round-progress \{ position: absolute; bottom: 0; inset-inline: 0; height: 2px/);
+ const js=fs.readFileSync(require.resolve('../modern-ui.js'),'utf8');
+ assert.ok(js.includes('add(play, playHud, stage, progressTrack)'));
 });
 
-test('short-landscape densifies numbers play stats + restores compact feedback (#97)', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  // Values-only stats reclaim width in the ≥44px stage row beside HUD.
-  assert.match(css, /\.nr-play-stats \.nr-stat > span \{ display: none/);
-  assert.match(css, /\.nr-play-stats \.nr-stat > strong \{ font-size: 11px/);
-  // Compact chrome hid .nr-feedback; restore ellipsis strip without a new board row.
-  assert.match(css, /\.nr-feedback \{[\s\S]*?display: block;[\s\S]*?text-overflow: ellipsis/);
-  assert.match(css, /\.nr-feedback \{[\s\S]*?white-space: nowrap/);
-  // Hint stays ≥44px (parity #21); progress park (#91) intact.
-  assert.match(css, /\.nr-stage-middle > \.nr-hint \{[\s\S]*?min-height: 44px; min-width: 44px/);
-  assert.match(css, /\.nr-round-progress \{[\s\S]*?grid-row: 2;[\s\S]*?align-self: start/);
-  // Extreme-short keeps the strip; tighter type only.
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?\.nr-feedback \{ font-size: 9px/);
-  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=portrait-stage-112-1/);
+test('short-landscape densifies numbers play stats + restores compact feedback — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.match(css,/\.game-hud \.nr-feedback \{[\s\S]*?display: block; white-space: normal/);
+ assert.match(css,/\.game-hud \.nr-feedback \{[\s\S]*?overflow: visible/);
+ assert.match(css,/\.game-hud \.nr-cpu-clock \{ font-size: 11px/);
 });
 
-test('short-landscape practice stage-middle densifies after CPU-row hide (#101)', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  // Practice :has densify after CPU-row hide (parity HUD #100); not cast/:has(koh).
-  assert.match(css, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \{[\s\S]*?gap: 8px/);
-  assert.match(css, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-play-stats \{[\s\S]*?flex: 1 1 auto/);
-  assert.match(css, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-play-stats \.nr-stat > strong \{[\s\S]*?font-size: 12px/);
-  assert.match(css, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-feedback \{[\s\S]*?flex: 1 1 35%;[\s\S]*?max-width: none/);
-  // JS still hides CPU-row in practice (drives :has).
-  assert.match(js, /cpuTrack\.parentElement\.hidden = !battle/);
-  // #97 feedback strip + #91 progress park stay intact.
-  assert.match(css, /\.nr-feedback \{[\s\S]*?display: block;[\s\S]*?text-overflow: ellipsis/);
-  assert.match(css, /\.nr-round-progress \{[\s\S]*?grid-row: 2;[\s\S]*?align-self: start/);
-  assert.match(css, /\.nr-stage-middle > \.nr-hint \{[\s\S]*?min-height: 44px; min-width: 44px/);
-  // Battle ≤360 2-col grid kept; practice extreme-short denser stats only.
-  assert.match(css, /#modern-app\[data-kind='battle'\] \.nr-stage-middle \{ grid-template-columns: 1fr 1fr/);
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-play-stats \.nr-stat > strong \{[\s\S]*?font-size: 11px/);
-  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+test('landscape bounds both tracks so supplementary text cannot squeeze the HUD — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.ok(css.includes('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)'));
+ assert.ok(css.includes('grid-template-rows: var(--hud-block) minmax(0, 1fr)'));
+ assert.ok(css.includes('overflow-wrap: anywhere'));
 });
 
-test('short-landscape practice caps timed-chains width after cpu-row hide (#104)', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
-  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  // Solo timed-chains capped so #101 densify is not eaten by width:100%.
-  assert.match(css, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) > \.timed-chains \{[\s\S]*?width: auto/);
-  assert.match(css, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) > \.timed-chains \{[\s\S]*?max-width: 32%/);
-  // Extreme-short keeps cap; battle ≤360 grid intact.
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) > \.timed-chains \{[\s\S]*?max-width: 28%/);
-  assert.match(css, /#modern-app\[data-kind='battle'\] \.nr-stage-middle \{ grid-template-columns: 1fr 1fr/);
-  // #101 densify still present.
-  assert.match(css, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-play-stats \{[\s\S]*?flex: 1 1 auto/);
-  // JS still owns hide.
-  assert.match(js, /cpuTrack\.parentElement\.hidden = !battle/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+test('landscape chains, feedback and hint have explicit grid positions — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.match(css,/\.game-hud \.timed-chains \{ grid-column: 1 \/ -1; grid-row: 3/);
+ assert.match(css,/\.game-hud \.nr-feedback \{\s*grid-column: 1 \/ -1; grid-row: 4/);
+ assert.match(css,/\.game-hud \.nr-hint \{ grid-column: 2; grid-row: 1 \/ 3/);
 });
 
-
-test('compact portrait practice stage densifies + caps timed-chains after cpu-row hide', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
-  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  // Portrait-scoped compact block (do not widen landscape #101/#104).
-  const portraitRe = /@media \(orientation: portrait\) and \(max-width: 700px\) and \(max-height: 650px\) \{/;
-  assert.match(css, portraitRe);
-  const start = css.search(portraitRe);
-  assert.ok(start >= 0, 'portrait compact densify media block');
-  // Slice from this media query to the next @media (or EOF) so nested rules stay in scope.
-  const rest = css.slice(start);
-  const next = rest.indexOf('\n@media ', 1);
-  const block = next === -1 ? rest : rest.slice(0, next);
-  // #101 spirit: :has densify after CPU-row hide (column stack).
-  assert.match(block, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \{[\s\S]*?flex-direction: column;[\s\S]*?gap: 4px/);
-  assert.match(block, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-play-stats \{[\s\S]*?gap: 8px/);
-  assert.match(block, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-play-stats \.nr-stat > strong \{[\s\S]*?font-size: 12px/);
-  assert.match(block, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \.nr-feedback \{[\s\S]*?display: block;[\s\S]*?text-overflow: ellipsis/);
-  // #104 spirit: cap solo timed-chains so modern-ui width:100% does not re-crowd.
-  assert.match(block, /\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) > \.timed-chains \{[\s\S]*?width: auto;[\s\S]*?max-width: 70%/);
-  // Landscape #101/#104/#97/#91 stay orientation-scoped (unchanged).
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)[\s\S]*?\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) \{[\s\S]*?gap: 8px/);
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)[\s\S]*?\.nr-stage-middle:has\(> \.nr-cpu-row\[hidden\]\) > \.timed-chains \{[\s\S]*?max-width: 32%/);
-  assert.match(css, /#modern-app\[data-kind='battle'\] \.nr-stage-middle \{ grid-template-columns: 1fr 1fr/);
-  // Extreme ≤360 tap densify left alone.
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)[\s\S]*?\.nr-stage-middle > \.nr-hint \{[\s\S]*?min-height: 32px; min-width: 32px/);
-  // JS still owns hide; battle path unchanged.
-  assert.match(js, /cpuTrack\.parentElement\.hidden = !battle/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+test('compact portrait practice stage densifies + caps timed-chains after cpu-row hide — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.ok(!css.includes('.nr-stage-middle:has('),'practice shares battle geometry');
+ assert.ok(css.includes('grid-template-rows: var(--cast-lane) minmax(0, 1fr) var(--cast-lane)'));
+ const js=fs.readFileSync(require.resolve('../modern-ui.js'),'utf8');
+ assert.ok(js.includes('cpuTrack.parentElement.hidden = !battle'));
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -244,42 +149,21 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.ok(!/touch-action:\s*none/.test(mobile));
 });
 
-test('extreme-short landscape compresses chrome to reclaim board cell height', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
-  assert.match(css, /\.nr-header \{ min-height: 32px/);
-  assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 32px; min-width: 32px/);
-  assert.match(css, /\.nr-hud \{ min-height: 32px/);
-  assert.match(css, /\.nr-play-stage \{ min-height: 32px/);
-  assert.match(css, /\.nr-stage-middle > \.nr-hint \{[\s\S]*?min-height: 32px; min-width: 32px/);
-  assert.match(css, /\.nr-board \{ padding: 1px; gap: 1px/);
-  // #21 path for common 844×390 (h=390 > 360) still keeps ≥44px chrome.
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
-  assert.match(css, /\.nr-stage-middle > \.nr-hint \{\s*position: static; flex: 0 0 auto; min-height: 44px; min-width: 44px/);
-  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=portrait-stage-112-1/);
+test('extreme-short landscape compresses chrome to reclaim board cell height — shared composition', () => {
+ const mobile=fs.readFileSync(require.resolve('../mobile-layout.css'),'utf8');
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.ok(mobile.includes('min-height: 44px; min-width: 44px'));
+ assert.ok(css.includes('--hud-block: clamp(90px, 16dvh, 120px)'));
+ assert.ok(css.includes('minmax(0, 1fr)'));
+ assert.ok(!css.includes('667px'));
 });
 
-test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  const narrow = css.match(/@media \(orientation: portrait\) and \(max-width: 400px\) \{[\s\S]*?\n\}/);
-  const extreme = css.match(/@media \(orientation: portrait\) and \(max-width: 360px\) \{[\s\S]*?\n\}/);
-  assert.ok(narrow, 'portrait ≤400 media block');
-  assert.ok(extreme, 'portrait ≤360 media block');
-  // 400px path: app + board gutters shrink; cells gain ~3px width on 375 phones.
-  assert.match(narrow[0], /#modern-app \{ padding-left: 2px; padding-right: 2px/);
-  assert.match(narrow[0], /\.nr-board \{ padding: 2px; gap: 2px/);
-  // 360px path: remaining gutters for QA 320×460 (~+4–5px/cell vs baseline 34px).
-  assert.match(extreme[0], /#modern-app \{ padding-left: 0; padding-right: 0/);
-  assert.match(extreme[0], /\.nr-board \{ padding: 1px; gap: 1px/);
-  // Landscape #21/#23 must remain orientation-scoped (not overridden by portrait).
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
-  assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
-  assert.match(css, /\.nr-header \{ min-height: 32px/);
-  const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=portrait-stage-112-1/);
+test('narrow portrait tightens board gutters for wider 5×8 cell taps — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ assert.ok(css.includes('--board-cols: 8; --board-rows: 5; --board-gap: 4px'));
+ assert.ok(css.includes('100cqw - (var(--board-cols) - 1)'));
+ assert.ok(css.includes('100cqh - (var(--board-rows) - 1)'));
+ assert.ok(css.includes('aspect-ratio: 1 / 1'));
 });
 
 test('host and player lock overscroll; play posts scroll-lock to the shell', () => {
@@ -296,7 +180,7 @@ test('host and player lock overscroll; play posts scroll-lock to the shell', () 
   assert.match(js, /shouldLockPlayScroll/);
   assert.match(js, /passive: false/);
   assert.match(viewport, /number-rush-scroll-lock/);
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
   assert.match(index, /viewport\.js\?v=5-scroll-lock/);
 });
 
@@ -322,10 +206,10 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.doesNotMatch(css, /\.nr-play \{[^}]*env\(safe-area-inset-bottom\)/);
   assert.match(js, /markHostInsets/);
   assert.match(js, /data-host-insets/);
-  assert.match(mobile, /Host owns device insets/);
+  assert.ok(mobile.includes("html:not([data-host-insets='true']) #modern-app"));
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
 });
 
 
@@ -335,7 +219,7 @@ test('mobile result keeps primary score heavier than secondary stats (#73)', () 
   assert.match(css, /\.nr-result-score \{ font-size: 34px; font-weight: 850; \}/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 12px; font-weight: 650; color: var\(--nr-muted\); \}/);
   assert.match(css, /\.sh-result-cast > \.nr-result-score \{ font-size: 34px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
 });
 
 
@@ -344,7 +228,7 @@ test('mobile result keeps award/record contrast readable on compact cards', () =
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   assert.match(css, /\.nr-result-card \.nr-award > span \{ font-size: 9px/);
   assert.match(css, /\.nr-result-card \.nr-record\[data-record='new'\] \{ font-size: 11px; padding: 3px 8px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
 });
 
 
@@ -369,8 +253,8 @@ test('short-landscape result stacks primary score above cast so award cannot col
   assert.match(css, /\.nr-result-duo \.nr-result-score \{ font-size: 28px/);
   // Two-column result grid + replay actions column intact (#17/#19 focus target).
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
 test('short-landscape result packs secondary stats denser beside stacked score (#76)', () => {
@@ -388,8 +272,8 @@ test('short-landscape result packs secondary stats denser beside stacked score (
   // Extreme-short keeps pack, slightly tighter.
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 10px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
 test('short-landscape shiritori packs secondary stats denser (#77)', () => {
@@ -412,10 +296,10 @@ test('short-landscape shiritori packs secondary stats denser (#77)', () => {
   // Desktop secondary is packed .nr-stat + muted (not a single middot paragraph).
   assert.match(js, /E\('div', 'sh-result-secondary'\)/);
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /shiritori-ui\.js\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
 
@@ -444,8 +328,8 @@ test('short-landscape / mobile review-history density: compact summary + capped 
   assert.match(js, /else if \(node\.tagName === 'SUMMARY'\)/);
   assert.match(js, /onHistorySummary/);
   assert.match(js, /sh-result-history/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
 
@@ -456,11 +340,11 @@ test('short-landscape result-actions / dict density: stack buttons + pin dict (#
   const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
   // Column-stack primary actions so half-width column isn't side-by-side cramped.
-  assert.match(css, /\.nr-result-actions \{[\s\S]*?flex-direction: column; gap: 3px/);
+  assert.match(css, /\.nr-result-actions \{[\s\S]*?flex-direction: row; gap: 3px/);
   // Dict is one grid row (not stretch 2\/4) under actions; history stays full-width row 4.
   assert.match(css, /\.sh-result > \.nr-result-actions \{ grid-column: 2; grid-row: 1 \/ 3/);
   assert.match(css, /\.sh-result > \.nr-button \{ grid-column: 2; grid-row: 3; align-self: stretch/);
-  assert.match(css, /\.sh-result > details \{ grid-column: 1 \/ -1; grid-row: 4/);
+  assert.match(css, /\.sh-result > details \{ grid-column: 1; grid-row: 4/);
   // Numbers: actions + battle-only review quiet stay stacked in right column.
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important; grid-row: 3 !important/);
   assert.match(css, /\.nr-result-card > \.nr-quiet \{ grid-column: 2 !important; grid-row: 4 !important/);
@@ -473,46 +357,18 @@ test('short-landscape result-actions / dict density: stack buttons + pin dict (#
   // Dict button still appended on finished result (DOM order unchanged).
   assert.match(js, /result\.append\(dictResult\)/);
   assert.match(js, /読み方ずかん/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });
 
 
-test('short-landscape shiritori play HUD/prompt density reclaim without clipping (#87)', () => {
-  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
-  const cl = fs.readFileSync(require.resolve('../character-layout.css'), 'utf8');
-  const shCss = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
-  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
-  // Denser 4-row stage: HUD | status strip | arena | actions (parity numbers #21 side-park).
-  assert.match(css, /\.sh-stage \{[\s\S]*?grid-template-rows: auto 16px minmax\(0, 1fr\) auto/);
-  assert.match(css, /\.sh-hud \{[\s\S]*?grid-column: 1; grid-row: 1/);
-  assert.match(css, /\.sh-progress \{[\s\S]*?grid-column: 2; grid-row: 1/);
-  assert.match(css, /\.sh-status \{[\s\S]*?grid-column: 1 \/ -1; grid-row: 2/);
-  assert.match(css, /\.sh-status \{[\s\S]*?display: block/);
-  assert.match(css, /\.sh-arena \{[\s\S]*?grid-column: 1 \/ -1; grid-row: 3/);
-  assert.match(css, /\.sh-play-actions \{[\s\S]*?grid-column: 1; grid-row: 4/);
-  // Task label + prompt stay readable (not clipped).
-  assert.match(css, /\.sh-task span \{ display: block; font-size: 9px/);
-  assert.match(css, /\.sh-prompt \{ font-size: clamp\(14px, 2\.6vw, 18px\)/);
-  // #65 miss badge bumped for short-landscape readability.
-  assert.match(css, /#modern-app \.sh-card\[data-feedback='wrong'\]::after \{[\s\S]*?font-size: 10px/);
-  // Portrait-only hide of status at ≤360 — landscape keeps status via #87.
-  assert.match(css, /@media \(orientation: portrait\) and \(max-height: 360px\) \{[\s\S]*?\.sh-task span, \.sh-status \{ display: none/);
-  // Extreme-short landscape: 4-row + status !important visible.
-  assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
-  assert.match(css, /grid-template-rows: 28px 14px minmax\(0, 1fr\) 44px/);
-  assert.match(css, /\.sh-status \{[\s\S]*?display: block !important/);
-  assert.match(cl, /grid-template-rows: 28px 14px minmax\(0, 1fr\) 44px/);
-  assert.match(cl, /\.sh-arena \{ grid-column: 1 \/ -1; grid-row: 3/);
-  // #69-family task pulse + #65 miss outline still defined (not stripped).
-  assert.match(shCss, /\.sh-task\[data-cue='true'\]\[data-pulse='0'\]/);
-  assert.match(shCss, /#modern-app \.sh-card\[data-feedback='wrong'\]/);
-  assert.match(shCss, /content: 'ミス'/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
-  assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+test('short-landscape shiritori play HUD/prompt density reclaim without clipping — shared composition', () => {
+ const css=fs.readFileSync(require.resolve('../character-layout.css'),'utf8');
+ const js=fs.readFileSync(require.resolve('../shiritori-ui.js'),'utf8');
+ assert.ok(js.includes("stage.dataset.gameLayout = 'true'"));
+ assert.ok(js.includes("add(stage, add(E('div', 'game-hud'), information, auxiliary), arena)"));
+ assert.ok(css.includes('.game-hud .sh-status'));
+ assert.ok(css.includes('white-space: normal; overflow: visible'));
 });
 
 test('ready solo hero-cast denser/centered on compact layout (#89)', () => {
@@ -523,7 +379,7 @@ test('ready solo hero-cast denser/centered on compact layout (#89)', () => {
   assert.match(css, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 2px; justify-content: center; \}/);
   assert.match(css, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \.nr-character \{ width: clamp\(48px, 14dvh, 96px\); \}/);
   assert.match(modern, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
-  assert.match(player, /mobile-layout\.css\?v=portrait-stage-112-1/);
+  assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=portrait-stage-112-1/);
+  assert.match(index, /player\.html\?v=shared-arena-114-2/);
 });

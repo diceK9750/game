@@ -62,46 +62,16 @@
   .nr-home .nr-game-icon { font-size: clamp(18px, 5dvh, 32px); }
   .nr-home .nr-game-card strong { font-size: 22px; }
   .nr-home .nr-game-card > span:not(.nr-game-icon) { display: none; }
-  /* Play uses remaining flex space, not a second independent vh allocation. */
-  .nr-play { gap: 4px; padding: 4px 0; overflow: clip; }
-  .nr-hud { min-height: 44px; gap: 4px; }
-  .nr-score-card { padding: 3px 5px; gap: 2px; }
-  .nr-score-card > strong { font-size: 24px; }
-  .nr-score-note { display: none; }
-  .nr-target { gap: 3px; }
-  .nr-target-number { font-size: 30px; }
-  .nr-board-wrap { flex: 1 1 0; min-height: 0; height: auto; }
-  .nr-board { padding: 3px; gap: 4px; grid-template-rows: repeat(5, minmax(0, 1fr)); }
-  .nr-cell { min-height: 0; border-radius: 6px; }
-  .nr-cell-number { font-size: clamp(19px, 4dvh, 30px); }
-  .nr-play-stage { flex: 0 0 auto; min-height: 0; gap: 4px; padding: 0; align-items: center; }
-  .nr-play-stage .nr-character { position: relative; width: clamp(32px, 7dvh, 60px); margin: 0; z-index: auto; }
-  .nr-play-stage .nr-character-name { display: none; }
-  .nr-stage-middle { padding: 0; }
-  .nr-play-stats { gap: 4px; }
+
   .nr-stat { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
   .nr-stat > span { font-size: 9px; letter-spacing: 0; margin: 0; }
   .nr-stat > strong { font-size: 11px; }
-  .nr-cpu-row { margin-top: 2px; }
-  .nr-feedback { display: none; }
-  .nr-stage-middle > .nr-hint { position: static; min-height: 44px; margin: 2px 0; }
-  .sh-stage { height: 100%; min-height: 0; gap: 4px; }
-  .sh-hud { flex-shrink: 0; padding: 2px 4px; gap: 4px; }
-  .sh-hud .nr-character, .sh-hud .nr-character-art { width: clamp(28px, 7dvh, 42px); height: auto; flex-basis: auto; }
-  .sh-prompt { font-size: clamp(15px, 3vw, 20px); }
-  .sh-task span { font-size: 10px; }
-  .sh-progress { flex-shrink: 0; font-size: 11px; line-height: 16px; }
-  .sh-status { flex-shrink: 0; min-height: 16px; font-size: 11px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sh-play-actions { flex-shrink: 0; }
-  .sh-play-actions button { min-height: 44px; padding: 5px; }
-  .sh-board-space { flex: 1 1 0; min-height: 0; }
-  .sh-board-space .sh-board { max-height: 100%; }
+
   .sh-card .sh-icon { font-size: min(88cqw, 86cqh); }
 }
 @media (max-width: 600px) {
   .nr-ready { display: grid; grid-template-columns: 1fr; }
-  .sh-board-space { --sh-cols: 3; --sh-rows: 4; }
-  .sh-board-space[data-count='24'] { --sh-cols: 4; --sh-rows: 6; }
+
 }
 @media (max-width: 600px) and (max-height: 700px) {
   .nr-hero-cast .nr-character { width: clamp(32px, 7dvh, 48px); }
@@ -109,8 +79,7 @@
   .nr-ready, .sh-ready { gap: 4px; }
   .nr-intro h1 { font-size: 17px; }
   .sh-setting-note { display: none; }
-  /* Reflow only picture cards. Number search intentionally retains 5 x 8. */
-  .sh-board-space[data-count='24'] { --sh-cols: 6; --sh-rows: 4; }
+
 }
 @media (orientation: landscape) and (max-height: 500px) {
   .nr-ready { grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr); gap: 8px; }
@@ -138,167 +107,27 @@
   .sh-ready-settings > .sh-dict-open { grid-column: 2; grid-row: 2; align-self: end; }
   .sh-ready-settings > .sh-start-actions { grid-column: 1; grid-row: 3; }
   .sh-ready-settings > .nr-settings { grid-area: auto; grid-column: 2; grid-row: 3; }
-  .sh-board-space { --sh-cols: 4; --sh-rows: 3; }
-  .sh-board-space[data-count='24'] { --sh-cols: 8; --sh-rows: 3; }
+
   .nr-dialog { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .nr-dialog > h1, .nr-dialog > p, .nr-dialog-actions { grid-column: 1 / -1; }
   .nr-dialog-actions, .nr-pause-extras, .nr-dialog .nr-settings { margin: 0; }
-  /* Park hint/stage beside the HUD so the 5×8 board reclaims a full row.
-     Pause/hint stay ≥44px; common landscape (844×390) cells reach ~44px tall.
-     Extreme short (landscape ≤360) further compresses chrome below. */
-  .nr-play {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 4px;
-    align-items: stretch;
-  }
+
   .nr-header { min-height: 44px; }
-  .nr-hud { grid-column: 1; grid-row: 1; min-height: 44px; }
-  .nr-play-stage {
-    grid-column: 2; grid-row: 1; align-self: stretch;
-    min-height: 44px; gap: 0; padding: 0;
-  }
-  .nr-play-stage .nr-character { display: none; }
-  .nr-board-wrap { grid-column: 1 / -1; grid-row: 2; }
-  .nr-board { padding: 2px; gap: 2px; }
-  /* #91: pin round-progress into the board grid cell (top) so it does not
-     auto-place into an implicit 3rd row after #21's 2-row play chrome.
-     Keep 3px bar + aria; ≤360 still display:none. */
-  .nr-round-progress {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    align-self: start;
-    z-index: 2;
-    margin: 0;
-    height: 3px;
-    pointer-events: none;
-  }
-  .nr-stage-middle {
-    display: flex; flex-direction: row; align-items: center; gap: 4px; height: 100%;
-  }
-  .nr-play-stats, .nr-cpu-row { margin: 0; }
-  /* #108: keep short-landscape hint ≥44px tap (override modern-ui short
-     absolute 44px chip; do not re-compress to 36). Extreme-short ≤360 still
-     32px tradeoff below. */
-  .nr-stage-middle > .nr-hint {
-    position: static; flex: 0 0 auto; min-height: 44px; min-width: 44px; margin: 0;
-  }
-  .nr-stage-middle > .timed-chains { flex: 1; min-width: 0; }
-  /* #97: densify numbers play stats + restore compact feedback after #91 progress
-     park. Compact chrome hid .nr-feedback (max-height:650); short-landscape stage
-     is a single ≥44px row beside HUD — values-only stats + ellipsis feedback
-     reclaim width without a new board-stealing row (parity shiritori #87 status).
-     Keep hint ≥44px; ≤360 still uses this strip (tighter type below). */
-  .nr-play-stats {
-    flex: 0 1 auto; gap: 6px; min-width: 0;
-  }
-  .nr-play-stats .nr-stat > span { display: none; }
-  .nr-play-stats .nr-stat > strong { font-size: 11px; }
-  .nr-cpu-row {
-    flex: 0 1 auto; gap: 4px; min-width: 0;
-  }
-  .nr-cpu-clock { font-size: 9px; min-width: 0; white-space: nowrap; }
-  .nr-cpu-timer { height: 3px; min-width: 36px; flex: 1 1 36px; }
-  .nr-feedback {
-    display: block;
-    flex: 1 1 auto;
-    min-width: 0;
-    max-width: 100%;
-    margin: 0 !important;
-    font-size: 10px;
-    line-height: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  /* #101: practice stage-middle densify after CPU-row hide — reclaim leftover
-     flex slot so stats+feedback+hint pack the ≥44px strip beside HUD
-     (parity play HUD #100). JS [hidden] owns hide; battle keeps
-     stats|cpu-row|feedback. Do not clip #97 feedback or #91 progress.
-     Not cast/:has(koh). */
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) {
-    gap: 8px;
-  }
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats {
-    flex: 1 1 auto;
-    gap: 10px;
-  }
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong {
-    font-size: 12px;
-  }
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-feedback {
-    flex: 1 1 35%;
-    max-width: none;
-  }
-  /* #104: after #101 practice stage densify, solo timed-chains still claimed
-     flex:1 + modern-ui width:100% and re-crowded stats/feedback on the ≥44px
-     strip. Cap width when cpu-row hidden; battle timed-chains + cpu-row intact.
-     Keep #97 feedback strip and #91 progress park. */
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) > .timed-chains {
-    flex: 0 1 28%;
-    width: auto;
-    max-width: 32%;
-  }
-  /* #87: short-landscape shiritori play HUD/prompt density — park progress beside
-     HUD (parity numbers #21) and pin status to a thin strip so arena reclaims a
-     full row without clipping task/prompt/status. Keep #69-family task pulse +
-     #65 miss badge readable. Common 844×390 uses this path (h=390 ≤500). */
-  .sh-stage {
-    display: grid;
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-    grid-template-rows: auto 16px minmax(0, 1fr) auto;
-    gap: 2px 6px;
-    min-height: 0;
-  }
-  .sh-hud {
-    grid-column: 1; grid-row: 1;
-    padding: 0 4px; gap: 4px; min-height: 36px; align-self: stretch;
-  }
-  .sh-hud .nr-character, .sh-hud .nr-character-art {
-    width: clamp(24px, 6dvh, 36px); height: auto; flex-basis: auto;
-  }
-  .sh-task { padding: 1px 6px; border-radius: 8px; min-width: 0; }
-  .sh-task span { display: block; font-size: 9px; line-height: 1.15; }
-  .sh-prompt { font-size: clamp(14px, 2.6vw, 18px); line-height: 1.2; }
-  .sh-clock { min-width: 48px; font-size: 12px; }
-  .sh-progress {
-    grid-column: 2; grid-row: 1;
-    align-self: center; font-size: 10px; line-height: 14px;
-    padding: 0 2px; margin: 0;
-  }
-  .sh-status {
-    grid-column: 1 / -1; grid-row: 2;
-    display: block; min-height: 14px; max-height: 16px; margin: 0;
-    font-size: 10px; line-height: 14px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .sh-arena { grid-column: 1 / -1; grid-row: 3; min-height: 0; height: 100%; }
-  .sh-play-actions { grid-column: 1; grid-row: 4; }
-  .sh-stage > .timed-chains { grid-column: 2; grid-row: 4; align-self: center; }
+
   /* #65 miss badge: keep readable on denser short-landscape cards. */
   #modern-app .sh-card[data-feedback='wrong']::after {
     font-size: 10px; padding: 1px 4px; top: 1px; right: 1px;
   }
 }
-/* Preserve the numeric grid while reducing nonessential decoration. */
+
 @media (max-height: 360px) {
-  .nr-play-stage .nr-character, .sh-hud .nr-character { display: none; }
+
   .nr-header { min-height: 46px; }
-  .nr-play { gap: 2px; padding: 2px 0; }
-  .nr-hud { min-height: 30px; }
-  .nr-target-number { font-size: 26px; }
-  .nr-board { padding: 2px; gap: 2px; }
-  .nr-round-progress { display: none; }
-  .nr-cell-number { font-size: 20px; }
-  .nr-play-stats .nr-stat > span { display: none; }
+
   .nr-setup:not(.sh-ready-settings) { font-size: 12px; }
 }
-/* Portrait-only: hide turn label + status strip when extremely short (landscape
-   #87 keeps both readable via the denser HUD grid above). */
-@media (orientation: portrait) and (max-height: 360px) {
-  .sh-task span, .sh-status { display: none; }
-}
+
+
 
 /* Transitions/results are fixed-screen UI, not reading documents. Bound cards
    by their parent's actual content box (header/padding already subtracted). */
@@ -427,11 +256,10 @@
   .sh-result-secondary .nr-stat > span { font-size: 7px; letter-spacing: 0; margin: 0; }
   .sh-result-secondary .nr-stat > strong { font-size: 11px; font-weight: 650; color: var(--nr-muted); }
   .sh-result-secondary > .nr-muted { display: none; }
-  /* #79: stack result-actions + pin dict to one row (not 2/4 stretch) so
-     もう一度/モード選択/読み方ずかん don't crowd after #75–#78 densified chrome.
-     Keep ≥44px hit targets (#17/#19 replay focus intact). */
+  /* Use the horizontal space for the two actions rather than spending two
+     44px rows; leave room for records and review even with 250px height. */
   .nr-result-actions {
-    display: flex; flex-direction: column; gap: 3px; margin: 0;
+    display: flex; flex-direction: row; gap: 3px; margin: 0;
   }
   .nr-result-actions > .nr-button,
   .nr-result-card > .nr-quiet,
@@ -440,7 +268,9 @@
   }
   .sh-result > .nr-result-actions { grid-column: 2; grid-row: 1 / 3; }
   .sh-result > .nr-button { grid-column: 2; grid-row: 3; align-self: stretch; }
-  .sh-result > details { grid-column: 1 / -1; grid-row: 4; }
+  .sh-result > details { grid-column: 1; grid-row: 4; }
+  .sh-result > .sh-result-secondary { grid-column: 2; grid-row: 4; }
+  .sh-result > .sh-discovery { grid-column: 1 / -1; grid-row: 5; }
   /* #78: compact history summary + capped open log so details don't fight
      #76/#77 packed stats on short landscape (e.g. 844×390). Keep ≥44px (#59). */
   .sh-result-history summary {
@@ -463,60 +293,11 @@
   .nr-history-index { font-size: 8px; }
 }
 @media (orientation: landscape) and (max-height: 360px) {
-  /* Extreme-short landscape: reclaim 5×8 cell height after #21's side-park.
-     844×390 (h=390) keeps the 500px ≥44px chrome path; only ≤360 compresses.
-     Pause/hint dip to 32px here — documented tradeoff vs ~7px taller cells. */
-  .nr-header { min-height: 32px; gap: 2px; }
-  #modern-app .nr-toolbar .nr-button { min-height: 32px; min-width: 32px; padding: 4px; }
+  /* Compress decoration, not navigation hit areas, on short browser viewports. */
+  .nr-header { min-height: 44px; gap: 2px; }
+  #modern-app .nr-toolbar .nr-button { min-height: 44px; min-width: 44px; padding: 4px; }
   .nr-brand-symbol { font-size: 16px; }
-  .nr-play { gap: 2px; padding: 0; }
-  .nr-hud { min-height: 32px; gap: 2px; }
-  .nr-play-stage { min-height: 32px; }
-  .nr-stage-middle > .nr-hint {
-    flex: 0 0 auto; min-height: 32px; min-width: 32px; margin: 0; padding: 4px 6px;
-  }
-  .nr-board { padding: 1px; gap: 1px; }
-  .nr-target-number { font-size: 22px; }
-  .nr-score-card > strong { font-size: 18px; }
-  .nr-cell-number { font-size: 18px; }
-  /* #97: extreme-short keeps the compact feedback strip; tighten type only. */
-  .nr-play-stats .nr-stat > strong { font-size: 10px; }
-  .nr-feedback { font-size: 9px; line-height: 12px; }
-  #modern-app[data-kind='battle'] .nr-stage-middle { grid-template-columns: 1fr 1fr; }
-  #modern-app[data-kind='battle'] .nr-play-stats { grid-column: 1; grid-row: 1; }
-  #modern-app[data-kind='battle'] .nr-cpu-row { grid-column: 2; grid-row: 1; }
-  #modern-app[data-kind='battle'] .nr-stage-middle > .timed-chains { grid-column: 1 / -1; grid-row: 2; }
-  /* #101: extreme-short practice keeps denser stats; battle 2-col grid above intact. */
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong {
-    font-size: 11px;
-  }
-  /* #104 extreme-short: keep solo timed-chains capped; battle 2-col grid above intact. */
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) > .timed-chains {
-    flex: 0 1 24%;
-    max-width: 28%;
-    width: auto;
-  }
-  /* #87 extreme-short: keep task/prompt/status (override prior hide); denser 4-row. */
-  .sh-stage {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 28px 14px minmax(0, 1fr) 44px;
-    gap: 2px 6px;
-  }
-  .sh-hud { grid-column: 1; grid-row: 1; padding: 0 4px; min-height: 28px; }
-  .sh-progress { grid-column: 2; grid-row: 1; align-self: center; font-size: 10px; }
-  .sh-task span { display: block; font-size: 8px; line-height: 1.1; }
-  .sh-status {
-    grid-column: 1 / -1; grid-row: 2;
-    display: block !important; min-height: 12px; max-height: 14px; margin: 0;
-    font-size: 9px; line-height: 12px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .sh-arena { grid-column: 1 / -1; grid-row: 3; min-height: 0; height: 100%; }
-  .sh-play-actions { grid-column: 1; grid-row: 4; }
-  .sh-stage > .timed-chains { grid-column: 2; grid-row: 4; align-self: center; }
-  .sh-prompt { font-size: 14px; }
-  .sh-clock { font-size: 11px; }
+
   #modern-app .sh-card[data-feedback='wrong']::after {
     font-size: 10px; padding: 1px 4px;
   }
@@ -530,6 +311,7 @@
   /* #77: shiritori secondary same tighten. */
   .sh-result-secondary .nr-stat > strong { font-size: 10px; }
   .sh-result-secondary { gap: 1px 4px; padding: 1px 0; }
+  .sh-result { padding: 6px; gap: 2px; }
   /* #78: extreme-short history log/list even tighter. */
   .sh-result .sh-log { max-height: min(56px, 14dvh); }
   .sh-result-history[open] { max-height: min(96px, 22dvh); }
@@ -545,17 +327,12 @@
 }
 
 @media (orientation: portrait) and (max-width: 400px) {
-  /* Narrow portrait: reclaim horizontal chrome so 5×8 cells approach ~44px taps.
-     8×44=352 > 320 so absolute 44px is impossible; maximize width instead.
-     Landscape #21/#23 paths are orientation:landscape — untouched here.
-     Host owns device insets (MOBILE-QA); only L/R gutters shrink — keep top/home intact. */
+  /* Host owns device insets; standalone player supplies its own safe gutters. */
   #modern-app { padding-left: 2px; padding-right: 2px; }
   html:not([data-host-insets='true']) #modern-app {
     padding-left: max(2px, env(safe-area-inset-left, 0px));
     padding-right: max(2px, env(safe-area-inset-right, 0px)); }
-  .nr-board { padding: 2px; gap: 2px; }
-  .nr-cell { border-radius: 5px; }
-  .nr-cell-number { letter-spacing: -1.2px; }
+
 }
 @media (orientation: portrait) and (max-width: 360px) {
   /* Extreme-narrow portrait (QA 320×460): squeeze remaining gutters (~+4–5px/cell vs baseline). */
@@ -563,50 +340,10 @@
   html:not([data-host-insets='true']) #modern-app {
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px); }
-  .nr-board { padding: 1px; gap: 1px; }
-  .nr-cell { border-radius: 4px; }
+
 }
 
-@media (orientation: portrait) and (max-width: 700px) and (max-height: 650px) {
-  /* Compact portrait practice stage densify after CPU-row hide — parity
-     short-landscape #101/#104. Vertical stack (not landscape row strip):
-     tighten gap, restore feedback into the freed slot, cap timed-chains so
-     modern-ui width:100% does not re-crowd stats+hint. JS [hidden] owns
-     hide; battle keeps stats|cpu-row|feedback. Landscape #97/#101/#104/#91
-     untouched (orientation:landscape). Leave ≤360 tap densify alone. */
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats {
-    flex: 0 0 auto;
-    gap: 8px;
-    width: 100%;
-  }
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-play-stats .nr-stat > strong {
-    font-size: 12px;
-  }
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) .nr-feedback {
-    display: block;
-    flex: 0 0 auto;
-    max-width: 100%;
-    width: 100%;
-    margin: 0 !important;
-    font-size: 10px;
-    line-height: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .nr-stage-middle:has(> .nr-cpu-row[hidden]) > .timed-chains {
-    flex: 0 0 auto;
-    width: auto;
-    max-width: 70%;
-    justify-content: center;
-  }
-}
+
 
 @media (orientation: portrait) and (max-width: 700px) and (max-height: 600px) {
   .sh-ready .nr-hero-cast { display: none; }
@@ -620,7 +357,7 @@
 .nr-play, .sh-page[data-layout='play'] { overflow: hidden; overflow: clip; overscroll-behavior: none; }
 .sh-page[data-layout='play'] .sh-stage { min-height: 0; }
 .sh-page[data-layout='play'] .sh-board-space { min-height: 0; }
-.sh-board-space .sh-card { min-height: 0; }
+
 @media (max-width: 700px), (max-height: 650px) {
   .nr-ready, .sh-page[data-layout='setup'] { overflow: hidden; overflow: clip; }
   .sh-page[data-layout='setup'] .sh-ready { min-height: 0; }

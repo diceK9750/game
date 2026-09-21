@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <script>
+    window.fixtureErrors=[];
+    window.addEventListener('error',e=>window.fixtureErrors.push({message:e.message,file:e.filename,line:e.lineno,stack:e.error?.stack}));
+  </script>
+  <base href="../">
+  <link rel="stylesheet" href="modern-ui.css">
+  <link rel="stylesheet" href="shiritori-ui.css">
+  <link rel="stylesheet" href="mobile-layout.css?v=shared-arena-114-2">
+  <link rel="stylesheet" href="character-layout.css?v=shared-arena-114-2">
+  <link rel="stylesheet" href="character-layer.css">
+  <script src="chain-ui.js" defer></script>
+  <script src="rival-cursor.js" defer></script>
+  <script src="shiritori-dictionary.js" defer></script>
+  <script src="shiritori-ui.js?v=shared-arena-114-2" defer></script>
+  <script src="modern-ui.js?v=shared-arena-114-2" defer></script>
+  <style>html,body{margin:0;width:100%;height:100%;overflow:hidden}</style>
+</head>
+<body><div id="modern-app" hidden></div></body>
+</html>

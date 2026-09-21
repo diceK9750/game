@@ -226,6 +226,7 @@
   add(ready, intro, setup);
 
   const play = section('playing', 'nr-play');
+  play.dataset.gameLayout = 'true';
   const hud = E('div', 'nr-hud');
   const youScore = E('strong', '', '0'), cpuScore = E('strong', '', '0');
   const youGoal = E('span', 'nr-score-note');
@@ -267,6 +268,7 @@
   });
   add(hud, youHud, targetWrap, cpuHud);
   const boardWrap = E('div', 'nr-board-wrap');
+  boardWrap.dataset.boardSpace = 'true';
   const board = E('div', 'nr-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', '数字パネル 5行8列');
   const cells = Array.from({length: 40}, (_, index) => {
     const cell = E('button', 'nr-cell'); cell.type = 'button'; cell.dataset.index = index;
@@ -285,7 +287,8 @@
   add(boardWrap, board);
   const progressTrack = E('div', 'nr-round-progress'); progressTrack.setAttribute('role', 'progressbar'); progressTrack.setAttribute('aria-label', '見つけた数字');
   const progressFill = E('div'); progressTrack.append(progressFill);
-  const stage = E('footer', 'nr-play-stage');
+  const stage = E('div', 'nr-play-stage');
+  stage.dataset.arena = 'true';
   const playRin = portrait('rin', 'RIN'), playKoh = portrait('koh', 'LUNA');
   const playStats = E('div', 'nr-play-stats');
   const elapsed = E('strong'), completed = E('strong'), mistakes = E('strong'), streak = E('strong');
@@ -300,7 +303,10 @@
   const middle = add(E('div', 'nr-stage-middle'), playStats, add(E('div', 'nr-cpu-row'), cpuClock, cpuTrack), feedback, hint);
   const timedChain = window.createTimedChainView?.({E, add, portraits:[playRin,playKoh]});
   if (timedChain) middle.append(timedChain.root);
-  add(stage, playRin.wrap, middle, playKoh.wrap); add(play, hud, boardWrap, progressTrack, stage);
+  // HUD text and supplemental controls cannot participate in arena sizing.
+  const playHud = add(E('div', 'game-hud'), hud, middle);
+  add(stage, playRin.wrap, boardWrap, playKoh.wrap);
+  add(play, playHud, stage, progressTrack);
 
   const countdown = section('countdown', 'nr-centered');
   const countLabel = E('h1'), countNumber = E('strong', 'nr-count-number');
@@ -698,7 +704,7 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
-  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/ready/home/
+  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/home/
   // countdown/resuming so focus cannot escape to header chrome (♪) or a hidden
   // board behind the overlay.
   function dialogTabStops(root) {
@@ -716,7 +722,6 @@
     if (screen === 'help') return helpScreen;
     if (screen === 'finished') return finished;
     if (screen === 'review') return review;
-    if (screen === 'ready') return setup;
     // Game chooser: trap among .nr-game-choices cards only (#53). Header ♪ /
     // ゲーム選択 stay outside. Entry focus stays first enabled card (#51).
     if (screen === 'home') return homeChoices;
@@ -726,18 +731,7 @@
     return null;
   }
   function dialogTrapStops(screen) {
-    if (screen === 'ready') {
-      // Mode select: cycle kind / range / difficulty / start only. Header chrome
-      // (♪ / 遊び方 / ゲーム選択) and ready settings stay outside the ring so Tab
-      // cannot escape setup. difficultyWrap is hidden in practice — dialogTabStops
-      // already skips [hidden]. Entry focus stays on 「1から順番」 (#50).
-      return [].concat(
-        dialogTabStops(kindGroup),
-        dialogTabStops(ranges),
-        dialogTabStops(difficultyWrap),
-        dialogTabStops(startGroup)
-      );
-    }
+    // Ready is a normal page: native Tab includes header, sound and FX settings.
     if (screen === 'home') {
       // Game chooser: cycle enabled .nr-game-card only. dialogTabStops skips
       // disabled cards (絵しりとり unavailable → 数字さがし alone). Entry (#51).
@@ -768,7 +762,7 @@
         command('back');
       }
     } else if (dialogTrapRoot(state?.screen) && event.key === 'Tab') {
-      // Cycle visible confirm/help/finished/review/ready/home/countdown controls
+      // Cycle visible confirm/help/finished/review/home/countdown controls
       // only (#45/#47/#48/#52/#53/#57). Esc (#16 help→back / confirm), entry (#43 help→戻る), finished
       // replay focus+Enter (#17), ready 「1から順番」 (#50), home first-card (#51),
       // countdown 「モード選択へ」 (#55), and pause→resume cell restore (#42) stay
@@ -784,7 +778,7 @@
       }
     } else if (state?.screen === 'shiritori' && event.key === 'Tab') {
       // Reclaim Tab when focus escaped to header chrome during a sh overlay (#46),
-      // intro setup (#52/#56), or finished result (#48 parity). In-page focus is
+      // or finished result (#48 parity). Setup deliberately uses native Tab. In-page focus is
       // trapped by shiritori's own page keydown handler.
       if (shiritori && !shiritori.page.contains(document.activeElement)) {
         shiritori.trapOverlayTab?.(event);

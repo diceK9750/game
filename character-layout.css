@@ -36,8 +36,8 @@
 }
 
 /* Reuse the full-body pose atlases; retain expressive portrait art elsewhere. */
-.nr-hero-cast .nr-rin .nr-character-art, .sh-arena > .nr-rin .nr-character-art { background-image: url('assets/characters/rin-atlas.png'); }
-.nr-hero-cast .nr-koh .nr-character-art, .sh-arena > .nr-koh .nr-character-art { background-image: url('assets/characters/koh-dark-cutout-atlas.png'); }
+.nr-hero-cast .nr-rin .nr-character-art, [data-arena] > .nr-rin .nr-character-art { background-image: url('assets/characters/rin-atlas.png'); }
+.nr-hero-cast .nr-koh .nr-character-art, [data-arena] > .nr-koh .nr-character-art { background-image: url('assets/characters/koh-dark-cutout-atlas.png'); }
 .nr-ready { height: 100%; min-height: 0; overflow: clip; align-items: stretch; }
 .nr-ready > .nr-intro { position: static; min-height: 0; display: flex; flex-direction: column; padding: 0; }
 .nr-ready .nr-intro-copy, .nr-ready .nr-intro > .nr-eyebrow { display: none; }
@@ -59,46 +59,165 @@
   .nr-ready { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
 }
 
-/* An independently sized arena reserves character lanes before sizing cards. */
-.sh-stage { display: flex; flex-direction: column; min-height: 0; }
-.sh-arena { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: clamp(40px, 15vw, 180px) minmax(0, 1fr) clamp(40px, 15vw, 180px); gap: 4px; align-items: center; }
-.sh-arena > .nr-character { display: block; width: 100%; min-height: 0; align-self: center; }
-.sh-arena > .nr-character .nr-character-name { display: none; }
-.sh-arena .sh-board-space { width: 100%; height: 100%; min-height: 0; justify-content: center; }
-.sh-arena .sh-board-space .sh-board {
-  --cell: min(calc((100cqw - (var(--sh-cols) - 1) * 4px) / var(--sh-cols)), calc((100cqh - (var(--sh-rows) - 1) * 4px) / var(--sh-rows)));
-  width: calc(var(--cell) * var(--sh-cols) + (var(--sh-cols) - 1) * 4px);
-  height: calc(var(--cell) * var(--sh-rows) + (var(--sh-rows) - 1) * 4px);
-  min-height: 0; max-height: 100%;
-}
-.sh-arena .sh-card { aspect-ratio: 1; width: 100%; height: 100%; min-height: 0; }
-/* #85: shiritori solo play after #80 hides LUNA — collapse empty third column on
-   desktop/landscape (parity practice play-stage #83 reclaim). Portrait keeps row
-   collapse below; battle duo 3-col unchanged. JS [hidden] owns hide. */
-.sh-arena:has(> .nr-koh[hidden]) {
-  grid-template-columns: clamp(40px, 15vw, 180px) minmax(0, 1fr);
-}
-@media (orientation: portrait) {
-  .sh-arena { --cast-height: clamp(32px, 11dvh, 100px); grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--cast-height) minmax(0, 1fr) var(--cast-height); gap: 2px; }
-  .sh-arena > .nr-character { width: var(--cast-height); justify-self: center; }
-  .sh-arena:has(> .nr-koh[hidden]) {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: var(--cast-height) minmax(0, 1fr);
-  }
-}
-@media (orientation: portrait) and (max-height: 600px) {
-  .sh-arena { --cast-height: 28px; }
-  .sh-status, .sh-task > span { display: none; }
-}
 @media (min-width: 701px) and (max-height: 850px) {
   .sh-ready-settings { padding: 12px; gap: 6px; }
   .sh-ready-settings .sh-setting-note, .sh-ready-settings .nr-setup-heading { display: none; }
   .sh-ready-settings .sh-config, .sh-ready-settings .sh-level-settings { gap: 5px; }
 }
+/* Shared composition contract (all game modes, including desktop).
+   This layer owns live geometry; mobile-layout owns menus/dialogs/chrome.
+   Fixed HUD budget + minmax arena prevent content-driven board resizing.
+   Exceptionally long information can scroll INSIDE the HUD, never the board. */
+#modern-app [data-game-layout] {
+  --hud-block: clamp(90px, 16dvh, 120px);
+  display: grid; grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--hud-block) minmax(0, 1fr);
+  height: 100%; max-height: none; min-height: 0; min-width: 0;
+  gap: 6px; padding: 4px 0; position: relative;
+}
+#modern-app .game-hud {
+  grid-column: 1; grid-row: 1;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px; min-width: 0; min-height: 0; contain: size;
+  overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
+}
+#modern-app .game-hud > * { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+#modern-app .game-hud .nr-hud {
+  grid-area: auto; align-self: stretch; min-height: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1fr); gap: 4px;
+}
+#modern-app .game-hud .nr-hud:has(> .nr-cpu[hidden]) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#modern-app .game-hud .nr-score-card, #modern-app .game-hud .nr-target {
+  min-width: 0; padding: 5px; display: flex; flex-direction: column;
+  align-items: center; justify-content: safe center; gap: 2px;
+}
+#modern-app .game-hud :is(.nr-score-card, .nr-target) > * { flex-shrink: 0; }
+#modern-app .game-hud .nr-score-note { display: none; }
+#modern-app .game-hud .nr-overline { font-size: 11px; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere; }
+#modern-app .game-hud .nr-score-card > strong { font-size: clamp(20px, 3dvh, 32px); line-height: 1; }
+#modern-app .game-hud .nr-target-number { font-size: clamp(24px, 4dvh, 38px); line-height: 1; }
+#modern-app .game-hud .nr-stage-middle {
+  position: static; display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto; align-content: start;
+  gap: 2px 6px; padding: 0; margin: 0; height: auto; width: auto; max-width: none;
+}
+#modern-app .game-hud .nr-play-stats { grid-column: 1; grid-row: 1; display: flex; flex-wrap: wrap; gap: 2px 8px; justify-content: space-between; }
+#modern-app .game-hud .nr-stat > strong { font-size: 12px; }
+#modern-app .game-hud .nr-stat > span { font-size: 11px; }
+#modern-app .game-hud .nr-cpu-row { grid-column: 1; grid-row: 2; margin: 0; }
+#modern-app .game-hud .nr-cpu-clock { font-size: 11px; line-height: 1.2; }
+#modern-app .game-hud .nr-feedback {
+  grid-column: 1 / -1; grid-row: 4; display: block; white-space: normal;
+  overflow: visible; text-overflow: clip; font-size: 12px; line-height: 1.35;
+}
+#modern-app .game-hud .nr-hint { grid-column: 2; grid-row: 1 / 3; position: static; min-height: 44px; min-width: 44px; margin: 0; padding: 5px; }
+#modern-app .game-hud .timed-chains { grid-column: 1 / -1; grid-row: 3; width: 100%; max-width: none; margin: 0; gap: 4px; }
+#modern-app .game-hud .timed-chain { min-width: 0; line-height: 1.2; }
+#modern-app .game-information { display: flex; flex-direction: column; gap: 2px; overflow: auto; overscroll-behavior: contain; }
+#modern-app .game-hud .sh-hud { grid-area: auto; padding: 0; min-height: 0; flex-shrink: 0; }
+#modern-app .game-hud .sh-task { min-width: 0; padding: 2px 4px; }
+#modern-app .game-hud .sh-task span { display: block; font-size: 11px; }
+#modern-app .game-hud .sh-prompt { font-size: clamp(15px, 2.5vw, 22px); overflow-wrap: anywhere; }
+#modern-app .game-hud .sh-clock { min-width: 0; font-size: 12px; flex-shrink: 0; }
+#modern-app .game-hud .sh-progress { grid-area: auto; font-size: 12px; margin: 0; }
+#modern-app .game-hud .sh-status { grid-area: auto; display: block; white-space: normal; overflow: visible; text-overflow: clip; font-size: 12px; line-height: 1.35; min-height: 0; margin: 0; }
+#modern-app .game-auxiliary { display: flex; flex-direction: column; gap: 4px; }
+#modern-app .game-hud .sh-play-actions { grid-area: auto; margin: 0; gap: 4px; }
+#modern-app .game-hud .sh-play-actions button { min-height: 44px; min-width: 44px; }
+/* Both renderers expose the same three slots. Hidden rival leaves a balanced
+   empty lane; it never moves the player to the rival's side in practice. */
+#modern-app [data-arena] {
+  --cast-lane: clamp(40px, 12vw, 180px);
+  grid-column: 1; grid-row: 2; display: grid;
+  grid-template-columns: var(--cast-lane) minmax(0, 1fr) var(--cast-lane);
+  grid-template-rows: minmax(0, 1fr); align-items: center;
+  gap: 4px; width: 100%; height: 100%; min-width: 0; min-height: 0;
+  margin: 0; padding: 0; position: relative;
+}
+#modern-app [data-arena] > .nr-character {
+  display: block; position: relative; inset: auto; grid-row: 1;
+  width: 100%; max-height: 100%; min-height: 0; margin: 0;
+  align-self: center; justify-self: center; z-index: auto;
+}
+#modern-app [data-arena] > .nr-rin { grid-column: 1; }
+#modern-app [data-arena] > .nr-koh { grid-column: 3; }
+#modern-app [data-arena] .nr-character-name { display: none; }
+#modern-app [data-arena] .nr-character-art { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+#modern-app [data-board-space] {
+  --board-cols: 8; --board-rows: 5; --board-gap: 4px;
+  grid-column: 2; grid-row: 1; display: grid; place-items: center;
+  container-type: size; container-name: board-space; width: 100%; height: 100%; min-width: 0; min-height: 0;
+  padding: 4px; margin: 0;
+}
+#modern-app .sh-board-space[data-board-space] { --board-cols: 4; --board-rows: 3; }
+#modern-app .sh-board-space[data-count='24'][data-board-space] { --board-cols: 8; --board-rows: 3; }
+#modern-app [data-board-space] > :is(.nr-board, .sh-board) {
+  --cell: min(calc((100cqw - (var(--board-cols) - 1) * var(--board-gap)) / var(--board-cols)), calc((100cqh - (var(--board-rows) - 1) * var(--board-gap)) / var(--board-rows)));
+  display: grid; flex: none; padding: 0; border: 0;
+  width: calc(var(--cell) * var(--board-cols) + (var(--board-cols) - 1) * var(--board-gap));
+  height: calc(var(--cell) * var(--board-rows) + (var(--board-rows) - 1) * var(--board-gap));
+  min-height: 0; max-height: none; gap: var(--board-gap);
+  grid-template-columns: repeat(var(--board-cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--board-rows), minmax(0, 1fr));
+}
+#modern-app [data-board-space] :is(.nr-cell, .sh-card) {
+  width: 100%; height: auto; min-width: 0; min-height: 0; max-height: none;
+  aspect-ratio: 1 / 1; padding: 0; align-self: center; container-type: size;
+}
+#modern-app [data-board-space] .nr-cell-number { font-size: clamp(12px, 60cqw, 48px); letter-spacing: 0; }
+#modern-app [data-board-space] .sh-icon { font-size: min(88cqw, 88cqh); }
+#modern-app [data-game-layout] > .nr-round-progress { position: absolute; bottom: 0; inset-inline: 0; height: 2px; }
+/* When vertical space cannot accommodate header + HUD + five useful card
+   rows, dock the SAME HUD beside the arena instead of reducing tap targets.
+   This is a shared height-driven composition, not a game/phone exception. */
 @media (orientation: landscape) and (max-height: 360px) {
-  /* #87: 4-row stage (HUD | status | arena | actions); mobile-layout densifies ≤500. */
-  .sh-stage { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 28px 14px minmax(0, 1fr) 44px; }
-  .sh-arena { grid-column: 1 / -1; grid-row: 3; height: 100%; }
-  .sh-arena .sh-board-space { grid-column: auto; grid-row: auto; }
-  .sh-arena > .nr-character { width: min(100%, calc(100dvh - 142px)); justify-self: center; }
+  #modern-app [data-game-layout] {
+    grid-template-columns: minmax(204px, .85fr) minmax(0, 1.65fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  #modern-app .game-hud {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 64px minmax(0, 1fr); gap: 4px;
+  }
+  #modern-app .game-hud .nr-play-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 4px; }
+  #modern-app .game-hud .nr-play-stats .nr-stat { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
+  #modern-app .game-hud .nr-hint { width: 64px; white-space: normal; align-self: start; }
+  #modern-app [data-arena] { grid-column: 2; grid-row: 1; --cast-lane: clamp(36px, 8vw, 80px); }
+}
+@media (orientation: portrait) {
+  #modern-app [data-game-layout] { --hud-block: clamp(204px, 26dvh, 240px); }
+  #modern-app .game-hud { grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  #modern-app [data-arena] {
+    --cast-lane: clamp(40px, 9dvh, 100px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--cast-lane) minmax(0, 1fr) var(--cast-lane);
+  }
+  #modern-app [data-arena] > .nr-character { width: var(--cast-lane); grid-column: 1; }
+  #modern-app [data-arena] > .nr-koh { grid-row: 1; }
+  #modern-app [data-arena] > .nr-rin { grid-row: 3; }
+  #modern-app [data-board-space] { grid-column: 1; grid-row: 2; }
+  /* The same opponent-above/player-below convention also applies to casts on
+     setup/result screens. These screens keep their existing state controls. */
+  #modern-app .nr-ready .nr-hero-cast { flex-direction: column-reverse; gap: 0; }
+  #modern-app .nr-ready .nr-hero-cast .nr-character { width: min(40cqw, calc((100cqh - 26px) / 2), 180px); }
+  #modern-app .nr-ready .nr-hero-cast .nr-character-name { display: none; }
+  #modern-app .nr-ready .nr-hero-cast .nr-versus { font-size: 14px; }
+  #modern-app :is(.nr-result-duo, .sh-result-cast) { flex-direction: column-reverse; gap: 2px; }
+  #modern-app :is(.nr-result-duo, .sh-result-cast) .nr-character { width: clamp(28px, 5dvh, 60px); }
+  #modern-app .sh-result-cast .nr-character-art { width: 100%; height: auto; }
+}
+/* Picture-grid shape follows its own available rectangle, not phone model or
+   viewport width. At aspect ratios 1 and 2 the competing square sizes cross.
+   Number search deliberately keeps its original 8 columns x 5 rows. */
+@container board-space (max-aspect-ratio: 1 / 1) {
+  #modern-app [data-board-space] > .sh-board { --board-cols: 3; --board-rows: 4; }
+  #modern-app [data-count='24'][data-board-space] > .sh-board { --board-cols: 4; --board-rows: 6; }
+}
+@container board-space (min-aspect-ratio: 1 / 1) and (max-aspect-ratio: 2 / 1) {
+  #modern-app [data-board-space] > .sh-board { --board-cols: 4; --board-rows: 3; }
+  #modern-app [data-count='24'][data-board-space] > .sh-board { --board-cols: 6; --board-rows: 4; }
+}
+@container board-space (min-aspect-ratio: 2 / 1) {
+  #modern-app [data-board-space] > .sh-board { --board-cols: 6; --board-rows: 2; }
+  #modern-app [data-count='24'][data-board-space] > .sh-board { --board-cols: 8; --board-rows: 3; }
 }
