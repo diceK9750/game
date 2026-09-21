@@ -850,6 +850,60 @@ test('confirm Tab cycles dialog controls and does not escape to chrome', () => {
   assert.equal(b.document.activeElement, cell, 'playing leaves Tab alone (no preventDefault cycle)');
 });
 
+test('help Tab cycles help controls and does not escape to chrome', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (screen, text) => walk(screen).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+  const headerSound = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
+
+  // ready → help: entry 戻る (#43); single-stop Tab stays on 戻る (no escape to ♪).
+  b.render('ready', {cells: []});
+  const helpBtn = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === '遊び方');
+  helpBtn.focus();
+  b.render('help', {cells: []});
+  const helpScreen = screenOf('help');
+  const helpBack = btnIn(helpScreen, '戻る');
+  assert.equal(b.document.activeElement, helpBack, 'help entry still focuses 戻る (#43)');
+  assert.ok(String(helpBack.className).includes('nr-primary'));
+
+  const helpStops = [];
+  (function visit(node) {
+    if (!node || node.hidden) return;
+    if (node.tagName === 'BUTTON' && !node.disabled) helpStops.push(node);
+    for (const child of node.children || []) visit(child);
+  })(helpScreen);
+  assert.equal(helpStops.length, 1, 'help exposes a single tab stop (戻る)');
+  assert.equal(helpStops[0], helpBack);
+  assert.ok(!helpStops.includes(headerSound), 'header BGM is outside the trap');
+
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, helpBack, 'help Tab stays on 戻る');
+  assert.notEqual(b.document.activeElement, headerSound, 'Tab must not escape to ♪ chrome');
+
+  helpBack.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, helpBack, 'Shift+Tab also stays on 戻る');
+
+  // Focus already on chrome: Tab pulls back into help instead of leaving.
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, helpBack, 'Tab from chrome re-enters help');
+
+  // Esc on help stays inert (#16 family); entry focus path unchanged.
+  const beforeEsc = b.queue().length;
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().length, beforeEsc, 'Esc stays inert on help');
+  assert.equal(b.document.activeElement, helpBack, 'Esc does not move help focus');
+
+  // Confirm trap still works after help (#45 regression guard).
+  b.render('playing', {cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const resume = btnIn(screenOf('confirm'), 'プレイを続ける');
+  assert.equal(b.document.activeElement, resume, 'pause entry still focuses resume');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.notEqual(b.document.activeElement, headerSound, 'confirm Tab still trapped after help');
+});
+
 test('shiritori overlay Tab reclaim wiring keeps chrome parity with confirm trap', () => {
   const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
   const sh = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
