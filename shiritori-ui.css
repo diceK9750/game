@@ -56,6 +56,32 @@
   border-radius: 3px; font-size: 9px; line-height: 1.2; font-weight: 900;
   color: white; background: #a81f2e; pointer-events: none;
 }
+/* NEW refill badge: gold chip + soft outline so mobile stock swaps read as fresh
+   (tiny 9px dark chip blended into the art on 4×6 / short-landscape boards). */
+#modern-app .sh-card[data-refilled='true'] {
+  outline: 3px solid #f0c45a; outline-offset: -3px;
+  box-shadow: inset 0 0 0 2px #ffe08a88, 0 0 10px #f0c45a66; z-index: 1;
+  animation: sh-refill-glow 900ms ease-out 1;
+}
+#modern-app .sh-card[data-refilled='true'] small {
+  bottom: 2px; right: 2px; padding: 2px 5px; border-radius: 5px;
+  font-size: 10px; line-height: 1.2; font-weight: 900; letter-spacing: .02em;
+  color: #fff6c8; background: #8a5a08; border: 1px solid #ffd15a;
+}
+@keyframes sh-refill-glow {
+  0% { box-shadow: inset 0 0 0 2px #ffe08a, 0 0 16px #ffd15acc; }
+  100% { box-shadow: inset 0 0 0 2px #ffe08a88, 0 0 10px #f0c45a66; }
+}
+#modern-app[data-reduced='true'] .sh-card[data-refilled='true'] { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  #modern-app .sh-card[data-refilled='true'] { animation: none; }
+}
+/* Mobile / short boards: bump NEW chip so it survives tiny panel cq. */
+@media (max-width: 600px), (max-height: 500px) {
+  #modern-app .sh-card[data-refilled='true'] small {
+    font-size: 11px; padding: 2px 6px;
+  }
+}
 .sh-daruma { width: 1em; height: 1.2em; background: url('assets/shiritori/daruma.svg') center / contain no-repeat; }
 .sh-levels button[aria-pressed='true'] { background: #395d62; border-color: var(--nr-gold); }
 .sh-overlay { position: fixed; inset: 0; z-index: 60; background: #06121ecb; display: flex; align-items: center; justify-content: center; padding: 12px; }

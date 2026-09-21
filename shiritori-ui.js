@@ -339,16 +339,19 @@
           icon.className = `sh-icon${data.id === 'daruma' ? ' sh-daruma' : ''}`;
           card.dataset.dealt = replaced ? String(Number(item.dealFlip)) : '';
         }
-        mark.textContent = data.owner === 'you' ? 'YOU ✓' : data.owner === 'cpu' ? 'CPU ✓' : s.refilled === i ? 'NEW' : '';
+        // NEW refill chip: distinct from owner marks so mobile stock swaps stay readable.
+        const refilled = live && !data.owner && s.refilled === i;
+        mark.textContent = data.owner === 'you' ? 'YOU ✓' : data.owner === 'cpu' ? 'CPU ✓' : refilled ? 'NEW' : '';
         card.disabled = !mine || !!data.owner || s.phase !== 'playing';
         const hinted = live && s.hint === i && !data.owner;
         // Durable miss outline (#18 parity): status truncates on short landscape.
         const missed = live && s.miss_card === i && !data.owner;
         card.dataset.owner = data.owner || ''; card.dataset.hint = String(hinted);
         card.dataset.feedback = missed ? 'wrong' : '';
+        card.dataset.refilled = String(refilled);
         item.hintLabel.hidden = !hinted;
         card.dataset.cpuSelecting = String(i===cpuCursor);
-        card.setAttribute('aria-label', `${hinted ? 'ヒント：' : missed ? 'ミス：' : ''}絵札${i + 1} ${data.words[0]}${data.owner ? ' 使用済み' : ' タップで自動回答'}`);
+        card.setAttribute('aria-label', `${hinted ? 'ヒント：' : missed ? 'ミス：' : refilled ? 'NEW補充：' : ''}絵札${i + 1} ${data.words[0]}${data.owner ? ' 使用済み' : ' タップで自動回答'}`);
       });
       resultTitle.textContent = solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : s.winner === 'you' ? 'あなたの勝利！' : s.winner === 'draw' ? 'ふたりでつなぎきった！' : 'ルナの勝利！';
       reason.textContent = s.message;

@@ -246,7 +246,15 @@ test('solo setup offers deck counts, hides CPU, and permits immediate replacemen
   assert.equal(view.page.querySelectorAll('.sh-card')[0], card);
   assert.equal(card.disabled, false);
   assert.equal(card.children[1].textContent, 'NEW');
+  assert.equal(card.dataset.refilled, 'true');
+  assert.match(card['aria-label'] || '', /NEW補充/);
+  assert.equal(view.page.querySelectorAll('.sh-card')[1].dataset.refilled, 'false');
   assert.equal(view.page.querySelector('.sh-stock').textContent, '山札 23枚');
+  // Cleared after next take / when refilled index moves away.
+  solo.refilled = null;
+  view.update(solo);
+  assert.equal(card.dataset.refilled, 'false');
+  assert.equal(card.children[1].textContent, '');
 });
 
 test('blocked solo exposes rescue without any reading choices', () => {
@@ -981,7 +989,26 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid #d0181c/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-miss-outline-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-outline-1/);
-  assert.match(player, /modern-ui\.css\?v=sh-miss-outline-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-refill-new-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-refill-new-1/);
+  assert.match(player, /modern-ui\.css\?v=sh-refill-new-1/);
 });
+
+test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
+  const sh = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  const modern = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(sh, /#modern-app \.sh-card\[data-refilled='true'\]/);
+  assert.match(sh, /#modern-app \.sh-card\[data-refilled='true'\] small/);
+  assert.match(sh, /@keyframes sh-refill-glow/);
+  assert.match(sh, /prefers-reduced-motion: reduce[\s\S]*?data-refilled='true'[\s\S]*?animation: none/);
+  assert.match(sh, /max-width: 600px[\s\S]*?data-refilled='true'\] small[\s\S]*?font-size: 11px/);
+  const contrastIdx = modern.indexOf('@media (prefers-contrast: more)');
+  assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid #a07000/);
+  const forcedIdx = modern.indexOf('@media (forced-colors: active)');
+  assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-refill-new-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-refill-new-1/);
+  assert.match(player, /modern-ui\.css\?v=sh-refill-new-1/);
+});
+

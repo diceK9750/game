@@ -386,7 +386,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-award { animation: nr-award-in 750ms ease-out both; }
 @keyframes nr-award-in { 0% { transform: translateY(12px) scale(.92); opacity: 0; }
   65% { transform: translateY(-2px) scale(1.02); opacity: 1; } 100% { transform: none; opacity: 1; } }
-/* High-contrast / forced-colors: keep miss/CPU/correct/hint/cpu-selecting outlines
+/* High-contrast / forced-colors: keep miss/CPU/correct/hint/refill/cpu-selecting outlines
    and static ring/spark/CPU/miss FX cues (#36/#37) readable when soft pastels and
    glow shadows are remapped or dropped. System colors match #29 outline semantics.
    Order: reduced-motion (pastel outlines nested under forced-colors: none AND
@@ -477,6 +477,13 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     outline: 4px solid #a07000; outline-offset: -3px;
     box-shadow: inset 0 0 0 3px #8a6000; animation: none;
   }
+  #modern-app .sh-card[data-refilled='true'] {
+    outline: 4px solid #a07000; outline-offset: -3px;
+    box-shadow: inset 0 0 0 2px #8a6000; animation: none;
+  }
+  #modern-app .sh-card[data-refilled='true'] small {
+    color: #fff; background: #8a6000; border-color: #a07000;
+  }
   #modern-app .nr-cell[data-cpu-selecting='true'],
   #modern-app .sh-card[data-cpu-selecting='true'] {
     outline: 4px solid #b01878; outline-offset: -1px;
@@ -526,6 +533,12 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   }
   #modern-app .sh-card[data-hint='true'] {
     outline: 4px solid Highlight; outline-offset: -3px; box-shadow: none; animation: none;
+  }
+  #modern-app .sh-card[data-refilled='true'] {
+    outline: 4px solid Highlight; outline-offset: -3px; box-shadow: none; animation: none;
+  }
+  #modern-app .sh-card[data-refilled='true'] small {
+    color: Canvas; background: Highlight; border-color: Highlight; forced-color-adjust: none;
   }
   #modern-app .nr-cell[data-cpu-selecting='true'],
   #modern-app .sh-card[data-cpu-selecting='true'] {
