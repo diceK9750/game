@@ -1346,11 +1346,13 @@ test('help Tab cycles help controls and does not escape to chrome', () => {
   b.app.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.equal(b.document.activeElement, helpBack, 'Tab from chrome re-enters help');
 
-  // Esc on help stays inert (#16 family); entry focus path unchanged.
+  // Esc on help dismisses via 「戻る」/back (parity shiritori help Esc / #16).
+  // Tab trap (#47) and entry focus (#43) stay intact above.
   const beforeEsc = b.queue().length;
   b.app.emit('keydown', {key: 'Escape'});
-  assert.equal(b.queue().length, beforeEsc, 'Esc stays inert on help');
-  assert.equal(b.document.activeElement, helpBack, 'Esc does not move help focus');
+  assert.equal(b.queue().length, beforeEsc + 1, 'Esc on help queues back');
+  assert.equal(b.queue().at(-1).action, 'back', 'Esc dismisses help like 戻る');
+  assert.equal(b.document.activeElement, helpBack, 'Esc does not steal help entry focus');
 
   // Confirm trap still works after help (#45 regression guard).
   b.render('playing', {cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
@@ -1497,8 +1499,15 @@ test('Escape toggles pause confirm and dismisses retry/title without quitting', 
   b.app.emit('keydown', {key: 'Escape'});
   assert.equal(b.queue().at(-1).action, 'no', 'title confirm Esc cancels instead of accepting');
 
+  // Help Esc dismisses via back (parity shiritori help / confirm Esc family).
+  b.render('help', {cells: []});
+  const beforeHelp = b.queue().length;
+  b.app.emit('keydown', {key: 'Escape'});
+  assert.equal(b.queue().length, beforeHelp + 1, 'Esc on help queues one command');
+  assert.equal(b.queue().at(-1).action, 'back', 'help Esc uses back like 戻る');
+
   const beforeSafe = b.queue().length;
-  for (const screen of ['home', 'ready', 'help', 'finished', 'review', 'countdown', 'resuming']) {
+  for (const screen of ['home', 'ready', 'finished', 'review', 'countdown', 'resuming']) {
     b.render(screen, screen === 'finished' || screen === 'review' ? {} : {cells: []});
     b.app.emit('keydown', {key: 'Escape'});
     assert.equal(b.queue().length, beforeSafe, `Esc stays inert on ${screen}`);

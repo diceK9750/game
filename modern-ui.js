@@ -599,15 +599,19 @@
   }
   app.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
-      // Toggle pause while playing; dismiss confirm without accepting quit/retry.
+      // Toggle pause while playing; dismiss confirm without accepting quit/retry;
+      // dismiss help via the same 「戻る」 path (parity shiritori help Esc / #16).
       if (state?.screen === 'playing') { event.preventDefault(); command('pause'); }
       else if (state?.screen === 'confirm') {
         event.preventDefault();
         command(state?.confirm_action === 'pause' ? 'yes' : 'no');
+      } else if (state?.screen === 'help') {
+        event.preventDefault();
+        command('back');
       }
     } else if (dialogTrapRoot(state?.screen) && event.key === 'Tab') {
       // Cycle visible confirm/help/finished/review/ready/home/countdown controls
-      // only (#45/#47/#48/#52/#53/#57). Esc (#16), entry (#43 help→戻る), finished
+      // only (#45/#47/#48/#52/#53/#57). Esc (#16 help→back / confirm), entry (#43 help→戻る), finished
       // replay focus+Enter (#17), ready 「1から順番」 (#50), home first-card (#51),
       // countdown 「モード選択へ」 (#55), and pause→resume cell restore (#42) stay
       // intact. Resuming reclaims the heading when cancel is hidden.
