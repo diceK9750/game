@@ -15,6 +15,7 @@ function harness() {
     setAttribute(key, val) { this[key] = val; }
     addEventListener(key, fn) { this.events[key] = fn; }
     emit(key, event = {}) { (this.events[key] || (() => {}))({preventDefault() {}, stopPropagation() {}, ...event}); }
+    click() { this.emit('click'); }
     focus() { doc.activeElement = this; }
     contains(el) { return this === el || this.children.some(child => child.contains(el)); }
     closest() { for (let node = this; node; node = node.parentElement) if (node.hidden) return node; return null; }
@@ -456,4 +457,110 @@ test('shiritori overlay entry focuses primary dialog control (parity with number
   view.headerAction('help');
   const helpBack = view.page.querySelectorAll('button').find(b => b.textContent === '戻る' && String(b.className).includes('nr-primary'));
   assert.equal(doc.activeElement, helpBack, 'help entry focuses 戻る');
+});
+
+
+test('shiritori overlay Tab cycles dialog controls and does not escape (parity #45)', () => {
+  const {view, state, queue, doc} = harness();
+  const cards12 = Array.from({length: 12}, (_, i) => ({
+    id: 'apple', icon: '🍎', words: ['りんご'], owner: null
+  }));
+  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
+  const stopsOf = (root) => {
+    const stops = [];
+    (function visit(node) {
+      if (!node || node.hidden) return;
+      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+      for (const child of node.children || []) visit(child);
+    })(root);
+    return stops;
+  };
+
+  // Pause: entry resume (#44); Tab cycles pause controls only; Shift+Tab wraps.
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const cards = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden);
+  cards[0].focus();
+  view.update({...state, total: 12, cards: [], phase: 'paused'});
+  const pause = view.page.querySelectorAll('.nr-dialog').find(n =>
+    n.querySelectorAll('h1').some(h => h.textContent === 'ひと休みしよう'));
+  assert.equal(pause.hidden, false);
+  const resume = btn(pause, 'プレイを続ける');
+  assert.equal(doc.activeElement, resume, 'pause entry still focuses resume (#44)');
+  const pauseStops = stopsOf(pause);
+  assert.ok(pauseStops.length >= 3, 'pause exposes multiple tab stops');
+  assert.equal(pauseStops[0], resume);
+  assert.ok(!pauseStops.includes(cards[0]), 'playable cards stay outside the trap');
+  for (let i = 0; i < pauseStops.length; i++) {
+    const expected = pauseStops[(i + 1) % pauseStops.length];
+    view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(doc.activeElement, expected, `pause Tab step ${i + 1} stays in dialog`);
+  }
+  resume.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(doc.activeElement, pauseStops[pauseStops.length - 1], 'Shift+Tab wraps inside pause');
+
+  // Esc on pause still requests pause→resume path via playing Esc (#16 family).
+  // (While already paused, Esc is inert in shiritori page; cancel is for restart confirm.)
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const beforeEsc = queue.length;
+  view.page.emit('keydown', {key: 'Escape'});
+  assert.equal(queue.at(-1).action, 'sh_pause');
+  assert.equal(queue.length, beforeEsc + 1);
+
+  // Restart confirm: affirmative primary entry; Tab cycles yes/cancel only.
+  view.headerAction('retry');
+  view.update({...state, total: 12, cards: [], phase: 'paused'});
+  const confirm = view.page.querySelectorAll('.nr-dialog').find(n =>
+    n.querySelectorAll('h1').some(h => h.textContent === 'やり直しますか？'));
+  assert.equal(confirm.hidden, false);
+  const yes = btn(confirm, 'やり直す');
+  assert.equal(doc.activeElement, yes, 'restart entry still focuses affirmative (#44)');
+  const confirmStops = stopsOf(confirm);
+  assert.deepEqual(confirmStops.map(b => b.textContent), ['やり直す', 'キャンセル']);
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, confirmStops[1], 'restart Tab moves to キャンセル');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, confirmStops[0], 'restart Tab wraps to やり直す');
+  // Esc cancels restart confirm without accepting.
+  const beforeCancel = queue.length;
+  view.page.emit('keydown', {key: 'Escape'});
+  assert.equal(queue.at(-1).action, 'sh_resume', 'Esc on restart confirm still cancels');
+  assert.equal(queue.length, beforeCancel + 1);
+
+  // Dictionary: entry back (#44); Tab cycles dict chrome (quiz hidden → no choices).
+  view.update({...state, phase: 'intro', cards: []});
+  view.page.querySelectorAll('.sh-dict-open')[0].events.click();
+  const dict = view.page.querySelector('.sh-dictionary');
+  assert.equal(dict.hidden, false);
+  const dictBack = btn(dict, '← 絵しりとりに戻る');
+  assert.equal(doc.activeElement, dictBack, 'dict entry still focuses back (#44)');
+  const dictStops = stopsOf(dict);
+  assert.ok(dictStops.includes(dictBack));
+  assert.ok(dictStops.length >= 2, 'dict exposes back + actions');
+  for (let i = 0; i < dictStops.length; i++) {
+    view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(doc.activeElement, dictStops[(i + 1) % dictStops.length], `dict Tab step ${i + 1}`);
+  }
+  dictBack.events.click();
+
+  // Help: entry 戻る; single-stop Tab stays on 戻る (no escape to intro setup).
+  view.headerAction('help');
+  const helpPage = view.page.querySelector('.nr-help-card');
+  assert.equal(helpPage.hidden, false);
+  const helpBack = btn(helpPage, '戻る');
+  assert.equal(doc.activeElement, helpBack, 'help entry still focuses 戻る (#44)');
+  const helpStops = stopsOf(helpPage);
+  assert.equal(helpStops.length, 1);
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, helpBack, 'help Tab stays on 戻る');
+  const startBtn = btn(view.page, 'はじめる');
+  assert.notEqual(doc.activeElement, startBtn, 'help Tab must not escape to setup');
+
+  // Playing: Tab is not trapped (cards keep native order / no cycle).
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const first = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden)[0];
+  first.focus();
+  assert.equal(doc.activeElement, first, 'play start still focuses first playable (#35)');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no preventDefault cycle)');
 });

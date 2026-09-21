@@ -542,6 +542,12 @@
         else idx = (idx < 0 || idx === stops.length - 1) ? 0 : idx + 1;
         stops[idx].focus({preventScroll: true});
       }
+    } else if (state?.screen === 'shiritori' && event.key === 'Tab') {
+      // Reclaim Tab when focus escaped to header chrome while a sh overlay is open
+      // (#46). In-page focus is trapped by shiritori's own page keydown handler.
+      if (shiritori && !shiritori.page.contains(document.activeElement)) {
+        shiritori.trapOverlayTab?.(event);
+      }
     } else if (state?.screen === 'playing') {
       if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
         event.preventDefault();
