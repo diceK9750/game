@@ -76,8 +76,8 @@ test('view preserves no-cooldown input, local assets, safe text and reduced moti
 test('prefers-reduced-motion keeps static cpu-claim and award without waiting for data-reduced', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
   // OS preference alone (before JS data-reduced) must freeze animated feedback into readable static states.
-  assert.match(css, /#modern-app \.nr-cpu-claim,\s*#modern-app \.nr-award \{ opacity: 1; animation: none !important; \}/);
-  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cpu-claim,\s*#modern-app\[data-reduced='true'\] \.nr-award \{ opacity: 1; animation: none !important; \}/);
+  assert.match(css, /#modern-app \.nr-cpu-claim,\s*#modern-app \.nr-ok-badge,\s*#modern-app \.nr-award \{ opacity: 1; animation: none !important; \}/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cpu-claim,\s*#modern-app\[data-reduced='true'\] \.nr-ok-badge,\s*#modern-app\[data-reduced='true'\] \.nr-award \{ opacity: 1; animation: none !important; \}/);
   // Final media block (not earlier fairy/character rules) carries cell outline + fx parity.
   const idx = css.lastIndexOf('@media (prefers-reduced-motion: reduce)');
   assert.ok(idx > 0, 'feedback reduced-motion media query present');
@@ -89,7 +89,7 @@ test('prefers-reduced-motion keeps static cpu-claim and award without waiting fo
   // Static ring/spark/miss-badge stand-ins (not blank .nr-fx); miss bomb/burst stay hidden.
   assert.match(media, /\.nr-fx \{ opacity: 1; animation: none !important; \}/);
   assert.match(media, /\.nr-bomb,[\s\S]*?\.nr-burst \{ opacity: 0; \}/);
-  assert.match(media, /\.nr-ring,[\s\S]*?\.nr-spark,[\s\S]*?\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
+  assert.match(media, /\.nr-ring,[\s\S]*?\.nr-spark,[\s\S]*?\.nr-miss-badge,[\s\S]*?\.nr-ok-badge \{[\s\S]*?opacity: 1; transform: none/);
 });
 
 test('data-reduced keeps static ring/spark/CPU/miss badge stand-ins instead of blanking .nr-fx', () => {
@@ -98,7 +98,7 @@ test('data-reduced keeps static ring/spark/CPU/miss badge stand-ins instead of b
   assert.doesNotMatch(css, /#modern-app\[data-reduced='true'\] \.nr-fx \{ opacity: 0/);
   assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-fx \{ opacity: 1; animation: none !important; \}/);
   assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-bomb,[\s\S]*?\.nr-burst \{ opacity: 0; \}/);
-  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-spark,[\s\S]*?\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-spark,[\s\S]*?\.nr-miss-badge,[\s\S]*?\.nr-ok-badge \{[\s\S]*?opacity: 1; transform: none/);
   // Outlines (#28/#29) remain; FX layer never intercepts taps.
   assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cell\[data-feedback='correct'\]/);
   assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cell\[data-feedback='wrong'\]/);
@@ -134,6 +134,40 @@ test('wrong FX mounts miss badge; reduced CSS shows it while bomb/burst stay hid
   assert.equal(badge && badge.textContent, 'ミス');
   assert.ok(walk(fx).some(n => n.className === 'nr-bomb'));
   assert.ok(walk(fx).some(n => n.className === 'nr-burst'));
+});
+
+test('correct FX mounts OK badge; reduced CSS keeps it static like CPU claim (#106)', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  // Always mounted with ring/spark for parity with miss/CPU badge mount pattern.
+  assert.match(js, /nr-ring.*nr-spark.*nr-ok-badge/);
+  assert.match(js, /'nr-ok-badge', 'OK'/);
+  assert.match(css, /\.nr-ok-badge \{[^}]*animation: nr-ok-badge/);
+  assert.match(css, /\.nr-ok-badge \{[^}]*pointer-events: none/);
+  // OS + data-reduced freeze animated OK badge into a static readable cue.
+  assert.match(css, /#modern-app \.nr-ok-badge/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ok-badge/);
+  const idx = css.lastIndexOf('@media (prefers-reduced-motion: reduce)');
+  assert.ok(idx > 0);
+  assert.match(css.slice(idx), /\.nr-ok-badge/);
+  // Contrast + forced-colors keep OK badge readable (mint / Highlight).
+  const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
+  const forcedIdx = css.indexOf('@media (forced-colors: active)');
+  assert.match(css.slice(contrastIdx, forcedIdx), /\.nr-ok-badge \{[\s\S]*?background: #0a6a40;[\s\S]*?box-shadow: none/);
+  assert.match(css.slice(forcedIdx), /\.nr-ok-badge \{[\s\S]*?background: Highlight;[\s\S]*?box-shadow: none/);
+  // Runtime mount under a correct effect.
+  const browser = browserHarness();
+  const round = browser.render('playing');
+  const cells = browser.cells();
+  round.cells[2].effect = 'correct';
+  round.cells[2].effect_id = 'correct:9';
+  browser.render('playing', round);
+  const fx = walk(cells[2]).find(n => String(n.className || '').includes('nr-fx-correct'));
+  assert.ok(fx);
+  const badge = walk(fx).find(n => n.className === 'nr-ok-badge');
+  assert.equal(badge && badge.textContent, 'OK');
+  assert.ok(walk(fx).some(n => String(n.className || '').includes('nr-ring')));
+  assert.ok(walk(fx).some(n => n.className === 'nr-spark'));
 });
 
 test('prefers-reduced-motion kills pose joy/shake; sprite data-pose is the static fallback', () => {
@@ -193,6 +227,7 @@ test('forced-colors and prefers-contrast keep static ring/spark/CPU/miss FX cues
   assert.match(contrast, /\.nr-ring-cpu \{ border-color: #b01878; \}/);
   assert.match(contrast, /\.nr-spark \{[\s\S]*?color: #0a8f55;[\s\S]*?text-shadow: none/);
   assert.match(contrast, /\.nr-cpu-claim \{[\s\S]*?background: #6a1048;[\s\S]*?box-shadow: none/);
+  assert.match(contrast, /\.nr-ok-badge \{[\s\S]*?background: #0a6a40;[\s\S]*?box-shadow: none/);
   assert.match(contrast, /\.nr-miss-badge \{[\s\S]*?background: #8a1010;[\s\S]*?box-shadow: none/);
   const forcedIdx = css.indexOf('@media (forced-colors: active)');
   assert.ok(forcedIdx > 0, 'forced-colors media query present');
@@ -203,9 +238,10 @@ test('forced-colors and prefers-contrast keep static ring/spark/CPU/miss FX cues
   assert.match(forced, /\.nr-ring-cpu \{ border-color: ButtonText; \}/);
   assert.match(forced, /\.nr-spark \{[\s\S]*?color: Highlight;[\s\S]*?text-shadow: none/);
   assert.match(forced, /\.nr-cpu-claim \{[\s\S]*?background: ButtonText;[\s\S]*?box-shadow: none/);
+  assert.match(forced, /\.nr-ok-badge \{[\s\S]*?background: Highlight;[\s\S]*?box-shadow: none/);
   assert.match(forced, /\.nr-miss-badge \{[\s\S]*?background: LinkText;[\s\S]*?box-shadow: none/);
   // Reduced-motion static stand-ins remain (normal/reduced looks not blanked by contrast pass).
-  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-miss-badge,[\s\S]*?\.nr-ok-badge \{[\s\S]*?opacity: 1; transform: none/);
 });
 
 test('nr-cell keyboard focus uses ::before ring so durable outlines stay visible', () => {
@@ -260,7 +296,7 @@ test('forced-colors wins over reduced-motion pastel outlines; CPU ::after uses s
   assert.match(rm, /data-feedback='cpu'/);
   // Animation / static FX kills stay outside the nest (still in RM block).
   assert.match(rm, /\.nr-fx \{ opacity: 1; animation: none !important; \}/);
-  assert.match(rm, /\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
+  assert.match(rm, /\.nr-miss-badge,[\s\S]*?\.nr-ok-badge \{[\s\S]*?opacity: 1; transform: none/);
   const forced = css.slice(forcedIdx);
   // Corner CPU label no longer stuck on #751887 under HC.
   assert.match(forced, /data-cpu-selecting='true'\]::after[\s\S]*?background: ButtonText/);
@@ -433,8 +469,8 @@ test('practice play HUD densifies YOU+お題 after CPU score-card hide (#100)', 
   assert.match(css, /\.nr-hud:has\(> \.nr-cpu\[hidden\]\) \{ gap: 12px; grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.3fr\); \}/);
   // JS still hides CPU score-card in practice (drives :has).
   assert.match(js, /cpuHud\.hidden = !battle/);
-  assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.css\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const hudOf = () => walk(b.app).find(n => n.className === 'nr-hud');
@@ -460,8 +496,8 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -496,8 +532,8 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -546,10 +582,10 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   // #80 hide still wired; #17 focus target unchanged.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
-  assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
+  assert.match(player, /modern-ui\.css\?v=ok-badge-106-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -584,9 +620,9 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
-  assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.css\?v=ok-badge-106-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -2045,8 +2081,8 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
-  assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.css\?v=ok-badge-106-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
 });
 
@@ -2080,7 +2116,7 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   assert.match(css, /\.nr-result-score \{[^}]*font-variant-numeric: tabular-nums/);
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
-  assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
+  assert.match(player, /modern-ui\.css\?v=ok-badge-106-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
 });
 
@@ -2121,8 +2157,8 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-award \{[\s\S]*?border: 2px solid Highlight/);
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
-  assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.css\?v=ok-badge-106-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
 });
 
@@ -2202,10 +2238,10 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
   // #86 hide still wired.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
-  assert.match(player, /modern-ui\.css\?v=settings-pressed-103-1/);
+  assert.match(player, /modern-ui\.css\?v=ok-badge-106-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-chains-104-1/);
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -2241,8 +2277,8 @@ test('practice pause copy omits rival/CPU; battle keeps rival stopped (#90)', ()
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const mutedIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-muted'));
@@ -2269,8 +2305,8 @@ test('practice ready intro-copy omits rival; battle keeps ライバル (#92)', (
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const introIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-intro-copy'));
@@ -2297,8 +2333,8 @@ test('practice PERFECT award blurb omits 先取; battle keeps it (#93)', () => {
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const awardOf = () => walk(b.app).find(n => n.className === 'nr-award');
@@ -2335,8 +2371,8 @@ test('practice help pause clause omits CPU; battle keeps it (#94)', () => {
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2372,8 +2408,8 @@ test('practice help rival bullet uses pace copy; battle keeps rival (#95)', () =
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2410,6 +2446,6 @@ test('numbers play HUD localizes TIME label to タイム (parity with result #10
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=play-time-ja-105-1/);
-  assert.match(index, /player\.html\?v=play-time-ja-105-1/);
+  assert.match(player, /modern-ui\.js\?v=ok-badge-106-1/);
+  assert.match(index, /player\.html\?v=ok-badge-106-1/);
 });
