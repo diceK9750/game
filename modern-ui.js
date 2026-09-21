@@ -317,12 +317,14 @@
 
   const helpScreen = section('help', 'nr-centered');
   const instructions = E('ol', 'nr-instructions');
+  // Named so render can swap kind-aware pause clause (practice must not invent CPU; #94 / parity #90).
+  const helpPracticePause = E('p', '', 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。');
   for (const [heading, text] of [
     ['お題と同じ数字をタップ', '盤面はいつも5行×8列。1から順番、またはランダムなお題を探します。'],
     ['ライバルより先に見つけよう', '青いYOUがあなた、ピンクのCPUがルナ。先に見つけると1点。全体の6割で勝利です。'],
     ['ミスしても、すぐ次へ', 'まちがいは爆弾の演出でお知らせ。同じマスはすぐ押し直せます。正解後も待ち時間はありません。'],
-    ['練習と休憩も、気軽に', 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。'],
   ]) add(instructions, add(E('li'), E('h2', '', heading), E('p', '', text)));
+  add(instructions, add(E('li'), E('h2', '', '練習と休憩も、気軽に'), helpPracticePause));
   const helpBack = button('戻る', 'back', undefined, 'nr-primary');
   add(helpScreen, add(E('div', 'nr-help-card nr-surface'), E('span', 'nr-eyebrow', 'HOW TO PLAY'), E('h1', '', '遊び方'), instructions, E('p', 'nr-muted', 'PC：クリック、または矢印キー＋Enter。Escで一時停止。結果画面はEnter／Spaceでもう一度。スマートフォンは横持ちがおすすめ。'), helpBack));
 
@@ -531,6 +533,10 @@
         ? 'タイマーもライバルも止まっています。準備ができたら再開しよう。'
         : 'タイマーは止まっています。準備ができたら再開しよう。')
       : '現在のプレイを終了します。';
+    // Practice has no CPU — help pause clause must not invent one (parity pause #90 / intro #92 / award #93).
+    helpPracticePause.textContent = battle
+      ? 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。'
+      : 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中は時計も止まります。';
     confirmYes.hidden = isPause; confirmNo.textContent = isPause ? 'プレイを続ける' : 'キャンセル';
     confirmYes.textContent = state.confirm_action === 'retry' ? 'やり直す' : '戻る'; pausedActions.hidden = !isPause;
     resultTag.textContent = state.perfect ? 'PERFECT VICTORY' : battle ? state.won ? 'YOU WIN' : 'NEXT CHALLENGE' : 'COMPLETE';
