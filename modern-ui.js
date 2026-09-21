@@ -335,7 +335,9 @@
   add(resultStats, stat('タイム', resultTime), stat('ミス', resultMiss), stat('最大連続正解', resultStreak));
   const chainSummary = E('p', 'nr-muted'); resultStats.append(chainSummary);
   const award = E('div', 'nr-award'); const awardValue = E('strong');
-  add(award, E('span', '', '✦ PERFECT BONUS ✦'), awardValue, E('small', '', '全問先取・ノーミスの特別賞'));
+  // Named so render can swap kind-aware blurb (practice must not say 先取; #93).
+  const awardBlurb = E('small', '', '全問先取・ノーミスの特別賞');
+  add(award, E('span', '', '✦ PERFECT BONUS ✦'), awardValue, awardBlurb);
   const record = E('p', 'nr-record');
   const reviewButton = button('対戦を振り返る', 'review', undefined, 'nr-quiet');
   const resultRetry = button('もう一度遊ぶ', 'retry', undefined, 'nr-primary');
@@ -538,6 +540,10 @@
     resultCopy.textContent = battle ? state.won ? '見つける力が、勝利につながった。' : 'ひと呼吸して、次の勝負へ。' : 'ひとつずつの発見が、スピードになる。';
     resultTime.textContent = formatTime(state.elapsed); resultMiss.textContent = `${integer(state.mistakes)} 回`; resultStreak.textContent = `${integer(state.max_streak)} 回`;
     award.hidden = !state.perfect; awardValue.textContent = `+ ${integer(state.bonus).toLocaleString()} pt`;
+    // Practice has no rival — PERFECT blurb must not say 先取 (parity pause #90 / intro #92).
+    awardBlurb.textContent = battle
+      ? '全問先取・ノーミスの特別賞'
+      : '全問クリア・ノーミスの特別賞';
     resultCard.dataset.perfect = String(!!state.perfect);
     // Record line kinds drive contrast: new-best pill vs muted prior-best vs hint/warn.
     let recordKind = '';

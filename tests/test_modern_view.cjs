@@ -427,8 +427,8 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
-  assert.match(index, /player\.html\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -463,8 +463,8 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
-  assert.match(index, /player\.html\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -515,8 +515,8 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
-  assert.match(index, /player\.html\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -552,8 +552,8 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
-  assert.match(index, /player\.html\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -1945,7 +1945,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
 });
 
@@ -2021,7 +2021,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
 });
 
@@ -2103,8 +2103,8 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
-  assert.match(index, /player\.html\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -2140,8 +2140,8 @@ test('practice pause copy omits rival/CPU; battle keeps rival stopped (#90)', ()
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
-  assert.match(index, /player\.html\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
 
   const b = browserHarness();
   const mutedIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-muted'));
@@ -2168,8 +2168,8 @@ test('practice ready intro-copy omits rival; battle keeps ライバル (#92)', (
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=practice-intro-copy-92-1/);
-  assert.match(index, /player\.html\?v=practice-intro-copy-92-1/);
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
 
   const b = browserHarness();
   const introIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-intro-copy'));
@@ -2184,4 +2184,41 @@ test('practice ready intro-copy omits rival; battle keeps ライバル (#92)', (
   assert.match(practiceIntro, /自分のペースで見つけよう/, 'practice ready intro is pace-focused');
   assert.doesNotMatch(practiceIntro, /ライバル/, 'practice ready intro must not mention rival');
   assert.doesNotMatch(practiceIntro, /対戦/, 'practice ready intro must not sell rivalry');
+});
+
+test('practice PERFECT award blurb omits 先取; battle keeps it (#93)', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /全問先取・ノーミスの特別賞/);
+  assert.match(js, /全問クリア・ノーミスの特別賞/);
+  // Kind-aware assignment: battle keeps 先取; practice drops phantom rivalry.
+  assert.match(js, /awardBlurb\.textContent = battle\s*\n\s*\? '全問先取・ノーミスの特別賞'/);
+  assert.match(js, /: '全問クリア・ノーミスの特別賞'/);
+
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /modern-ui\.js\?v=perfect-award-copy-93-1/);
+  assert.match(index, /player\.html\?v=perfect-award-copy-93-1/);
+
+  const b = browserHarness();
+  const awardOf = () => walk(b.app).find(n => n.className === 'nr-award');
+  const blurbOf = () => walk(awardOf()).find(n => n.tagName === 'SMALL');
+
+  b.render('finished', {
+    kind: 'battle', won: true, perfect: true, bonus: 1000,
+    player_points: 10, cpu_points: 0, completed: 10, max_number: 10,
+    elapsed: 20, mistakes: 0, max_streak: 10, storage_saved: true,
+  });
+  assert.equal(awardOf().hidden, false, 'battle PERFECT award visible');
+  assert.match(blurbOf().textContent, /全問先取/, 'battle award blurb keeps 先取');
+  assert.doesNotMatch(blurbOf().textContent, /クリア/, 'battle award blurb is not practice clear copy');
+
+  b.render('finished', {
+    kind: 'practice', perfect: true, bonus: 1000,
+    completed: 10, max_number: 10, elapsed: 25, mistakes: 0, max_streak: 10,
+    storage_saved: true,
+  });
+  assert.equal(awardOf().hidden, false, 'practice PERFECT award visible when perfect');
+  assert.match(blurbOf().textContent, /全問クリア/, 'practice award blurb is clear-focused');
+  assert.doesNotMatch(blurbOf().textContent, /先取/, 'practice award blurb must not say 先取');
+  assert.doesNotMatch(blurbOf().textContent, /ライバル|CPU/, 'practice award blurb must not invent a rival');
 });
