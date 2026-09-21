@@ -428,7 +428,7 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=practice-cast-hide-1/);
+  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -456,6 +456,47 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   const retry = walk(finished).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
   assert.equal(b.document.activeElement, retry, 'practice result still focuses replay (#17)');
 });
+
+test('practice result solo-cast denser/centered after LUNA hide; drop redundant visibility CSS (#81)', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  // JS [hidden] owns hide — no leftover visibility:hidden rival slot on play stage.
+  assert.ok(!/#modern-app\[data-kind='practice'\] \.nr-play-stage \.nr-koh \{ visibility:\s*hidden/.test(css),
+    'redundant practice play visibility:hidden removed');
+  // Solo cast (:has koh[hidden]) denser + centered — desktop + short-height + short-LS.
+  assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
+  assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 6px; justify-content: center; \}/);
+  assert.match(mobile, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 2px; justify-content: center; \}/);
+  // #80 hide still wired; #17 focus target unchanged.
+  assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
+    /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
+  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
+  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+
+  const b = browserHarness();
+  const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
+  const kohIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-koh'));
+  const rinIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-rin'));
+
+  // Need a previousScreen so finished entry focuses replay (#17), same as #80.
+  b.render('playing', {kind: 'practice', cells: state().cells});
+  b.render('finished', {kind: 'practice', perfect: false, won: true, cells: state().cells});
+  const duo = resultDuo();
+  assert.equal(kohIn(duo).hidden, true, 'practice result still hides LUNA (#80)');
+  assert.equal(rinIn(duo).hidden, false, 'practice result keeps RIN');
+  const finished = walk(b.app).find(n => n.dataset.screen === 'finished');
+  const retry = walk(finished).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
+  assert.equal(b.document.activeElement, retry, 'practice solo result still focuses replay (#17)');
+
+  b.render('finished', {kind: 'battle', perfect: false, won: true, cells: state().cells,
+    player_points: 12, cpu_points: 5, goal: 12});
+  assert.equal(kohIn(resultDuo()).hidden, false, 'battle result still shows LUNA');
+});
+
 
 test('modern view starts only after render and releases ownership on backend fallback', () => {
   const browser = browserHarness();
@@ -1830,9 +1871,9 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
-  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(player, /mobile-layout\.css\?v=result-actions-dict-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -1865,8 +1906,8 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   assert.match(css, /\.nr-result-score \{[^}]*font-variant-numeric: tabular-nums/);
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
-  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
-  assert.match(player, /mobile-layout\.css\?v=result-actions-dict-ls-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
 });
 
 test('finished result still focuses primary replay after score hierarchy (#17)', () => {
@@ -1906,9 +1947,9 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-award \{[\s\S]*?border: 2px solid Highlight/);
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
-  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(player, /mobile-layout\.css\?v=result-actions-dict-ls-1/);
+  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
 });
 
 test('finished result sets record data-record kinds for contrast styling', () => {
