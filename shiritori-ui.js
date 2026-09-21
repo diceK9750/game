@@ -124,8 +124,21 @@
     const result = E('div', 'sh-intro sh-result nr-surface');
     const resultTitle = E('h1'), reason = E('p');
     // Primary score (shared .nr-result-score) vs quieter secondary stats (#73 hierarchy).
+    // Secondary is packed .nr-stat cells (numbers #76 parity) + muted chain wrap.
     const resultScore = E('strong', 'nr-result-score');
-    const resultSecondary = E('p', 'sh-result-secondary');
+    const resultSecondary = E('div', 'sh-result-secondary');
+    const resultMiss = E('strong'), resultHint = E('strong'), resultThird = E('strong');
+    const secondaryThirdLabel = E('span', '', 'つなぎ直し');
+    function shStat(label, value) {
+      if (typeof label === 'string') return add(E('div', 'nr-stat'), E('span', '', label), value);
+      return add(E('div', 'nr-stat'), label, value);
+    }
+    add(resultSecondary,
+      shStat('ミス', resultMiss),
+      shStat('ヒント', resultHint),
+      shStat(secondaryThirdLabel, resultThird),
+      E('p', 'nr-muted'));
+    const chainSummary = resultSecondary.querySelector('.nr-muted');
     const resultRin = portrait('rin', 'RIN'), resultKoh = portrait('koh', 'LUNA');
     const log = E('ol', 'sh-log');
     const resultRetry = button('もう一度遊ぶ', 'sh_start', undefined, 'nr-primary');
@@ -386,11 +399,26 @@
       });
       resultTitle.textContent = solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : s.winner === 'you' ? 'あなたの勝利！' : s.winner === 'draw' ? 'ふたりでつなぎきった！' : 'ルナの勝利！';
       reason.textContent = s.message;
-      // Primary: cards cleared. Secondary: miss/hint/relink/chain (quieter hierarchy).
+      // Primary: cards cleared. Secondary: packed miss/hint/(relink|chain) + muted wrap (#73/#77).
       resultScore.textContent = `${s.history.length} / ${s.total || 24}`;
-      let secondary = `ミス${s.mistakes}回 · ヒント${3 - s.hints}回${solo ? ` · つなぎ直し${2 - s.relinks}回` : ''}`;
-      if (s.chain) secondary += ` · 最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス${solo ? '' : ` ／ CPU最大${s.chain.cpu.best}連鎖 · ${s.chain.cpu.bonus}ボーナス`}`;
-      resultSecondary.textContent = secondary;
+      resultMiss.textContent = `${s.mistakes}回`;
+      resultHint.textContent = `${3 - s.hints}回`;
+      if (solo) {
+        secondaryThirdLabel.textContent = 'つなぎ直し';
+        resultThird.textContent = `${2 - s.relinks}回`;
+      } else {
+        secondaryThirdLabel.textContent = '最大連鎖';
+        resultThird.textContent = `${s.chain?.you?.best || 0}`;
+      }
+      if (s.chain) {
+        chainSummary.textContent = solo
+          ? `最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス`
+          : `最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス ／ CPU最大${s.chain.cpu.best}連鎖 · ${s.chain.cpu.bonus}ボーナス`;
+        chainSummary.hidden = false;
+      } else {
+        chainSummary.textContent = '';
+        chainSummary.hidden = true;
+      }
       pose(resultRin, s.winner === 'cpu' ? '100% 100%' : '100% 0%');
       pose(resultKoh, s.winner === 'you' ? '100% 100%' : '100% 0%');
       const key = JSON.stringify(s.history);
