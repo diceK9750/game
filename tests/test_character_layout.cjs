@@ -12,6 +12,11 @@ test('reduced motion keeps a static readable chain banner without opacity pulse'
   assert.match(css,/#modern-app\[data-reduced='true'\] \.chain-burst\[data-pulse/);
   assert.match(css,/@media \(prefers-reduced-motion: reduce\)/);
   assert.match(css,/animation: none !important; opacity: 1/);
+  // Readability under RM: larger type + solid fill (not only opacity:1).
+  assert.match(css,/#modern-app\[data-reduced='true'\] \.chain-burst\[data-pulse[\s\S]*?font-size: clamp\(13px/);
+  assert.match(css,/#modern-app\[data-reduced='true'\] \.chain-burst\[data-pulse[\s\S]*?background: #0c2433f5/);
+  assert.match(css,/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.chain-burst\[data-pulse[\s\S]*?font-size: clamp\(13px/);
+  assert.match(css,/#modern-app\[data-reduced='true'\] \.timed-chain\[data-tier='3'\] \.chain-burst\[data-pulse[\s\S]*?background: #483014f5/);
 });
 test('square cards and separate character lanes share the remaining arena',()=>{
   assert.match(css,/--cell: min\(calc\(\(100cqw/);
