@@ -1219,7 +1219,7 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
 
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
-  assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
+  assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
   assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const {view, state, doc} = harness();
@@ -1377,7 +1377,7 @@ test('shiritori ready solo hero-cast denser/centered after LUNA+VS hide (parity 
   assert.match(character, /\.nr-ready \.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \.nr-character \{ width: min\(56cqw, calc\(100cqh - 18px\), 320px\); \}/);
   // Cache-bust CSS + iframe; JS hide from #88 unchanged.
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
+  assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
   assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);

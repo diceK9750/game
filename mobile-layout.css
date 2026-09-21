@@ -182,6 +182,33 @@
     flex: 0 0 auto; min-height: 44px; min-width: 44px; margin: 0;
   }
   .nr-stage-middle > .timed-chains { flex: 1; min-width: 0; }
+  /* #97: densify numbers play stats + restore compact feedback after #91 progress
+     park. Compact chrome hid .nr-feedback (max-height:650); short-landscape stage
+     is a single ≥44px row beside HUD — values-only stats + ellipsis feedback
+     reclaim width without a new board-stealing row (parity shiritori #87 status).
+     Keep hint ≥44px; ≤360 still uses this strip (tighter type below). */
+  .nr-play-stats {
+    flex: 0 1 auto; gap: 6px; min-width: 0;
+  }
+  .nr-play-stats .nr-stat > span { display: none; }
+  .nr-play-stats .nr-stat > strong { font-size: 11px; }
+  .nr-cpu-row {
+    flex: 0 1 auto; gap: 4px; min-width: 0;
+  }
+  .nr-cpu-clock { font-size: 9px; min-width: 0; white-space: nowrap; }
+  .nr-cpu-timer { height: 3px; min-width: 36px; flex: 1 1 36px; }
+  .nr-feedback {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0 !important;
+    font-size: 10px;
+    line-height: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   /* #87: short-landscape shiritori play HUD/prompt density — park progress beside
      HUD (parity numbers #21) and pin status to a thin strip so arena reclaims a
      full row without clipping task/prompt/status. Keep #69-family task pulse +
@@ -421,6 +448,9 @@
   .nr-target-number { font-size: 22px; }
   .nr-score-card > strong { font-size: 18px; }
   .nr-cell-number { font-size: 18px; }
+  /* #97: extreme-short keeps the compact feedback strip; tighten type only. */
+  .nr-play-stats .nr-stat > strong { font-size: 10px; }
+  .nr-feedback { font-size: 9px; line-height: 12px; }
   #modern-app[data-kind='battle'] .nr-stage-middle { grid-template-columns: 1fr 1fr; }
   #modern-app[data-kind='battle'] .nr-play-stats { grid-column: 1; grid-row: 1; }
   #modern-app[data-kind='battle'] .nr-cpu-row { grid-column: 2; grid-row: 1; }

@@ -514,7 +514,7 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
+  assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
   assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
   assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
@@ -1946,7 +1946,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
-  assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
+  assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -1980,7 +1980,7 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
+  assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
 });
 
 test('finished result still focuses primary replay after score hierarchy (#17)', () => {
@@ -2022,7 +2022,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
-  assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
+  assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
 });
 
 test('finished result sets record data-record kinds for contrast styling', () => {
@@ -2102,7 +2102,7 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
+  assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
   assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
   assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
