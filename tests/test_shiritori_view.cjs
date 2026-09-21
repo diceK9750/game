@@ -676,19 +676,20 @@ test('intro setup Tab cycles mode/count/difficulty/start only (parity ready #52)
   assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no intro trap bleed)');
 });
 
-test('finished result Tab cycles replay/mode/dict and does not escape (parity #48)', () => {
+test('finished result Tab cycles replay/mode/history/dict and does not escape (parity #48/#58)', () => {
   const {view, state, queue, doc} = harness();
   const collectStops = (root) => {
     const stops = [];
     (function visit(node) {
       if (!node || node.hidden) return;
       if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+      else if (node.tagName === 'SUMMARY') stops.push(node);
       for (const child of node.children || []) visit(child);
     })(root);
     return stops;
   };
 
-  // Battle result: entry replay (#19); Tab cycles retry/mode/dict only.
+  // Battle result: entry replay (#19); Tab cycles retry/mode/history summary/dict.
   view.update({...state, phase: 'playing'});
   view.update({
     ...state,
@@ -701,11 +702,15 @@ test('finished result Tab cycles replay/mode/dict and does not escape (parity #4
   const retry = result.querySelectorAll('button').find(b => b.textContent === 'もう一度遊ぶ');
   const setup = result.querySelectorAll('button').find(b => b.textContent === 'モード選択');
   const dict = result.querySelector('.sh-dict-open');
+  const history = result.querySelector('.sh-result-history');
+  const historySummary = history && history.querySelector('summary');
   assert.ok(retry && setup && dict, 'result actions stay available');
+  assert.ok(history && historySummary, 'result history <details>/<summary> is present');
+  assert.equal(historySummary.textContent, 'ことばと別の読み方を振り返る');
   assert.equal(doc.activeElement, retry, 'result entry still focuses primary replay (#19)');
 
   const finishedStops = collectStops(result);
-  assert.deepEqual(finishedStops, [retry, setup, dict], 'finished exposes retry/mode/dict');
+  assert.deepEqual(finishedStops, [retry, setup, historySummary, dict], 'finished exposes retry/mode/history/dict');
   // Intro dict (outside result) must not join the ring.
   const introDict = view.page.querySelectorAll('.sh-dict-open')[0];
   assert.ok(introDict && introDict !== dict);
@@ -728,7 +733,7 @@ test('finished result Tab cycles replay/mode/dict and does not escape (parity #4
   view.page.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.equal(doc.activeElement, retry, 'Tab from heading re-enters result on replay');
 
-  // #19 Enter/Space retry still works when focus is not on a visible button.
+  // #19 Enter/Space retry still works when focus is not on a visible button/summary.
   heading.focus();
   const beforeEnter = queue.length;
   view.page.emit('keydown', {key: 'Enter', repeat: false});
@@ -739,7 +744,15 @@ test('finished result Tab cycles replay/mode/dict and does not escape (parity #4
   view.page.emit('keydown', {key: ' ', repeat: false});
   assert.equal(queue.length, afterSetup, 'mode-select button keeps native Space activation');
 
-  // Solo finished: same three stops (no hidden review equivalent).
+  // History <summary>: Enter/Space must NOT steal into replay (#19); leave native toggle.
+  historySummary.focus();
+  const beforeSummary = queue.length;
+  view.page.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(queue.length, beforeSummary, 'Enter on history summary does not retry');
+  view.page.emit('keydown', {key: ' ', repeat: false});
+  assert.equal(queue.length, beforeSummary, 'Space on history summary does not retry');
+
+  // Solo finished: same four stops (history summary stays in the ring).
   view.update({...state, phase: 'intro', mode: 'solo', cards: []});
   view.update({
     ...state,
@@ -750,9 +763,11 @@ test('finished result Tab cycles replay/mode/dict and does not escape (parity #4
   });
   assert.equal(doc.activeElement, retry, 'solo result still focuses replay (#19)');
   const soloStops = collectStops(result);
-  assert.deepEqual(soloStops, [retry, setup, dict], 'solo finished keeps retry/mode/dict');
+  assert.deepEqual(soloStops, [retry, setup, historySummary, dict], 'solo finished keeps retry/mode/history/dict');
   view.page.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.equal(doc.activeElement, setup, 'solo Tab moves to モード選択');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, historySummary, 'solo Tab moves to history summary');
   view.page.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.equal(doc.activeElement, dict, 'solo Tab moves to 読み方ずかん');
   view.page.emit('keydown', {key: 'Tab', shiftKey: false});
@@ -782,3 +797,13 @@ test('finished result Tab cycles replay/mode/dict and does not escape (parity #4
   view.page.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no result trap bleed)');
 });
+
+test('result history details summary is in Tab ring and keeps 44px hit target', () => {
+  const sh = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  assert.match(sh, /sh-result-history/);
+  assert.match(sh, /else if \(node\.tagName === 'SUMMARY'\)/);
+  assert.match(sh, /onHistorySummary/);
+  assert.match(css, /\.sh-result-history summary \{[^}]*min-height: 44px/);
+});
+
