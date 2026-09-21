@@ -53,7 +53,7 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=sh-play-hud-87-1/);
+  assert.match(html, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -66,7 +66,7 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
   assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(player, /canvas \{ touch-action: none;/);
-  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
+  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
   // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
@@ -89,7 +89,7 @@ test('extreme-short landscape compresses chrome to reclaim board cell height', (
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-stage-middle > \.nr-hint \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=sh-play-hud-87-1/);
+  assert.match(html, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
 test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
@@ -110,7 +110,7 @@ test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-header \{ min-height: 32px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=sh-play-hud-87-1/);
+  assert.match(html, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
 test('host and player lock overscroll; play posts scroll-lock to the shell', () => {
@@ -154,9 +154,9 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.match(js, /markHostInsets/);
   assert.match(js, /data-host-insets/);
   assert.match(mobile, /Host owns device insets/);
-  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
+  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
 
@@ -166,7 +166,7 @@ test('mobile result keeps primary score heavier than secondary stats (#73)', () 
   assert.match(css, /\.nr-result-score \{ font-size: 34px; font-weight: 850; \}/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 12px; font-weight: 650; color: var\(--nr-muted\); \}/);
   assert.match(css, /\.sh-result-cast > \.nr-result-score \{ font-size: 34px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
 
@@ -175,7 +175,7 @@ test('mobile result keeps award/record contrast readable on compact cards', () =
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   assert.match(css, /\.nr-result-card \.nr-award > span \{ font-size: 9px/);
   assert.match(css, /\.nr-result-card \.nr-record\[data-record='new'\] \{ font-size: 11px; padding: 3px 8px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
 
@@ -200,8 +200,8 @@ test('short-landscape result stacks primary score above cast so award cannot col
   assert.match(css, /\.nr-result-duo \.nr-result-score \{ font-size: 28px/);
   // Two-column result grid + replay actions column intact (#17/#19 focus target).
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
+  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
 });
 
 test('short-landscape result packs secondary stats denser beside stacked score (#76)', () => {
@@ -219,8 +219,8 @@ test('short-landscape result packs secondary stats denser beside stacked score (
   // Extreme-short keeps pack, slightly tighter.
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 10px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
+  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
 });
 
 test('short-landscape shiritori packs secondary stats denser (#77)', () => {
@@ -243,10 +243,10 @@ test('short-landscape shiritori packs secondary stats denser (#77)', () => {
   // Desktop secondary is packed .nr-stat + muted (not a single middot paragraph).
   assert.match(js, /E\('div', 'sh-result-secondary'\)/);
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
-  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
+  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
 });
 
 
@@ -275,8 +275,8 @@ test('short-landscape / mobile review-history density: compact summary + capped 
   assert.match(js, /else if \(node\.tagName === 'SUMMARY'\)/);
   assert.match(js, /onHistorySummary/);
   assert.match(js, /sh-result-history/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
+  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
 });
 
 
@@ -304,8 +304,8 @@ test('short-landscape result-actions / dict density: stack buttons + pin dict (#
   // Dict button still appended on finished result (DOM order unchanged).
   assert.match(js, /result\.append\(dictResult\)/);
   assert.match(js, /読み方ずかん/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
+  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
 });
 
 
@@ -341,7 +341,20 @@ test('short-landscape shiritori play HUD/prompt density reclaim without clipping
   assert.match(shCss, /\.sh-task\[data-cue='true'\]\[data-pulse='0'\]/);
   assert.match(shCss, /#modern-app \.sh-card\[data-feedback='wrong'\]/);
   assert.match(shCss, /content: 'ミス'/);
-  assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(player, /character-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
+  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
+});
+
+test('ready solo hero-cast denser/centered on compact layout (#89)', () => {
+  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const modern = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(css, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 2px; justify-content: center; \}/);
+  assert.match(css, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \.nr-character \{ width: clamp\(48px, 14dvh, 96px\); \}/);
+  assert.match(modern, /\.nr-hero-cast:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
+  assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
 });
