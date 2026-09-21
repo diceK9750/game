@@ -323,8 +323,12 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-result-card { max-width: 620px; }
 .nr-result-duo { display: flex; justify-content: center; align-items: center; gap: 24px; margin: 8px auto 0; }
 .nr-result-duo .nr-character { width: 126px; }
-.nr-result-score { color: var(--nr-gold); font-size: 42px; line-height: 1; white-space: nowrap; letter-spacing: 2px; }
-.nr-result-stats { display: flex; justify-content: space-around; padding: 16px 0; margin-top: 16px; border-top: 1px solid var(--nr-border); border-bottom: 1px solid var(--nr-border); }
+.nr-result-score { color: var(--nr-gold); font-size: 52px; font-weight: 850; line-height: 1; white-space: nowrap; letter-spacing: 2px; font-variant-numeric: tabular-nums; text-shadow: 0 0 18px #e1bc6c55, 0 2px 0 #0004; }
+/* Result secondary stats: quieter than primary score (hierarchy, not play HUD). */
+.nr-result-stats { display: flex; justify-content: space-around; padding: 14px 0; margin-top: 14px; border-top: 1px solid var(--nr-border); border-bottom: 1px solid var(--nr-border); }
+.nr-result-stats .nr-stat > strong { font-size: 14px; font-weight: 650; color: var(--nr-muted); }
+.nr-result-stats .nr-stat > span { font-size: 8px; opacity: .9; }
+.nr-result-stats > .nr-muted { font-size: 12px; opacity: .85; }
 .nr-record { font-size: 12px; color: var(--nr-gold); margin-top: 14px !important; min-height: 18px; }
 .nr-result-actions { display: flex; gap: 12px; margin-top: 18px; }
 .nr-result-actions > .nr-button { flex: 1; min-height: 48px; }
@@ -406,7 +410,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-play-stats { gap: 5px; } .nr-stat > strong { font-size: 13px; } .nr-stat > span { font-size: 8px; }
   .nr-cpu-row { margin-top: 11px; padding: 0 6px; gap: 9px; } .nr-cpu-clock { font-size: 9px; min-width: 85px; } .nr-feedback { font-size: 9px; margin-top: 7px !important; }
   .nr-centered { padding-top: 16px; padding-bottom: 20px; } .nr-dialog, .nr-help-card, .nr-review-card, .nr-count-card, .nr-result-card { padding: 23px 18px; border-radius: 20px; }
-  .nr-result-duo { gap: 7px; } .nr-result-duo .nr-character { width: 100px; } .nr-result-score { font-size: 32px; letter-spacing: 0; }
+  .nr-result-duo { gap: 7px; } .nr-result-duo .nr-character { width: 100px; } .nr-result-score { font-size: 40px; letter-spacing: 0; }
   .nr-result-actions { gap: 7px; } .nr-result-actions .nr-button { font-size: 12px !important; padding: 11px 8px; } .nr-history { grid-template-columns: 1fr; }
 }
 @media (max-height: 500px) { #modern-app { padding-left: 10px; padding-right: 10px; }
@@ -437,7 +441,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-centered { align-items: safe center; } .nr-dialog, .nr-help-card, .nr-review-card, .nr-count-card, .nr-result-card { padding: 22px; }
   .nr-count-card { padding: 15px; } .nr-count-card .nr-eyebrow { margin-bottom: 4px; } .nr-count-card h1 { font-size: 20px; } .nr-count-number { font-size: 75px; }
   .nr-count-card .nr-muted { margin-top: 0 !important; } .nr-count-card .nr-button { margin-top: 10px; min-height: 36px; }
-  .nr-result-card { max-width: 780px; } .nr-result-duo { margin-top: 0; } .nr-result-duo .nr-character { width: 90px; } .nr-result-score { font-size: 34px; }
+  .nr-result-card { max-width: 780px; } .nr-result-duo { margin-top: 0; } .nr-result-duo .nr-character { width: 90px; } .nr-result-score { font-size: 42px; }
   .nr-result-stats { margin-top: 10px; padding: 10px 0; } .nr-result-actions { margin-top: 12px; }
 }
 @media (max-height: 340px) { .nr-header { min-height: 37px; } .nr-toolbar .nr-button { min-height: 30px; } .nr-hud { min-height: 36px; }

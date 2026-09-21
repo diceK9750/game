@@ -122,12 +122,15 @@
       add(E('div', 'nr-pause-extras'), button('新しい配置でやり直す', () => { restartRequested='sh_restart'; return 'sh_pause'; }), button('モード選択へ', () => { restartRequested='sh_setup'; return 'sh_pause'; })), endSolo);
     if (settingsControls) pause.append(settingsControls());
     const result = E('div', 'sh-intro sh-result nr-surface');
-    const resultTitle = E('h1'), reason = E('p'), tally = E('p');
+    const resultTitle = E('h1'), reason = E('p');
+    // Primary score (shared .nr-result-score) vs quieter secondary stats (#73 hierarchy).
+    const resultScore = E('strong', 'nr-result-score');
+    const resultSecondary = E('p', 'sh-result-secondary');
     const resultRin = portrait('rin', 'RIN'), resultKoh = portrait('koh', 'LUNA');
     const log = E('ol', 'sh-log');
     const resultRetry = button('もう一度遊ぶ', 'sh_start', undefined, 'nr-primary');
     const resultSetup = button('モード選択', 'sh_setup', undefined, 'nr-secondary');
-    add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultKoh.wrap), reason, tally,
+    add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultKoh.wrap), resultScore, reason, resultSecondary,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
     add(page, intro, stage, pause, result);
@@ -383,8 +386,11 @@
       });
       resultTitle.textContent = solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : s.winner === 'you' ? 'あなたの勝利！' : s.winner === 'draw' ? 'ふたりでつなぎきった！' : 'ルナの勝利！';
       reason.textContent = s.message;
-      tally.textContent = `${s.history.length} / ${s.total || 24}枚 · ミス${s.mistakes}回 · ヒント${3 - s.hints}回${solo ? ` · つなぎ直し${2 - s.relinks}回` : ''}`;
-      if (s.chain) tally.textContent += ` · 最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス${solo ? '' : ` ／ CPU最大${s.chain.cpu.best}連鎖 · ${s.chain.cpu.bonus}ボーナス`}`;
+      // Primary: cards cleared. Secondary: miss/hint/relink/chain (quieter hierarchy).
+      resultScore.textContent = `${s.history.length} / ${s.total || 24}`;
+      let secondary = `ミス${s.mistakes}回 · ヒント${3 - s.hints}回${solo ? ` · つなぎ直し${2 - s.relinks}回` : ''}`;
+      if (s.chain) secondary += ` · 最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス${solo ? '' : ` ／ CPU最大${s.chain.cpu.best}連鎖 · ${s.chain.cpu.bonus}ボーナス`}`;
+      resultSecondary.textContent = secondary;
       pose(resultRin, s.winner === 'cpu' ? '100% 100%' : '100% 0%');
       pose(resultKoh, s.winner === 'you' ? '100% 100%' : '100% 0%');
       const key = JSON.stringify(s.history);

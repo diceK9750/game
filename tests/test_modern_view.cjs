@@ -1795,9 +1795,9 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
-  assert.match(player, /modern-ui\.css\?v=hint-affordance-1/);
+  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
   assert.match(player, /modern-ui\.js\?v=hint-affordance-1/);
-  assert.match(player, /mobile-layout\.css\?v=hint-affordance-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-score-hierarchy-1/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -1819,4 +1819,33 @@ test('practice play shows mint hint control; battle hides it; used state updates
 
   b.render('playing', {kind: 'battle', hint_used: false, player_points: 0, cpu_points: 0});
   assert.equal(hint.hidden, true, 'battle hides practice hint');
+});
+
+
+test('result screen primary score outweighs secondary stats (hierarchy #73)', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  // Primary: larger gold score with weight + tabular nums.
+  assert.match(css, /\.nr-result-score \{[^}]*font-size: 52px;[^}]*font-weight: 850/);
+  assert.match(css, /\.nr-result-score \{[^}]*font-variant-numeric: tabular-nums/);
+  // Secondary: muted / smaller than play HUD defaults when inside result stats.
+  assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
+  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+});
+
+test('finished result still focuses primary replay after score hierarchy (#17)', () => {
+  const b = browserHarness();
+  b.render('playing', {kind: 'battle', player_points: 12, cpu_points: 5});
+  b.render('finished', {
+    kind: 'battle', won: true, perfect: false,
+    player_points: 12, cpu_points: 5, completed: 12, max_number: 25,
+    elapsed: 42, mistakes: 1, max_streak: 4,
+  });
+  const score = walk(b.app).find(n => n.tagName === 'STRONG' && String(n.className).includes('nr-result-score'));
+  assert.ok(score, 'result primary score present');
+  assert.match(score.textContent, /12\s*:\s*5/);
+  const retry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
+  assert.ok(retry, 'replay button present');
+  assert.equal(b.document.activeElement, retry, 'result entry focuses primary replay (#17)');
 });

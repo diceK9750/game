@@ -989,9 +989,9 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid #d0181c/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-prompt-cue-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-prompt-cue-1/);
-  assert.match(player, /modern-ui\.css\?v=hint-affordance-1/);
+  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1007,9 +1007,9 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid #a07000/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-prompt-cue-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-prompt-cue-1/);
-  assert.match(player, /modern-ui\.css\?v=hint-affordance-1/);
+  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
 });
 
 test('shiritori HUD required cue CSS pulses on change and stays static under reduced-motion', () => {
@@ -1086,7 +1086,55 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.match(js, /dataset\.cue/);
   assert.match(js, /taskWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-prompt-cue-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-prompt-cue-1/);
-  assert.match(player, /modern-ui\.css\?v=hint-affordance-1/);
+  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
+});
+
+
+test('shiritori finished splits primary score vs secondary stats (hierarchy #73)', () => {
+  const {view, state, doc} = harness();
+  view.update({
+    ...state,
+    phase: 'finished',
+    mode: 'solo',
+    winner: 'you',
+    total: 24,
+    mistakes: 2,
+    hints: 1,
+    relinks: 1,
+    history: [
+      {word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']},
+      {word: 'ゴリラ', icon: '🦍', owner: 'you', readings: ['ごりら']},
+    ],
+    chain: {you: {best: 3, bonus: 1}, cpu: {best: 1, bonus: 0}},
+  });
+  const result = view.page.querySelector('.sh-result');
+  assert.ok(result && result.hidden === false, 'result visible');
+  const score = result.querySelector('.nr-result-score');
+  const secondary = result.querySelector('.sh-result-secondary');
+  assert.ok(score, 'primary score element present');
+  assert.ok(secondary, 'secondary stats element present');
+  assert.equal(score.textContent, '2 / 24');
+  assert.match(secondary.textContent, /ミス2回/);
+  assert.match(secondary.textContent, /ヒント2回/);
+  assert.match(secondary.textContent, /つなぎ直し1回/);
+  assert.match(secondary.textContent, /最大3連鎖/);
+  // Must not glue primary into the secondary line.
+  assert.ok(!secondary.textContent.includes('2 / 24'), 'secondary omits primary score');
+  const retry = result.querySelectorAll('button').find(b => b.textContent === 'もう一度遊ぶ');
+  assert.equal(doc.activeElement, retry, 'result entry focuses primary replay (#19)');
+});
+
+test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
+  const sh = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(js, /nr-result-score/);
+  assert.match(js, /sh-result-secondary/);
+  assert.match(sh, /\.sh-result-secondary \{/);
+  assert.match(sh, /\.sh-result > \.nr-result-score/);
+  assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
 });
