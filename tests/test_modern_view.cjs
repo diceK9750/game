@@ -89,6 +89,19 @@ test('prefers-reduced-motion keeps static cpu-claim and award without waiting fo
   assert.match(media, /\.nr-fx \{ opacity: 0; \}/);
 });
 
+test('prefers-reduced-motion kills pose joy/shake; sprite data-pose is the static fallback', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  // Animated bounce/wobble for celebrate/victory/hurt.
+  assert.match(css, /\.nr-character-art\[data-pose='celebrate'\], \.nr-character-art\[data-pose='victory'\] \{ animation: nr-joy/);
+  assert.match(css, /\.nr-character-art\[data-pose='hurt'\] \{ animation: nr-shake/);
+  // Explicit OS + data-reduced kills (local to pose rules; blanket * also covers #modern-app).
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?data-pose='celebrate'[\s\S]*?data-pose='victory'[\s\S]*?data-pose='hurt'[\s\S]*?animation: none !important/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-character-art\[data-pose='celebrate'\],[\s\S]*?data-pose='victory'[\s\S]*?data-pose='hurt'[\s\S]*?animation: none !important/);
+  // Why no held transform: posePosition/background-position already swaps the portrait
+  // frame for celebrate/victory/hurt — that sprite is the durable non-motion cue.
+  assert.match(css, /Static fallback is the\s*data-pose sprite frame/);
+});
+
 test('forced-colors and prefers-contrast keep miss/CPU/correct/hint/cpu-selecting durable outlines readable', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
   const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
