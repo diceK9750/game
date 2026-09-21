@@ -206,12 +206,22 @@
       stops[idx].focus({preventScroll: true});
       return true;
     }
+    // Blocked rescue Tab ring (#60 follow-up): cycle enabled play-actions only
+    // (つなぎ直す; hint stays disabled). Cards stay disabled. Esc still pauses
+    // (#16 family). Header ♪ / 一時停止 / やり直す stay outside (reclaim via
+    // modern-ui). Entry rescue focus (#60) intact.
+    function blockedTabStops() {
+      if (latest?.phase !== 'blocked' || dictionaryOpen || helpOpen) return [];
+      return dialogTabStops(toolbar);
+    }
     function trapOverlayTab(event) {
       if (event.key !== 'Tab') return false;
       const root = activeOverlayRoot();
       if (root) return cycleTabStops(event, dialogTabStops(root));
       // Finished result when no overlay: reclaim from ♪ chrome (#48 / #19).
       if (latest?.phase === 'finished') return cycleTabStops(event, resultTabStops());
+      // Blocked rescue when no overlay: reclaim from ♪ chrome onto つなぎ直す.
+      if (latest?.phase === 'blocked') return cycleTabStops(event, blockedTabStops());
       // Intro setup when no overlay: reclaim from ♪ chrome / settings / dict.
       return cycleTabStops(event, introSetupTabStops());
     }
@@ -222,9 +232,10 @@
         if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');
         return;
       }
-      // Overlay Tab trap (#46) + intro setup (#52/#56) + finished result (#48 parity):
-      // cycle dialog / setup / result controls only. Entry (#44 overlays / intro h1 /
-      // #19 replay), Esc, and play-start card focus (#35) stay unchanged.
+      // Overlay Tab trap (#46) + intro setup (#52/#56) + finished result (#48 parity)
+      // + blocked rescue (#60 follow-up): cycle dialog / setup / result / rescue
+      // controls only. Entry (#44 overlays / intro h1 / #19 replay / #60 rescue),
+      // Esc, and play-start card focus (#35) stay unchanged.
       if (trapOverlayTab(event)) return;
       // Arrow keys move among playable .sh-card buttons (parity with number-rush nextPlayable).
       // Enter/Space stay native button activation; mouse/touch paths unchanged.
