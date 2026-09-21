@@ -53,7 +53,7 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+  assert.match(html, /mobile-layout\.css\?v=result-award-record-1/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -66,7 +66,7 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
   assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(player, /canvas \{ touch-action: none;/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
   assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
   // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
@@ -89,7 +89,7 @@ test('extreme-short landscape compresses chrome to reclaim board cell height', (
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-stage-middle > \.nr-hint \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+  assert.match(html, /mobile-layout\.css\?v=result-award-record-1/);
 });
 
 test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
@@ -110,7 +110,7 @@ test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-header \{ min-height: 32px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+  assert.match(html, /mobile-layout\.css\?v=result-award-record-1/);
 });
 
 test('host and player lock overscroll; play posts scroll-lock to the shell', () => {
@@ -127,7 +127,7 @@ test('host and player lock overscroll; play posts scroll-lock to the shell', () 
   assert.match(js, /shouldLockPlayScroll/);
   assert.match(js, /passive: false/);
   assert.match(viewport, /number-rush-scroll-lock/);
-  assert.match(player, /modern-ui\.js\?v=hint-affordance-1/);
+  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
   assert.match(index, /viewport\.js\?v=5-scroll-lock/);
 });
 
@@ -154,9 +154,9 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.match(js, /markHostInsets/);
   assert.match(js, /data-host-insets/);
   assert.match(mobile, /Host owns device insets/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
-  assert.match(player, /modern-ui\.js\?v=hint-affordance-1/);
-  assert.match(player, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-award-record-1/);
 });
 
 
@@ -166,5 +166,14 @@ test('mobile result keeps primary score heavier than secondary stats (#73)', () 
   assert.match(css, /\.nr-result-score \{ font-size: 34px; font-weight: 850; \}/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 12px; font-weight: 650; color: var\(--nr-muted\); \}/);
   assert.match(css, /\.sh-result > \.nr-result-score \{ font-size: 34px; \}/);
-  assert.match(player, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-award-record-1/);
+});
+
+
+test('mobile result keeps award/record contrast readable on compact cards', () => {
+  const css = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(css, /\.nr-result-card \.nr-award > span \{ font-size: 9px/);
+  assert.match(css, /\.nr-result-card \.nr-record\[data-record='new'\] \{ font-size: 11px; padding: 3px 8px; \}/);
+  assert.match(player, /mobile-layout\.css\?v=result-award-record-1/);
 });

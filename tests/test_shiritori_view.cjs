@@ -991,7 +991,7 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
   assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
   assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1009,7 +1009,7 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
   assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
   assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
 });
 
 test('shiritori HUD required cue CSS pulses on change and stays static under reduced-motion', () => {
@@ -1088,7 +1088,7 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
   assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
   assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
 });
 
 
@@ -1136,5 +1136,5 @@ test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
   assert.match(sh, /\.sh-result > \.nr-result-score/);
   assert.match(player, /shiritori-ui\.css\?v=result-score-hierarchy-1/);
   assert.match(player, /shiritori-ui\.js\?v=result-score-hierarchy-1/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
 });

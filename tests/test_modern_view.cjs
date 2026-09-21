@@ -1795,9 +1795,9 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
-  assert.match(player, /modern-ui\.js\?v=hint-affordance-1/);
-  assert.match(player, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-award-record-1/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -1830,8 +1830,8 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   assert.match(css, /\.nr-result-score \{[^}]*font-variant-numeric: tabular-nums/);
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
-  assert.match(player, /modern-ui\.css\?v=result-score-hierarchy-1/);
-  assert.match(player, /mobile-layout\.css\?v=result-score-hierarchy-1/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-award-record-1/);
 });
 
 test('finished result still focuses primary replay after score hierarchy (#17)', () => {
@@ -1847,5 +1847,94 @@ test('finished result still focuses primary replay after score hierarchy (#17)',
   assert.match(score.textContent, /12\s*:\s*5/);
   const retry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
   assert.ok(retry, 'replay button present');
+  assert.equal(b.document.activeElement, retry, 'result entry focuses primary replay (#17)');
+});
+
+
+test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  // Award: dark gold panel + cream label (reads above primary score gold).
+  assert.match(css, /\.nr-award \{[\s\S]*?background: linear-gradient\(145deg, #3a2a12f5, #16100af8\)/);
+  assert.match(css, /\.nr-award > span \{[\s\S]*?color: #fff8e7/);
+  assert.match(css, /\.nr-award > strong \{[\s\S]*?color: #ffe7a8/);
+  // Record: muted by default; new-best is a high-contrast pill.
+  assert.match(css, /\.nr-record \{[^}]*color: var\(--nr-muted\)/);
+  assert.match(css, /\.nr-record\[data-record='new'\] \{[\s\S]*?border-radius: 999px/);
+  assert.match(css, /\.nr-record\[data-record='new'\] \{[\s\S]*?color: #fff8e7/);
+  // Contrast / forced-colors keep award + new-record readable.
+  const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
+  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.nr-award \{[\s\S]*?border: 2px solid #c9a227/);
+  assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.nr-record\[data-record='new'\]/);
+  const forcedIdx = css.indexOf('@media (forced-colors: active)');
+  assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-award \{[\s\S]*?border: 2px solid Highlight/);
+  assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
+  assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
+  assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
+  assert.match(player, /mobile-layout\.css\?v=result-award-record-1/);
+});
+
+test('finished result sets record data-record kinds for contrast styling', () => {
+  const b = browserHarness();
+  const recordOf = () => walk(b.app).find(n => n.className === 'nr-record');
+  const awardOf = () => walk(b.app).find(n => n.className === 'nr-award');
+
+  b.render('finished', {
+    kind: 'battle', won: true, perfect: true, bonus: 1500, is_new_best: true,
+    player_points: 15, cpu_points: 4, completed: 15, max_number: 20,
+    elapsed: 30, mistakes: 0, max_streak: 15, storage_saved: true,
+  });
+  assert.equal(awardOf().hidden, false, 'PERFECT award visible');
+  assert.ok(walk(awardOf()).some(n => /PERFECT BONUS/.test(n.textContent || '')), 'PERFECT label present');
+  assert.ok(walk(awardOf()).some(n => /\+\s*1[,.]?500\s*pt/.test(n.textContent || '')), 'bonus value present');
+  assert.equal(recordOf().dataset.record, 'new');
+  assert.match(recordOf().textContent, /自己ベスト更新/);
+
+  b.render('finished', {
+    kind: 'battle', won: true, perfect: false, is_new_best: false, best_points: 12,
+    player_points: 10, cpu_points: 8, completed: 10, max_number: 20,
+    elapsed: 40, mistakes: 2, max_streak: 5, storage_saved: true,
+  });
+  assert.equal(awardOf().hidden, true);
+  assert.equal(recordOf().dataset.record, 'best');
+  assert.match(recordOf().textContent, /自己ベスト 12/);
+
+  b.render('finished', {
+    kind: 'practice', perfect: false, hint_used: true, is_new_best: false,
+    completed: 20, max_number: 20, elapsed: 55, mistakes: 1, max_streak: 8,
+    storage_saved: true,
+  });
+  assert.equal(recordOf().dataset.record, 'hint');
+  assert.match(recordOf().textContent, /ヒント使用/);
+
+  b.render('finished', {
+    kind: 'practice', perfect: false, is_new_best: false, storage_saved: false,
+    completed: 10, max_number: 20, elapsed: 20, mistakes: 0, max_streak: 3,
+  });
+  assert.equal(recordOf().dataset.record, 'warn');
+  assert.match(recordOf().textContent, /保存できませんでした/);
+
+  // New best + storage fail keeps celebratory 'new' kind (message still appended).
+  b.render('finished', {
+    kind: 'battle', won: true, perfect: false, is_new_best: true, storage_saved: false,
+    player_points: 18, cpu_points: 3, completed: 18, max_number: 20,
+    elapsed: 25, mistakes: 0, max_streak: 10,
+  });
+  assert.equal(recordOf().dataset.record, 'new');
+  assert.match(recordOf().textContent, /自己ベスト更新/);
+  assert.match(recordOf().textContent, /保存できませんでした/);
+});
+
+test('finished result still focuses primary replay after award/record contrast (#17)', () => {
+  const b = browserHarness();
+  b.render('playing', {kind: 'battle', player_points: 12, cpu_points: 5});
+  b.render('finished', {
+    kind: 'battle', won: true, perfect: true, bonus: 1000, is_new_best: true,
+    player_points: 12, cpu_points: 5, completed: 12, max_number: 20,
+    elapsed: 42, mistakes: 0, max_streak: 12, storage_saved: true,
+  });
+  const retry = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
   assert.equal(b.document.activeElement, retry, 'result entry focuses primary replay (#17)');
 });
