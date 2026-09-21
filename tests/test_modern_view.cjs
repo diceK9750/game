@@ -177,6 +177,34 @@ test('forced-colors and prefers-contrast keep miss/CPU/correct/hint/cpu-selectin
   assert.match(forced, /data-cpu-selecting='true'[\s\S]*?box-shadow: none/);
 });
 
+test('forced-colors and prefers-contrast keep static ring/spark/CPU/miss FX cues readable', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  // Base FX stay pointer-events none so contrast overrides cannot revive hit targets.
+  assert.match(css, /\.nr-fx \{[^}]*pointer-events: none/);
+  assert.match(css, /\.nr-miss-badge \{[^}]*pointer-events: none/);
+  const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
+  assert.ok(contrastIdx > 0, 'prefers-contrast media query present');
+  const contrastEnd = css.indexOf('@media (forced-colors: active)', contrastIdx);
+  const contrast = css.slice(contrastIdx, contrastEnd);
+  // Higher-contrast solids (no soft pastel / glow) for static stand-ins.
+  assert.match(contrast, /\.nr-ring \{[\s\S]*?border-color: #0a8f55/);
+  assert.match(contrast, /\.nr-ring-cpu \{ border-color: #b01878; \}/);
+  assert.match(contrast, /\.nr-spark \{[\s\S]*?color: #0a8f55;[\s\S]*?text-shadow: none/);
+  assert.match(contrast, /\.nr-cpu-claim \{[\s\S]*?background: #6a1048;[\s\S]*?box-shadow: none/);
+  assert.match(contrast, /\.nr-miss-badge \{[\s\S]*?background: #8a1010;[\s\S]*?box-shadow: none/);
+  const forcedIdx = css.indexOf('@media (forced-colors: active)');
+  assert.ok(forcedIdx > 0, 'forced-colors media query present');
+  const forced = css.slice(forcedIdx, css.indexOf('/* Effects remain understandable', forcedIdx));
+  // System colors parity with #29 cell outlines (Highlight/ButtonText/LinkText).
+  assert.match(forced, /\.nr-ring \{[\s\S]*?border-color: Highlight/);
+  assert.match(forced, /\.nr-ring-cpu \{ border-color: ButtonText; \}/);
+  assert.match(forced, /\.nr-spark \{[\s\S]*?color: Highlight;[\s\S]*?text-shadow: none/);
+  assert.match(forced, /\.nr-cpu-claim \{[\s\S]*?background: ButtonText;[\s\S]*?box-shadow: none/);
+  assert.match(forced, /\.nr-miss-badge \{[\s\S]*?background: LinkText;[\s\S]*?box-shadow: none/);
+  // Reduced-motion static stand-ins remain (normal/reduced looks not blanked by contrast pass).
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
+});
+
 test('nr-cell keyboard focus uses ::before ring so durable outlines stay visible', () => {
   const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
   // Shell buttons keep outline focus; cells/cards are excluded so feedback outlines are not clobbered.
