@@ -528,7 +528,7 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
-  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/ready so focus
+  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/ready/home so focus
   // cannot escape to header chrome (♪) or a hidden board behind the overlay.
   function dialogTabStops(root) {
     const stops = [];
@@ -546,6 +546,9 @@
     if (screen === 'finished') return finished;
     if (screen === 'review') return review;
     if (screen === 'ready') return setup;
+    // Game chooser: trap among .nr-game-choices cards only (#53). Header ♪ /
+    // ゲーム選択 stay outside. Entry focus stays first enabled card (#51).
+    if (screen === 'home') return homeChoices;
     return null;
   }
   function dialogTrapStops(screen) {
@@ -561,6 +564,11 @@
         dialogTabStops(startGroup)
       );
     }
+    if (screen === 'home') {
+      // Game chooser: cycle enabled .nr-game-card only. dialogTabStops skips
+      // disabled cards (絵しりとり unavailable → 数字さがし alone). Entry (#51).
+      return dialogTabStops(homeChoices);
+    }
     const root = dialogTrapRoot(screen);
     return root ? dialogTabStops(root) : [];
   }
@@ -573,9 +581,10 @@
         command(state?.confirm_action === 'pause' ? 'yes' : 'no');
       }
     } else if (dialogTrapRoot(state?.screen) && event.key === 'Tab') {
-      // Cycle visible confirm/help/finished/review/ready controls only (#45/#47/#48/#52).
-      // Esc (#16), entry (#43 help→戻る), finished replay focus+Enter (#17),
-      // ready 「1から順番」 entry (#50), and pause→resume cell restore (#42) stay intact.
+      // Cycle visible confirm/help/finished/review/ready/home controls only
+      // (#45/#47/#48/#52/#53). Esc (#16), entry (#43 help→戻る), finished replay
+      // focus+Enter (#17), ready 「1から順番」 (#50), home first-card (#51), and
+      // pause→resume cell restore (#42) stay intact.
       const stops = dialogTrapStops(state.screen);
       if (stops.length) {
         event.preventDefault();
