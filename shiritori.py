@@ -86,6 +86,10 @@ PERFECT_RING = (
 )
 SMALL = str.maketrans("ゃゅょぁぃぅぇぉっゎ", "やゆよあいうえおつわ")
 
+# Durable miss outline (~1.2s): parity with numbers WRONG_EFFECT_FRAMES (~72 @ 60fps).
+# Short-landscape status truncates the miss copy, so the wrong card itself must stay marked.
+MISS_OUTLINE_SECONDS = 1.2
+
 
 def tail(word):
     """House rule: long marks use preceding kana; small kana become full-size."""
@@ -225,6 +229,8 @@ class ShiritoriRound:
         self.last_word = "しりとり"
         self.selected = None
         self.mistakes = 0
+        self.miss_card = None
+        self.miss_until = 0
         self.hints = 3
         self.hint = None
         self.winner = None
@@ -258,6 +264,8 @@ class ShiritoriRound:
         self.cpu_move = None
         self.selected = self.hint = None
         self.mistakes, self.hints = 0, 3
+        self.miss_card = None
+        self.miss_until = 0
         self.relinks = 2
         self.refilled = None
         self.break_next = False
@@ -288,6 +296,8 @@ class ShiritoriRound:
     def finish(self, winner, reason):
         self.phase, self.winner, self.message = "finished", winner, reason
         self.selected = self.hint = None
+        self.miss_card = None
+        self.miss_until = 0
         self.chain.sync(self.clock(), ())
         self.revision += 1
 
@@ -340,6 +350,8 @@ class ShiritoriRound:
         owner = self.turn
         self.chain.hit(owner, self.clock())
         self.cpu_move = None
+        self.miss_card = None
+        self.miss_until = 0
         if owner == "you":
             self.discoveries.add((self.cards[index][0], word))
         self.used[index] = owner
@@ -422,6 +434,8 @@ class ShiritoriRound:
                 self.chain.miss('you')
                 self.chain.sync(self.clock(), ('you',))
                 self.relinks -= 1
+                self.miss_card = None
+                self.miss_until = 0
                 self.required = choices[0][1][0]
                 self.last_word = "つなぎ直し"
                 self.break_next = True
@@ -438,6 +452,8 @@ class ShiritoriRound:
                 else:
                     self.chain.miss('you')
                     self.mistakes += 1
+                    self.miss_card = value
+                    self.miss_until = self.clock() + MISS_OUTLINE_SECONDS
                     if self.mode != "solo":
                         self.deadline -= 3
                     self.message = f"この絵は「{self.required}」につながらないよ（使用済み・ん終わりも不可）。" + (" 選び直そう。" if self.mode == "solo" else " −3秒")
@@ -456,6 +472,14 @@ class ShiritoriRound:
                 self.message = ("完走につながるルートを発見！光る絵をつなごう。" if plan['perfect']
                                 else "長くつながる候補を探したよ。光る絵をつなごう。")
 
+    def active_miss_card(self):
+        """Wrong-card outline while playing/blocked and within the durable TTL."""
+        if self.miss_card is None or self.clock() >= self.miss_until:
+            return None
+        if self.phase not in ("playing", "blocked"):
+            return None
+        return self.miss_card
+
     def snapshot(self):
         visible = self.phase in ("playing", "blocked", "finished")
         return {"phase": self.phase, "turn": self.turn, "required": self.required,
@@ -464,7 +488,8 @@ class ShiritoriRound:
                 "cpu_progress": max(0, min(1, 1-self.remaining()/2.2)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
                 "last_word": self.last_word, "remaining": round(self.remaining(), 1) if self.phase in ("playing", "paused") else 0,
                 "limit": self.limit, "difficulty": self.difficulty, "message": self.message, "winner": self.winner,
-                "mistakes": self.mistakes, "hints": self.hints, "hint": self.hint,
+                "mistakes": self.mistakes, "miss_card": self.active_miss_card(),
+                "hints": self.hints, "hint": self.hint,
                 "selected": self.selected, "revision": self.revision,
                 "mode": self.mode, "total": self.total, "stock": len(self.stock), "completed": len(self.history),
                 "relinks": self.relinks, "refilled": self.refilled, "seen": sorted(self.seen) if visible else [],

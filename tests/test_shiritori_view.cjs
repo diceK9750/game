@@ -954,3 +954,34 @@ test('dictionary Esc dismisses via close()/back path (parity help Esc / #63)', (
   assert.equal(helpPage.hidden, true, 'help Esc still dismisses via 戻る');
 });
 
+
+test('wrong miss_card paints durable feedback outline on that sh-card', () => {
+  const {view, state} = harness();
+  view.update({...state, miss_card: 3, message: 'この絵は「り」につながらないよ'});
+  const cards = view.page.querySelectorAll('.sh-card');
+  assert.equal(cards[3].dataset.feedback, 'wrong');
+  assert.equal(cards[0].dataset.feedback, '');
+  assert.match(cards[3]['aria-label'] || '', /ミス/);
+  // Cleared when miss_card is null (TTL expired / correct take).
+  view.update({...state, miss_card: null});
+  assert.equal(cards[3].dataset.feedback, '');
+  // Non-live phases drop the cue even if a stale index arrives.
+  view.update({...state, phase: 'finished', winner: 'you', miss_card: 3, history: []});
+  assert.equal(cards[3].dataset.feedback, '');
+});
+
+test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => {
+  const sh = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  const modern = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(sh, /#modern-app \.sh-card\[data-feedback='wrong'\]/);
+  assert.match(sh, /#modern-app \.sh-card\[data-feedback='wrong'\]::after/);
+  assert.match(sh, /content: 'ミス'/);
+  const contrastIdx = modern.indexOf('@media (prefers-contrast: more)');
+  assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid #d0181c/);
+  const forcedIdx = modern.indexOf('@media (forced-colors: active)');
+  assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-miss-outline-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-outline-1/);
+  assert.match(player, /modern-ui\.css\?v=sh-miss-outline-1/);
+});
