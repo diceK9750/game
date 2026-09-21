@@ -427,8 +427,8 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
+  assert.match(index, /player\.html\?v=practice-pause-copy-90-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -463,8 +463,8 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
+  assert.match(index, /player\.html\?v=practice-pause-copy-90-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -515,8 +515,8 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
+  assert.match(index, /player\.html\?v=practice-pause-copy-90-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -552,8 +552,8 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
+  assert.match(index, /player\.html\?v=practice-pause-copy-90-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -1945,7 +1945,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
   assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
@@ -2021,7 +2021,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
   assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
 });
 
@@ -2103,8 +2103,8 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /mobile-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=practice-ready-cast-86-1/);
-  assert.match(index, /player\.html\?v=ready-hero-solo-89-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
+  assert.match(index, /player\.html\?v=practice-pause-copy-90-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -2128,4 +2128,32 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
   const ordered = walk(ready).find(n =>
     n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
   assert.equal(b.document.activeElement, ordered, 'practice ready still focuses 1から順番 (#50)');
+});
+
+test('practice pause copy omits rival/CPU; battle keeps rival stopped (#90)', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /タイマーは止まっています。準備ができたら再開しよう。/);
+  assert.match(js, /タイマーもライバルも止まっています。準備ができたら再開しよう。/);
+  // Kind-aware ternary: battle keeps rival line; practice drops it.
+  assert.match(js, /isPause\s*\n\s*\? \(battle\s*\n\s*\? 'タイマーもライバルも止まっています/);
+  assert.doesNotMatch(js, /confirmCopy\.textContent = isPause \? 'タイマーもライバルも止まっています/);
+
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /modern-ui\.js\?v=practice-pause-copy-90-1/);
+  assert.match(index, /player\.html\?v=practice-pause-copy-90-1/);
+
+  const b = browserHarness();
+  const mutedIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-muted'));
+
+  b.render('confirm', {confirm_action: 'pause', kind: 'battle', cells: []});
+  const battleConfirm = walk(b.app).find(n => n.dataset?.screen === 'confirm');
+  assert.match(mutedIn(battleConfirm).textContent, /ライバルも止まっています/, 'battle pause still mentions rival');
+
+  b.render('confirm', {confirm_action: 'pause', kind: 'practice', cells: []});
+  const practiceConfirm = walk(b.app).find(n => n.dataset?.screen === 'confirm');
+  const practiceCopy = mutedIn(practiceConfirm).textContent;
+  assert.match(practiceCopy, /タイマーは止まっています/, 'practice pause mentions timer only');
+  assert.doesNotMatch(practiceCopy, /ライバル/, 'practice pause must not mention rival');
+  assert.doesNotMatch(practiceCopy, /CPU/, 'practice pause must not mention CPU');
 });

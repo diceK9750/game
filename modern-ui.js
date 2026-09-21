@@ -518,7 +518,12 @@
     countNumber.textContent = Math.max(1, Math.ceil(finite(state.countdown, 3)));
     const isPause = state.confirm_action === 'pause';
     confirmTitle.textContent = isPause ? 'ひと休みしよう' : state.confirm_action === 'retry' ? 'やり直しますか？' : 'モード選択に戻りますか？';
-    confirmCopy.textContent = isPause ? 'タイマーもライバルも止まっています。準備ができたら再開しよう。' : '現在のプレイを終了します。';
+    // Practice has no rival — pause copy must not claim ライバル/CPU is stopped.
+    confirmCopy.textContent = isPause
+      ? (battle
+        ? 'タイマーもライバルも止まっています。準備ができたら再開しよう。'
+        : 'タイマーは止まっています。準備ができたら再開しよう。')
+      : '現在のプレイを終了します。';
     confirmYes.hidden = isPause; confirmNo.textContent = isPause ? 'プレイを続ける' : 'キャンセル';
     confirmYes.textContent = state.confirm_action === 'retry' ? 'やり直す' : '戻る'; pausedActions.hidden = !isPause;
     resultTag.textContent = state.perfect ? 'PERFECT VICTORY' : battle ? state.won ? 'YOU WIN' : 'NEXT CHALLENGE' : 'COMPLETE';

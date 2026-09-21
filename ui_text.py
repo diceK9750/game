@@ -22,6 +22,7 @@ LABELS = {
     "RESUMING - BOARD HIDDEN": "もうすぐ再開 / 盤面はかくれているよ",
     "PAUSED - TAKE YOUR TIME": "ひと休みしよう",
     "CPU AND TIMER ARE STOPPED": "CPUもタイマーも止まっています",
+    "TIMER IS STOPPED": "タイマーは止まっています",
     "RESUME WHEN YOU ARE READY": "準備ができたら「続ける」",
     "RESTART THIS RUN?": "新しい配置でやり直しますか?",
     "RETURN TO TITLE?": "選択画面に戻りますか?",

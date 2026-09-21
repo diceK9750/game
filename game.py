@@ -1713,7 +1713,13 @@ class NumberRush:
         self.draw_box(144, 86, 352, 186, PINK)
         if self.confirm_action == "pause":
             centered_text(116, "PAUSED - TAKE YOUR TIME", YELLOW)
-            centered_text(151, "CPU AND TIMER ARE STOPPED", CARD)
+            # Practice has no CPU — avoid claiming the rival is stopped.
+            pause_detail = (
+                "CPU AND TIMER ARE STOPPED"
+                if self.play_kind == "battle"
+                else "TIMER IS STOPPED"
+            )
+            centered_text(151, pause_detail, CARD)
             centered_text(177, "RESUME WHEN YOU ARE READY", MUTED)
             self.draw_button(YES_BUTTON, "RESUME", BLUE)
             self.draw_button(NO_BUTTON, "TITLE", PINK)
