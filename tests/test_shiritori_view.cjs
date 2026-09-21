@@ -905,10 +905,13 @@ test('finished result Tab cycles replay/mode/history/dict and does not escape (p
 test('result history details summary is in Tab ring and keeps 44px hit target', () => {
   const sh = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
   const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  const mobile = fs.readFileSync(require.resolve('../mobile-layout.css'), 'utf8');
   assert.match(sh, /sh-result-history/);
   assert.match(sh, /else if \(node\.tagName === 'SUMMARY'\)/);
   assert.match(sh, /onHistorySummary/);
   assert.match(css, /\.sh-result-history summary \{[^}]*min-height: 44px/);
+  // #78 densifies padding/log height but must not drop the 44px hit target.
+  assert.match(mobile, /\.sh-result-history summary \{[\s\S]*?min-height: 44px/);
 });
 
 test('dictionary Esc dismisses via close()/back path (parity help Esc / #63)', () => {

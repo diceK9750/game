@@ -238,6 +238,10 @@
   .sh-result-cast { gap: 16px; }
   .sh-result-cast .nr-character, .sh-result-cast .nr-character-art { width: clamp(28px, 9dvh, 72px); height: auto; }
   .sh-result .sh-log { max-height: min(120px, 20dvh); font-size: 12px; }
+  /* #78: compact history summary (still ≥44px hit target from #59). */
+  .sh-result-history summary {
+    min-height: 44px; padding: 6px 0; font-size: 12px; line-height: 1.2;
+  }
   .sh-result > .nr-button { min-height: 44px; padding: 5px; }
   .sh-page > .nr-dialog { margin: 0 auto; max-height: 100%; padding: 8px; gap: 4px; }
   .nr-dialog .nr-button { min-height: 44px; padding: 5px; font-size: 12px !important; }
@@ -303,6 +307,26 @@
   .sh-result > .nr-result-actions { grid-column: 2; grid-row: 1; }
   .sh-result > details { grid-column: 1 / -1; grid-row: 4; }
   .sh-result > .nr-button { grid-column: 2; grid-row: 2 / 4; }
+  /* #78: compact history summary + capped open log so details don't fight
+     #76/#77 packed stats on short landscape (e.g. 844×390). Keep ≥44px (#59). */
+  .sh-result-history summary {
+    min-height: 44px; padding: 4px 0; font-size: 11px; line-height: 1.15;
+  }
+  .sh-result .sh-log {
+    max-height: min(72px, 16dvh); font-size: 11px; line-height: 1.4;
+  }
+  .sh-result-history[open] {
+    max-height: min(116px, 26dvh); overflow: auto; overscroll-behavior: contain;
+  }
+  /* Numbers review: denser list + hard cap so scroll stays inside card. */
+  .nr-review-card > .nr-muted { font-size: 10px; line-height: 1.25; }
+  .nr-history {
+    max-height: min(120px, 32dvh); gap: 4px; margin: 2px 0;
+    grid-template-columns: 1fr;
+  }
+  .nr-history li { padding: 4px 6px; gap: 4px; font-size: 9px; }
+  .nr-history strong { font-size: 13px; }
+  .nr-history-index { font-size: 8px; }
 }
 @media (orientation: landscape) and (max-height: 360px) {
   /* Extreme-short landscape: reclaim 5×8 cell height after #21's side-park.
@@ -343,6 +367,11 @@
   /* #77: shiritori secondary same tighten. */
   .sh-result-secondary .nr-stat > strong { font-size: 10px; }
   .sh-result-secondary { gap: 1px 4px; padding: 1px 0; }
+  /* #78: extreme-short history log/list even tighter. */
+  .sh-result .sh-log { max-height: min(56px, 14dvh); }
+  .sh-result-history[open] { max-height: min(96px, 22dvh); }
+  .nr-history { max-height: min(88px, 28dvh); gap: 3px; }
+  .nr-history strong { font-size: 12px; }
 }
 
 @media (orientation: portrait) and (max-width: 400px) {
