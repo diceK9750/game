@@ -850,6 +850,52 @@ test('ready entry focuses primary start 1から順番; same-screen and overlays 
   assert.equal(b.document.activeElement, resume, 'pause entry still focuses プレイを続ける');
 });
 
+test('home entry focuses first enabled game card; same-screen and ready spared', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (screen, text) => walk(screen).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+  const homeScreen = () => screenOf('home');
+  const pictureGame = () => walk(homeScreen()).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-picture-game'));
+  const numberGame = () => walk(homeScreen()).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-number-game'));
+
+  // ready → home (ゲーム選択): land on first enabled card (絵しりとり when available).
+  b.render('ready', {cells: []});
+  const gamesBack = walk(b.app).find(n => n.tagName === 'BUTTON' && n.textContent === 'ゲーム選択');
+  assert.ok(gamesBack, 'ready exposes ゲーム選択');
+  gamesBack.focus();
+  b.render('home', {cells: []});
+  assert.ok(pictureGame() && !pictureGame().disabled, 'harness enables 絵しりとり');
+  assert.equal(b.document.activeElement, pictureGame(), 'home entry focuses first enabled card');
+  assert.notEqual(b.document.activeElement, gamesBack, 'must not leave focus on header ゲーム選択');
+
+  // Same-screen home updates must not yank focus (mouse/touch mid-chooser).
+  numberGame().focus();
+  b.render('home', {cells: [], bgm: false});
+  assert.equal(b.document.activeElement, numberGame(), 'home→home keeps current focus');
+
+  // When picture is unavailable, fall through to 数字さがし.
+  pictureGame().disabled = true;
+  b.render('ready', {cells: []});
+  gamesBack.focus();
+  b.render('home', {cells: []});
+  assert.equal(b.document.activeElement, numberGame(), 'disabled picture → focuses 数字さがし');
+  pictureGame().disabled = false;
+
+  // home → ready still prefers 「1から順番」 (#50); ready must not be stolen by home.
+  numberGame().focus();
+  b.render('ready', {cells: []});
+  const ordered = walk(screenOf('ready')).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-primary'));
+  assert.equal(b.document.activeElement, ordered, 'ready entry still focuses 1から順番');
+
+  // ready → help still prefers 戻る (#43).
+  b.render('help', {cells: []});
+  const helpBack = btnIn(screenOf('help'), '戻る');
+  assert.equal(b.document.activeElement, helpBack, 'help entry still focuses 戻る');
+});
+
 
 test('confirm Tab cycles dialog controls and does not escape to chrome', () => {
   const b = browserHarness();

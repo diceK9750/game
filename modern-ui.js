@@ -460,6 +460,13 @@
         focusTarget.focus({preventScroll: true});
       } else if (state.screen === 'help' && previousScreen) {
         helpBack.focus({preventScroll: true});
+      } else if (state.screen === 'home' && previousScreen) {
+        // Game chooser: land on first enabled .nr-game-card so keyboard users can
+        // Enter without Tab hunting past header chrome (♪ / ゲーム選択). Picture
+        // may be disabled when shiritori is unavailable — fall through to numbers.
+        // Same-screen home updates leave mouse/touch alone (changedScreen gate).
+        const homeCard = [pictureGame, numberGame].find(card => !card.disabled);
+        if (homeCard) homeCard.focus({preventScroll: true});
       } else if (state.screen === 'ready' && previousScreen) {
         // Mode select: land on primary start 「1から順番」 so keyboard users can
         // Enter without Tab hunting past kind/range/difficulty. Same-screen ready
