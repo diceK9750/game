@@ -50,9 +50,11 @@
       add(E('div', 'nr-hero-cast'), heroRin.wrap, E('span', 'nr-versus', 'VS'), heroRival.wrap));
     const setup = E('div', 'nr-setup nr-surface sh-ready-settings');
     const modeButtons = [button('CPUと対戦', 'sh_mode', 'battle'), button('ひとりで練習', 'sh_mode', 'solo')];
+    const modeGroup = add(E('div', 'nr-segment sh-actions sh-modes'), ...modeButtons);
     const modeHint = E('p', 'sh-setting-note');
     const counts = [12,24,36,48];
     const countButtons = counts.map(n => button(`${n}枚`, 'sh_total', n));
+    const countGroup = add(E('div', 'nr-segment sh-actions sh-counts'), ...countButtons);
     const countHint = E('p', 'sh-setting-note');
     const levels = E('div', 'sh-level-settings');
     const levelButtons = [['easy','ゆったり'],['normal','ふつう'],['hard','てごわい']].map(([v,label]) => button(label, 'sh_difficulty', v));
@@ -65,11 +67,12 @@
       E('p', '', 'ヒントは3回。小さい文字は大きく（ちゃ→や）、長音は直前の文字（ぎたー→た）。濁点は区別。札とことばの再使用はできません。'),
       E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。対戦は相手の手番中、自分のゲージが止まります。CPUも同じ条件で連鎖します。'));
     const start = button('はじめる', 'sh_start', undefined, 'nr-primary');
+    const startGroup = add(E('div', 'sh-actions sh-start-actions'), start);
     add(setup, E('div', 'nr-setup-heading', '絵しりとりのチャレンジ'),
-      add(E('div', 'sh-config'), E('h2', 'nr-field-label', '遊び方'), add(E('div', 'nr-segment sh-actions sh-modes'), ...modeButtons), modeHint,
-        E('h2', 'nr-field-label', '絵の総枚数'), add(E('div', 'nr-segment sh-actions sh-counts'), ...countButtons), countHint),
+      add(E('div', 'sh-config'), E('h2', 'nr-field-label', '遊び方'), modeGroup, modeHint,
+        E('h2', 'nr-field-label', '絵の総枚数'), countGroup, countHint),
       add(E('div', 'sh-config'), levels),
-      add(E('div', 'sh-actions sh-start-actions'), start));
+      startGroup);
     add(intro, hero, setup);
     if (settingsControls) setup.append(settingsControls());
     const stage = E('div', 'sh-stage');
@@ -163,11 +166,19 @@
       if (latest?.phase === 'paused' && !pause.hidden) return pause;
       return null;
     }
-    function trapOverlayTab(event) {
-      if (event.key !== 'Tab') return false;
-      const root = activeOverlayRoot();
-      if (!root) return false;
-      const stops = dialogTabStops(root);
+    // Intro/setup Tab ring (#52 parity): mode / count / difficulty / start only.
+    // Settings + 読み方ずかん stay outside (pointer still works). Solo hides levels
+    // via [hidden] skip. Entry focus stays on intro h1 (unchanged).
+    function introSetupTabStops() {
+      if (latest?.phase !== 'intro' || dictionaryOpen || helpOpen) return [];
+      return [].concat(
+        dialogTabStops(modeGroup),
+        dialogTabStops(countGroup),
+        dialogTabStops(levels),
+        dialogTabStops(startGroup)
+      );
+    }
+    function cycleTabStops(event, stops) {
       if (!stops.length) return false;
       event.preventDefault();
       const active = document.activeElement;
@@ -177,6 +188,13 @@
       stops[idx].focus({preventScroll: true});
       return true;
     }
+    function trapOverlayTab(event) {
+      if (event.key !== 'Tab') return false;
+      const root = activeOverlayRoot();
+      if (root) return cycleTabStops(event, dialogTabStops(root));
+      // Intro setup when no overlay: reclaim from ♪ chrome / settings / dict.
+      return cycleTabStops(event, introSetupTabStops());
+    }
     page.addEventListener('keydown', event => {
       if (event.key === 'Escape') {
         if (helpOpen) { closeHelp.click(); event.preventDefault(); return; }
@@ -184,8 +202,9 @@
         if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');
         return;
       }
-      // Overlay Tab trap (#46): cycle pause/restart/setup/dict/help controls only.
-      // Entry focus (#44), Esc, and play-start card focus (#35) stay unchanged.
+      // Overlay Tab trap (#46) + intro setup Tab trap (#52 parity): cycle dialog /
+      // mode-count-difficulty-start only. Entry (#44 overlays / intro h1), Esc,
+      // and play-start card focus (#35) stay unchanged.
       if (trapOverlayTab(event)) return;
       // Arrow keys move among playable .sh-card buttons (parity with number-rush nextPlayable).
       // Enter/Space stay native button activation; mouse/touch paths unchanged.

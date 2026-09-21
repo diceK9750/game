@@ -607,8 +607,9 @@
         stops[idx].focus({preventScroll: true});
       }
     } else if (state?.screen === 'shiritori' && event.key === 'Tab') {
-      // Reclaim Tab when focus escaped to header chrome while a sh overlay is open
-      // (#46). In-page focus is trapped by shiritori's own page keydown handler.
+      // Reclaim Tab when focus escaped to header chrome during a sh overlay (#46)
+      // or intro setup (#52 parity). In-page focus is trapped by shiritori's own
+      // page keydown handler (overlays + intro mode/count/difficulty/start).
       if (shiritori && !shiritori.page.contains(document.activeElement)) {
         shiritori.trapOverlayTab?.(event);
       }
