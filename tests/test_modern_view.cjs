@@ -235,12 +235,14 @@ test('forced-colors wins over reduced-motion pastel outlines; CPU ::after uses s
   assert.ok(effectsIdx > 0 && forcedIdx > effectsIdx, 'forced-colors follows reduced-motion section');
   // Only one forced-colors block, and it is the last media query of that kind.
   assert.equal(css.indexOf('@media (forced-colors: active)'), css.lastIndexOf('@media (forced-colors: active)'));
-  // Pastel durable outlines are nested so they do not apply under HC.
-  assert.match(css, /@media \(forced-colors: none\) \{[\s\S]*?data-reduced='true'[\s\S]*?data-feedback='wrong'/);
+  // Pastel durable outlines are nested so they do not apply under HC / contrast-more.
+  assert.match(css, /@media \(forced-colors: none\) \{[\s\S]*?@media not \(prefers-contrast: more\) \{[\s\S]*?data-reduced='true'[\s\S]*?data-feedback='wrong'/);
   const rmIdx = css.lastIndexOf('@media (prefers-reduced-motion: reduce)');
-  assert.ok(rmIdx > 0 && rmIdx < forcedIdx);
-  const rm = css.slice(rmIdx, forcedIdx);
-  assert.match(rm, /@media \(forced-colors: none\) \{[\s\S]*?data-feedback='wrong'[\s\S]*?#f67f81/);
+  const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
+  assert.ok(rmIdx > 0 && rmIdx < contrastIdx && contrastIdx < forcedIdx,
+    'order: RM → prefers-contrast → forced-colors');
+  const rm = css.slice(rmIdx, contrastIdx);
+  assert.match(rm, /@media \(forced-colors: none\) \{[\s\S]*?@media not \(prefers-contrast: more\) \{[\s\S]*?data-feedback='wrong'[\s\S]*?#f67f81/);
   assert.match(rm, /data-feedback='correct'/);
   assert.match(rm, /data-feedback='cpu'/);
   // Animation / static FX kills stay outside the nest (still in RM block).
@@ -255,6 +257,32 @@ test('forced-colors wins over reduced-motion pastel outlines; CPU ::after uses s
   assert.match(forced, /data-feedback='wrong'[^{]*\{[^}]*outline: 4px solid LinkText/);
   assert.match(forced, /\.nr-ring \{[\s\S]*?border-color: Highlight/);
   assert.match(forced, /\.nr-miss-badge \{[\s\S]*?background: LinkText/);
+});
+
+test('prefers-contrast more wins over reduced-motion pastel outlines (parity with #39)', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const effectsIdx = css.indexOf('/* Effects remain understandable');
+  const rmIdx = css.lastIndexOf('@media (prefers-reduced-motion: reduce)');
+  const contrastIdx = css.indexOf('@media (prefers-contrast: more)');
+  const forcedIdx = css.indexOf('@media (forced-colors: active)');
+  assert.ok(effectsIdx > 0 && rmIdx > effectsIdx, 'RM section follows effects header');
+  assert.ok(contrastIdx > rmIdx && forcedIdx > contrastIdx,
+    'prefers-contrast after RM pastels; forced-colors last');
+  // Only one prefers-contrast: more block (moved after RM; not duplicated).
+  assert.equal(css.indexOf('@media (prefers-contrast: more)'), css.lastIndexOf('@media (prefers-contrast: more)'));
+  // data-reduced pastels gated: higher-specificity selector cannot clobber contrast solids.
+  assert.match(css, /@media \(forced-colors: none\) \{[\s\S]*?@media not \(prefers-contrast: more\) \{[\s\S]*?data-reduced='true'[\s\S]*?#f67f81/);
+  // OS RM pastels similarly gated (same specificity as contrast; nest + order both protect).
+  const rm = css.slice(rmIdx, contrastIdx);
+  assert.match(rm, /@media not \(prefers-contrast: more\) \{[\s\S]*?#f67f81/);
+  assert.doesNotMatch(rm, /#d0181c/);
+  const contrast = css.slice(contrastIdx, forcedIdx);
+  assert.match(contrast, /data-feedback='wrong'[\s\S]*?outline: 4px solid #d0181c/);
+  assert.match(contrast, /data-feedback='correct'[\s\S]*?outline: 4px solid #0a8f55/);
+  assert.match(contrast, /data-feedback='cpu'[\s\S]*?outline: 4px solid #b01878/);
+  // Static cues remain in contrast block (RM only toggles opacity/transform, not colors).
+  assert.match(contrast, /\.nr-ring \{[\s\S]*?border-color: #0a8f55/);
+  assert.match(contrast, /\.nr-miss-badge \{[\s\S]*?background: #8a1010/);
 });
 
 test('markHostInsets tags embedded iframe and clears standalone', () => {

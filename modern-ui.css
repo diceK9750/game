@@ -388,9 +388,69 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 /* High-contrast / forced-colors: keep miss/CPU/correct/hint/cpu-selecting outlines
    and static ring/spark/CPU/miss FX cues (#36/#37) readable when soft pastels and
    glow shadows are remapped or dropped. System colors match #29 outline semantics.
-   Order: prefers-contrast → reduced-motion (pastel outlines nested under
-   forced-colors: none) → forced-colors LAST so HC system colors win when both
-   forced-colors and prefers-reduced-motion / data-reduced apply (#39). */
+   Order: reduced-motion (pastel outlines nested under forced-colors: none AND
+   not prefers-contrast: more) → prefers-contrast → forced-colors LAST so durable
+   HC cues win when contrast-more or forced-colors + RM / data-reduced apply
+   (#39 / contrast-RM pastel parity). */
+/* Effects remain understandable when animations are turned off.
+   Honor OS prefers-reduced-motion even before JS sets data-reduced.
+   Pastel durable outlines nest under (forced-colors: none) + not (prefers-contrast: more)
+   so #29/#38 system colors and contrast-more solids are not overridden when HC +
+   reduced-motion both apply (#39 forced-colors; contrast-more needs the same gate
+   because data-reduced pastel selectors are more specific than contrast rules). */
+#modern-app[data-reduced='true'] .nr-cpu-claim,
+#modern-app[data-reduced='true'] .nr-award { opacity: 1; animation: none !important; }
+#modern-app[data-reduced='true'] *, #modern-app[data-reduced='true'] *::before, #modern-app[data-reduced='true'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+/* Reduced-motion FX: do not blank .nr-fx (that hid ring/spark and nested CPU badge).
+   Cell outlines (#28/#29) stay the durable outer cue; ring/spark/CPU badge + miss badge
+   are static inner stand-ins. Miss bomb/burst stay hidden (motion-heavy); .nr-miss-badge
+   is the reduced-only inner cue (opacity 0 under full motion). pointer-events: none. */
+#modern-app[data-reduced='true'] .nr-fx { opacity: 1; animation: none !important; }
+#modern-app[data-reduced='true'] .nr-bomb,
+#modern-app[data-reduced='true'] .nr-burst { opacity: 0; }
+#modern-app[data-reduced='true'] .nr-ring,
+#modern-app[data-reduced='true'] .nr-spark,
+#modern-app[data-reduced='true'] .nr-miss-badge {
+  opacity: 1; transform: none; animation: none !important;
+}
+@media (forced-colors: none) {
+  @media not (prefers-contrast: more) {
+    #modern-app[data-reduced='true'] .nr-cell[data-feedback='wrong'] {
+      background: #f8b5b4; outline: 3px solid #f67f81; outline-offset: -3px;
+      box-shadow: inset 0 0 0 2px #c44a4c88; }
+    #modern-app[data-reduced='true'] .nr-cell[data-feedback='correct'] {
+      outline: 3px solid #b4f6d5; outline-offset: -3px; }
+    #modern-app[data-reduced='true'] .nr-cell[data-feedback='cpu'] {
+      outline: 3px solid #f4a8cb; outline-offset: -3px; box-shadow: inset 0 0 0 2px #8a1f5a88; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #modern-app .nr-cpu-claim,
+  #modern-app .nr-award { opacity: 1; animation: none !important; }
+  #modern-app *, #modern-app *::before, #modern-app *::after { animation: none !important; transition: none !important; }
+  #modern-app .nr-fx { opacity: 1; animation: none !important; }
+  #modern-app .nr-bomb,
+  #modern-app .nr-burst { opacity: 0; }
+  #modern-app .nr-ring,
+  #modern-app .nr-spark,
+  #modern-app .nr-miss-badge {
+    opacity: 1; transform: none; animation: none !important;
+  }
+  /* Pastel outlines only when HC is off; contrast-more + forced-colors blocks below own HC. */
+  @media (forced-colors: none) {
+    @media not (prefers-contrast: more) {
+      #modern-app .nr-cell[data-feedback='wrong'] {
+        background: #f8b5b4; outline: 3px solid #f67f81; outline-offset: -3px;
+        box-shadow: inset 0 0 0 2px #c44a4c88; }
+      #modern-app .nr-cell[data-feedback='correct'] {
+        outline: 3px solid #b4f6d5; outline-offset: -3px; }
+      #modern-app .nr-cell[data-feedback='cpu'] {
+        outline: 3px solid #f4a8cb; outline-offset: -3px; box-shadow: inset 0 0 0 2px #8a1f5a88; }
+    }
+  }
+}
+/* prefers-contrast after RM pastels: thicker solids win over soft RM outlines when both
+   apply (same specificity as OS-RM pastels; data-reduced pastels gated above). */
 @media (prefers-contrast: more) {
   #modern-app .nr-cell[data-feedback='wrong'] {
     outline: 4px solid #d0181c; outline-offset: -3px; background: #ffd0d0;
@@ -439,58 +499,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     color: #fff; background: #8a1010; box-shadow: none;
   }
 }
-/* Effects remain understandable when animations are turned off.
-   Honor OS prefers-reduced-motion even before JS sets data-reduced.
-   Pastel durable outlines nest under (forced-colors: none) so #29/#38 system
-   colors are not overridden when HC + reduced-motion both apply. */
-#modern-app[data-reduced='true'] .nr-cpu-claim,
-#modern-app[data-reduced='true'] .nr-award { opacity: 1; animation: none !important; }
-#modern-app[data-reduced='true'] *, #modern-app[data-reduced='true'] *::before, #modern-app[data-reduced='true'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-/* Reduced-motion FX: do not blank .nr-fx (that hid ring/spark and nested CPU badge).
-   Cell outlines (#28/#29) stay the durable outer cue; ring/spark/CPU badge + miss badge
-   are static inner stand-ins. Miss bomb/burst stay hidden (motion-heavy); .nr-miss-badge
-   is the reduced-only inner cue (opacity 0 under full motion). pointer-events: none. */
-#modern-app[data-reduced='true'] .nr-fx { opacity: 1; animation: none !important; }
-#modern-app[data-reduced='true'] .nr-bomb,
-#modern-app[data-reduced='true'] .nr-burst { opacity: 0; }
-#modern-app[data-reduced='true'] .nr-ring,
-#modern-app[data-reduced='true'] .nr-spark,
-#modern-app[data-reduced='true'] .nr-miss-badge {
-  opacity: 1; transform: none; animation: none !important;
-}
-@media (forced-colors: none) {
-  #modern-app[data-reduced='true'] .nr-cell[data-feedback='wrong'] {
-    background: #f8b5b4; outline: 3px solid #f67f81; outline-offset: -3px;
-    box-shadow: inset 0 0 0 2px #c44a4c88; }
-  #modern-app[data-reduced='true'] .nr-cell[data-feedback='correct'] {
-    outline: 3px solid #b4f6d5; outline-offset: -3px; }
-  #modern-app[data-reduced='true'] .nr-cell[data-feedback='cpu'] {
-    outline: 3px solid #f4a8cb; outline-offset: -3px; box-shadow: inset 0 0 0 2px #8a1f5a88; }
-}
-@media (prefers-reduced-motion: reduce) {
-  #modern-app .nr-cpu-claim,
-  #modern-app .nr-award { opacity: 1; animation: none !important; }
-  #modern-app *, #modern-app *::before, #modern-app *::after { animation: none !important; transition: none !important; }
-  #modern-app .nr-fx { opacity: 1; animation: none !important; }
-  #modern-app .nr-bomb,
-  #modern-app .nr-burst { opacity: 0; }
-  #modern-app .nr-ring,
-  #modern-app .nr-spark,
-  #modern-app .nr-miss-badge {
-    opacity: 1; transform: none; animation: none !important;
-  }
-  /* Pastel outlines only when HC is off; forced-colors block below owns HC. */
-  @media (forced-colors: none) {
-    #modern-app .nr-cell[data-feedback='wrong'] {
-      background: #f8b5b4; outline: 3px solid #f67f81; outline-offset: -3px;
-      box-shadow: inset 0 0 0 2px #c44a4c88; }
-    #modern-app .nr-cell[data-feedback='correct'] {
-      outline: 3px solid #b4f6d5; outline-offset: -3px; }
-    #modern-app .nr-cell[data-feedback='cpu'] {
-      outline: 3px solid #f4a8cb; outline-offset: -3px; box-shadow: inset 0 0 0 2px #8a1f5a88; }
-  }
-}
-/* forced-colors LAST: wins over reduced-motion pastels for durable outlines + static FX. */
+/* forced-colors LAST: wins over reduced-motion pastels + contrast-more for durable outlines + static FX. */
 @media (forced-colors: active) {
   #modern-app .nr-cell[data-feedback='wrong'] {
     outline: 4px solid LinkText; outline-offset: -3px; background: Canvas;
