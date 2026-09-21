@@ -422,6 +422,41 @@ test('number rival frame is unique, keeps input enabled and hides for pause or s
   b.render('playing',{kind:'practice'}); assert.ok(b.cells().every(c=>c.dataset.cpuSelecting==='false'));
 });
 
+test('practice hides LUNA cast on play stage and result (parity shiritori solo; #80)', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
+  assert.match(index, /player\.html\?v=practice-cast-hide-1/);
+
+  const b = browserHarness();
+  const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
+  const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
+  const kohIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-koh'));
+  const rinIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-rin'));
+
+  b.render('playing', {kind: 'battle', cells: state().cells});
+  assert.equal(kohIn(playStage()).hidden, false, 'battle play shows LUNA');
+  assert.equal(rinIn(playStage()).hidden, false, 'battle play shows RIN');
+
+  b.render('playing', {kind: 'practice', cells: state().cells});
+  assert.equal(kohIn(playStage()).hidden, true, 'practice play hides LUNA');
+  assert.equal(rinIn(playStage()).hidden, false, 'practice play keeps RIN');
+
+  b.render('finished', {kind: 'battle', perfect: false, won: true, cells: state().cells});
+  assert.equal(kohIn(resultDuo()).hidden, false, 'battle result shows LUNA');
+  assert.equal(rinIn(resultDuo()).hidden, false, 'battle result shows RIN');
+
+  b.render('finished', {kind: 'practice', perfect: false, won: true, cells: state().cells});
+  assert.equal(kohIn(resultDuo()).hidden, true, 'practice result hides LUNA');
+  assert.equal(rinIn(resultDuo()).hidden, false, 'practice result keeps RIN');
+  // #17 replay focus still lands on もう一度遊ぶ with koh hidden.
+  const finished = walk(b.app).find(n => n.dataset.screen === 'finished');
+  const retry = walk(finished).find(n => n.tagName === 'BUTTON' && n.textContent === 'もう一度遊ぶ');
+  assert.equal(b.document.activeElement, retry, 'practice result still focuses replay (#17)');
+});
+
 test('modern view starts only after render and releases ownership on backend fallback', () => {
   const browser = browserHarness();
   assert.equal(browser.app.hidden, true); assert.equal(browser.root.getAttribute('data-modern-ready'), null);
@@ -1796,7 +1831,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
-  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
   assert.match(player, /mobile-layout\.css\?v=result-actions-dict-ls-1/);
 });
 
@@ -1872,7 +1907,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=result-award-record-1/);
-  assert.match(player, /modern-ui\.js\?v=result-award-record-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
   assert.match(player, /mobile-layout\.css\?v=result-actions-dict-ls-1/);
 });
 

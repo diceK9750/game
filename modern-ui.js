@@ -439,6 +439,8 @@
     cpuScore.textContent = battle ? integer(state.cpu_points) : integer(state.max_number);
     youGoal.textContent = battle ? `${integer(state.goal)}点で勝利` : '見つけた数字';
     cpuHud.hidden = !battle; youHud.dataset.practice = String(!battle);
+    // Practice has no rival — hide LUNA on play stage + result cast (parity shiritori solo).
+    playKoh.wrap.hidden = !battle; resultKoh.wrap.hidden = !battle;
     elapsed.textContent = formatTime(state.elapsed); completed.textContent = `${integer(state.completed)} / ${state.max_number}`;
     mistakes.textContent = integer(state.mistakes); streak.textContent = `${integer(state.streak)} 連続`;
     timedChain?.update(state.chain, battle, playing, state.screen === 'finished');
