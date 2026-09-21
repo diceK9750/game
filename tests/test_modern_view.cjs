@@ -1557,3 +1557,70 @@ test('playing locks document scroll and unlocks on pause/result; reading panes s
   b.render('finished');
   assert.equal(b.app.dataset.scrollLock, 'false');
 });
+
+
+test('settings toast CSS pulses on show and stays static under reduced-motion', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  assert.match(css, /\.nr-settings-toast\[data-show='true'\]\[data-pulse='0'\]/);
+  assert.match(css, /\.nr-settings-toast\[data-show='true'\]\[data-pulse='1'\]/);
+  assert.match(css, /@keyframes nr-settings-toast-a/);
+  assert.match(css, /@keyframes nr-settings-toast-b/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.nr-settings-toast\[data-show='true'\][\s\S]*?animation: none !important/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-settings-toast\[data-show='true'\][\s\S]*?animation: none !important/);
+  assert.match(css, /forced-colors LAST[\s\S]*?@media \(forced-colors: active\) \{[\s\S]*?\.nr-settings-toast/);
+});
+
+test('toggling BGM/SFX/motion shows persistence confirm toast; animationend dismisses', () => {
+  const b = browserHarness();
+  b.render('ready', {bgm: true, sfx: true, reduced: false, storage_saved: true});
+  const toast = walk(b.app).find(n => n.className === 'nr-settings-toast');
+  assert.ok(toast, 'settings toast node mounted');
+  assert.equal(toast.hidden, true);
+  assert.equal(toast.textContent, '');
+
+  b.render('ready', {bgm: false, sfx: true, reduced: false, storage_saved: true});
+  assert.equal(toast.hidden, false);
+  assert.equal(toast.dataset.show, 'true');
+  assert.match(toast.textContent, /BGM OFF · 保存しました/);
+  const pulseAfterBgm = toast.dataset.pulse;
+
+  b.render('ready', {bgm: false, sfx: false, reduced: false, storage_saved: true});
+  assert.match(toast.textContent, /効果音 OFF · 保存しました/);
+  assert.notEqual(toast.dataset.pulse, pulseAfterBgm, 'pulse flips to restart CSS animation');
+
+  b.render('ready', {bgm: false, sfx: false, reduced: true, storage_saved: true});
+  assert.match(toast.textContent, /演出 ひかえめ · 保存しました/);
+
+  b.render('ready', {bgm: false, sfx: false, reduced: true, storage_saved: false});
+  // No prefs change → toast text unchanged (still prior message) until screen change clears.
+  assert.match(toast.textContent, /演出 ひかえめ · 保存しました/);
+
+  // Failed save on next toggle:
+  b.render('ready', {bgm: true, sfx: false, reduced: true, storage_saved: false});
+  assert.match(toast.textContent, /BGM ON · 保存できませんでした/);
+
+  toast.emit('animationend', {target: toast});
+  assert.equal(toast.hidden, true);
+  assert.equal(toast.dataset.show, 'false');
+  assert.equal(toast.textContent, '');
+});
+
+test('settings toast clears on screen change when reduced motion has no animationend', () => {
+  const b = browserHarness();
+  b.render('ready', {bgm: true, sfx: true, reduced: true, storage_saved: true});
+  const toast = walk(b.app).find(n => n.className === 'nr-settings-toast');
+  b.render('ready', {bgm: false, sfx: true, reduced: true, storage_saved: true});
+  assert.match(toast.textContent, /BGM OFF · 保存しました/);
+  b.render('home', {bgm: false, sfx: true, reduced: true, storage_saved: true, cells: []});
+  assert.equal(toast.hidden, true);
+  assert.equal(toast.textContent, '');
+});
+
+test('settings toast wiring lives in modern-ui.js with animationend dismiss', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /showSettingsToast/);
+  assert.match(js, /hideSettingsToast/);
+  assert.match(js, /nr-settings-toast/);
+  assert.match(js, /animationend/);
+  assert.match(js, /prevPrefs/);
+});
