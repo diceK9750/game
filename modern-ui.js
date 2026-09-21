@@ -191,10 +191,11 @@
   const intro = E('div', 'nr-intro');
   const heroCast = E('div', 'nr-hero-cast');
   const heroRin = portrait('rin', 'RIN / あなた'), heroKoh = portrait('koh', 'LUNA / ライバル');
+  const heroVersus = E('span', 'nr-versus', 'VS');
   const title = E('h1', '', '見つけた！が、勝負になる。');
   add(intro, E('span', 'nr-eyebrow', 'QUICK EYES. BRIGHT MOMENTS.'), title,
     E('p', 'nr-intro-copy', 'お題の数字を、ライバルより先に見つけよう。\n順番・ランダムのお題で対戦。一人での練習も楽しめます。'),
-    add(heroCast, heroRin.wrap, E('span', 'nr-versus', 'VS'), heroKoh.wrap));
+    add(heroCast, heroRin.wrap, heroVersus, heroKoh.wrap));
   const setup = E('div', 'nr-setup nr-surface');
   add(setup, E('div', 'nr-setup-heading', '今日のチャレンジ'));
   const kindGroup = E('div', 'nr-segment nr-kind-group'); kindGroup.setAttribute('role', 'group'); kindGroup.setAttribute('aria-label', '遊び方を選ぶ');
@@ -439,7 +440,8 @@
     cpuScore.textContent = battle ? integer(state.cpu_points) : integer(state.max_number);
     youGoal.textContent = battle ? `${integer(state.goal)}点で勝利` : '見つけた数字';
     cpuHud.hidden = !battle; youHud.dataset.practice = String(!battle);
-    // Practice has no rival — hide LUNA on play stage + result cast (parity shiritori solo).
+    // Practice has no rival — hide LUNA on ready hero-cast + play stage + result cast (parity #80).
+    heroKoh.wrap.hidden = !battle; heroVersus.hidden = !battle;
     playKoh.wrap.hidden = !battle; resultKoh.wrap.hidden = !battle;
     elapsed.textContent = formatTime(state.elapsed); completed.textContent = `${integer(state.completed)} / ${state.max_number}`;
     mistakes.textContent = integer(state.mistakes); streak.textContent = `${integer(state.streak)} 連続`;

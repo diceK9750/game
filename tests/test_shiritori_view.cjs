@@ -1220,7 +1220,7 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
-  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
+  assert.match(index, /player\.html\?v=practice-ready-cast-86-1/);
 
   const {view, state, doc} = harness();
   view.update({
@@ -1279,7 +1279,7 @@ test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #
   assert.match(layout, /\.sh-arena \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\) clamp\(40px, 15vw, 180px\);/);
   assert.match(js, /koh\.wrap\.hidden = solo/);
   assert.match(player, /character-layout\.css\?v=sh-arena-solo-85-1/);
-  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
+  assert.match(index, /player\.html\?v=practice-ready-cast-86-1/);
 
   const {view, state} = harness();
   view.update({
