@@ -118,6 +118,9 @@
 .sh-result-cast { display: flex; justify-content: center; gap: 40px; }
 .sh-result-cast .nr-character { width: 100px; }
 .sh-result-cast .nr-character-art { width: 100px; height: 100px; }
+/* Result primary score reuses .nr-result-score; secondary stays muted (#73). */
+.sh-result > .nr-result-score { display: block; margin: 4px auto 0; }
+.sh-result-secondary { margin: 6px 0 0; color: var(--nr-muted); font-size: 13px; line-height: 1.45; opacity: .9; }
 .sh-log { max-height: 220px; overflow: auto; line-height: 1.8; }
 .sh-log small { display: block; color: var(--nr-muted); }
 @media(max-height: 500px) {
@@ -133,6 +136,8 @@
   .sh-actions button { min-height: 36px; padding: 6px 10px; }
   .sh-intro { margin: 0 auto; }
   .sh-result-cast { display: none; }
+  .sh-result > .nr-result-score { font-size: 36px; letter-spacing: 0; margin-top: 0; }
+  .sh-result-secondary { font-size: 11px; margin-top: 2px; }
 }
 /* Landscape phones first: only 12 large, fixed-position slots, not a tiny wall. */
 .sh-board { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(44px, 1fr)); min-height: 144px; }
