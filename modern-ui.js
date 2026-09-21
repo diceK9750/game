@@ -510,8 +510,8 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
-  // Keep Tab/Shift+Tab cycling inside open confirm/help overlays so focus cannot
-  // escape to header chrome (♪) or a hidden board behind the overlay.
+  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review so focus
+  // cannot escape to header chrome (♪) or a hidden board behind the overlay.
   function dialogTabStops(root) {
     const stops = [];
     (function visit(node) {
@@ -522,6 +522,13 @@
     })(root);
     return stops;
   }
+  function dialogTrapRoot(screen) {
+    if (screen === 'confirm') return confirm;
+    if (screen === 'help') return helpScreen;
+    if (screen === 'finished') return finished;
+    if (screen === 'review') return review;
+    return null;
+  }
   app.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       // Toggle pause while playing; dismiss confirm without accepting quit/retry.
@@ -530,10 +537,11 @@
         event.preventDefault();
         command(state?.confirm_action === 'pause' ? 'yes' : 'no');
       }
-    } else if ((state?.screen === 'confirm' || state?.screen === 'help') && event.key === 'Tab') {
-      // Cycle visible confirm/help controls only (#45/#47). Esc (#16), entry
-      // focus (#43 help→戻る), and pause→resume cell restore (#42) stay intact.
-      const stops = dialogTabStops(state.screen === 'confirm' ? confirm : helpScreen);
+    } else if (dialogTrapRoot(state?.screen) && event.key === 'Tab') {
+      // Cycle visible confirm/help/finished/review controls only (#45/#47/#48).
+      // Esc (#16), entry (#43 help→戻る), finished replay focus+Enter (#17), and
+      // pause→resume cell restore (#42) stay intact.
+      const stops = dialogTabStops(dialogTrapRoot(state.screen));
       if (stops.length) {
         event.preventDefault();
         const active = document.activeElement;
