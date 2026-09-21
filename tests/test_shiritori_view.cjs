@@ -269,9 +269,9 @@ test('sh-card keyboard focus uses ::before ring so hint/CPU outlines stay visibl
   const modern = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
   const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
   // Cards excluded from shell outline; inset ::before ring leaves outline free for hint/CPU.
-  assert.match(modern, /#modern-app button:not\(\.nr-cell\):not\(\.sh-card\):focus-visible/);
-  assert.match(modern, /#modern-app \.nr-cell:focus-visible, #modern-app \.sh-card:focus-visible \{ outline: none; \}/);
-  assert.match(modern, /#modern-app \.nr-cell:focus-visible::before, #modern-app \.sh-card:focus-visible::before \{[^}]*box-shadow: inset 0 0 0 3px #f9d58a/);
+  assert.match(modern, /#modern-app button:not\(\.nr-cell\):not\(\.sh-card\):not\(\.nr-game-card\):focus-visible/);
+  assert.match(modern, /#modern-app \.nr-cell:focus-visible, #modern-app \.sh-card:focus-visible, #modern-app \.nr-game-card:focus-visible \{ outline: none; \}/);
+  assert.match(modern, /#modern-app \.nr-cell:focus-visible::before, #modern-app \.sh-card:focus-visible::before,[\s\S]*?#modern-app \.nr-game-card:focus-visible::before \{[^}]*box-shadow: inset 0 0 0 3px #f9d58a/);
   // Hint + CPU-selecting carry #modern-app so they beat focus outline:none when both apply.
   assert.match(css, /#modern-app \.sh-card\[data-hint='true'\]/);
   assert.match(modern, /#modern-app \.sh-card\[data-cpu-selecting='true'\]/);

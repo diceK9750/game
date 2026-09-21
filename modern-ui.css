@@ -2,7 +2,7 @@
 .nr-home { flex: 1; min-height: 0; width: 100%; max-width: 1040px; margin: auto; padding: 24px 0; display: flex; flex-direction: column; justify-content: center; gap: 16px; overflow: auto; }
 .nr-home > h1, .nr-home > .nr-eyebrow { text-align: center; }
 .nr-game-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.nr-home .nr-game-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-width: 0; min-height: 230px; padding: 24px; border-radius: 24px; background: #193743e8; border-color: #8acfc563; }
+.nr-home .nr-game-card { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-width: 0; min-height: 230px; padding: 24px; border-radius: 24px; background: #193743e8; border-color: #8acfc563; }
 .nr-game-card strong { font-size: 30px; }
 .nr-game-card small { color: #a5f0d3; }
 .nr-game-icon { font-size: 40px; color: #f9d58a; letter-spacing: 5px; }
@@ -51,11 +51,12 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 #modern-app button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 /* Shell controls keep outline focus. Board cells/cards use a ::before ring below so
    durable miss/CPU/correct/hint/cpu-selecting outlines are not clobbered. */
-#modern-app button:not(.nr-cell):not(.sh-card):focus-visible, #modern-app [tabindex='-1']:focus-visible { outline: 3px solid #f9d58a; outline-offset: 3px; }
-/* Keyboard-only cell/card focus: inset ring via ::before. Leaves outline + box-shadow free
-   for feedback; :focus-visible keeps mouse taps free of sticky rings. */
-#modern-app .nr-cell:focus-visible, #modern-app .sh-card:focus-visible { outline: none; }
-#modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
+#modern-app button:not(.nr-cell):not(.sh-card):not(.nr-game-card):focus-visible, #modern-app [tabindex='-1']:focus-visible { outline: 3px solid #f9d58a; outline-offset: 3px; }
+/* Keyboard-only cell/card/chooser focus: inset ring via ::before. Leaves outline +
+   box-shadow free for feedback/hover; :focus-visible keeps mouse taps free of sticky rings. */
+#modern-app .nr-cell:focus-visible, #modern-app .sh-card:focus-visible, #modern-app .nr-game-card:focus-visible { outline: none; }
+#modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before,
+#modern-app .nr-game-card:focus-visible::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 5;
   box-shadow: inset 0 0 0 3px #f9d58a;
 }
@@ -481,7 +482,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .sh-card[data-cpu-selecting='true']::after {
     color: #fff; background: #6a1048;
   }
-  #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
+  #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before,
+  #modern-app .nr-game-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px #c9a227;
   }
   /* Static ring/spark/CPU/miss cues (#36/#37): readable under higher contrast; no glow. */
@@ -525,7 +527,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .sh-card[data-cpu-selecting='true']::after {
     color: Canvas; background: ButtonText;
   }
-  #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
+  #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before,
+  #modern-app .nr-game-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px Highlight;
   }
   /* Static ring/spark/CPU/miss cues (#36/#37): system colors parity with #29 outlines.
