@@ -490,7 +490,7 @@
         const effect = E('span', `nr-fx nr-fx-${type}`);
         if (type === 'wrong') add(effect, E('i', 'nr-bomb'), E('i', 'nr-burst'), E('span', 'nr-miss-badge', 'ミス'));
         else if (type === 'cpu') add(effect, E('i', 'nr-ring nr-ring-cpu'), E('span', 'nr-cpu-claim', 'CPU'));
-        else add(effect, E('i', 'nr-ring'), E('i', 'nr-spark', '✦'));
+        else add(effect, E('i', 'nr-ring'), E('i', 'nr-spark', '✦'), E('span', 'nr-ok-badge', 'OK'));
         item.effect.replaceChildren(effect);
       } else if (!data.effect && item.effectId) {
         // Drop finished FX nodes so a later miss can remount cleanly without flicker.

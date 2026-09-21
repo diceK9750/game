@@ -414,6 +414,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-cpu-claim { position: absolute; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: .4px; color: #fff; background: #8a1f5aee; box-shadow: 0 0 10px #ed56ff88; animation: nr-cpu-claim 650ms both; }
 .nr-miss-badge { position: absolute; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: .4px; color: #fff; background: #a81f2eee; box-shadow: 0 0 10px #f67f8188; opacity: 0; pointer-events: none; }
 @keyframes nr-cpu-claim { 0% { transform: scale(.6); opacity: 0; } 25%, 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(.9) translateY(-6px); opacity: 0; } }
+.nr-ok-badge { position: absolute; z-index: 1; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 900; letter-spacing: .4px; color: #fff; background: #1f8a5eee; box-shadow: 0 0 10px #b4f6d588; animation: nr-ok-badge 650ms both; pointer-events: none; }
+@keyframes nr-ok-badge { 0% { transform: scale(.6); opacity: 0; } 25%, 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(.9) translateY(-6px); opacity: 0; } }
 /* Miss outline outlasts the bomb burst so wrong taps stay readable beside correct/CPU FX.
    #modern-app prefix beats .nr-cell:focus-visible { outline: none } when both apply. */
 #modern-app .nr-cell[data-feedback='wrong'] {
@@ -574,10 +576,11 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
    reduced-motion both apply (#39 forced-colors; contrast-more needs the same gate
    because data-reduced pastel selectors are more specific than contrast rules). */
 #modern-app[data-reduced='true'] .nr-cpu-claim,
+#modern-app[data-reduced='true'] .nr-ok-badge,
 #modern-app[data-reduced='true'] .nr-award { opacity: 1; animation: none !important; }
 #modern-app[data-reduced='true'] *, #modern-app[data-reduced='true'] *::before, #modern-app[data-reduced='true'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-/* Reduced-motion FX: do not blank .nr-fx (that hid ring/spark and nested CPU badge).
-   Cell outlines (#28/#29) stay the durable outer cue; ring/spark/CPU badge + miss badge
+/* Reduced-motion FX: do not blank .nr-fx (that hid ring/spark and nested CPU/OK badge).
+   Cell outlines (#28/#29) stay the durable outer cue; ring/spark/CPU/OK badge + miss badge
    are static inner stand-ins. Miss bomb/burst stay hidden (motion-heavy); .nr-miss-badge
    is the reduced-only inner cue (opacity 0 under full motion). pointer-events: none. */
 #modern-app[data-reduced='true'] .nr-fx { opacity: 1; animation: none !important; }
@@ -585,7 +588,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 #modern-app[data-reduced='true'] .nr-burst { opacity: 0; }
 #modern-app[data-reduced='true'] .nr-ring,
 #modern-app[data-reduced='true'] .nr-spark,
-#modern-app[data-reduced='true'] .nr-miss-badge {
+#modern-app[data-reduced='true'] .nr-miss-badge,
+#modern-app[data-reduced='true'] .nr-ok-badge {
   opacity: 1; transform: none; animation: none !important;
 }
 @media (forced-colors: none) {
@@ -601,6 +605,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 }
 @media (prefers-reduced-motion: reduce) {
   #modern-app .nr-cpu-claim,
+  #modern-app .nr-ok-badge,
   #modern-app .nr-award { opacity: 1; animation: none !important; }
   #modern-app *, #modern-app *::before, #modern-app *::after { animation: none !important; transition: none !important; }
   #modern-app .nr-fx { opacity: 1; animation: none !important; }
@@ -608,7 +613,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-burst { opacity: 0; }
   #modern-app .nr-ring,
   #modern-app .nr-spark,
-  #modern-app .nr-miss-badge {
+  #modern-app .nr-miss-badge,
+  #modern-app .nr-ok-badge {
     opacity: 1; transform: none; animation: none !important;
   }
   /* Pastel outlines only when HC is off; contrast-more + forced-colors blocks below own HC. */
@@ -694,7 +700,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-game-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px #c9a227;
   }
-  /* Static ring/spark/CPU/miss cues (#36/#37): readable under higher contrast; no glow. */
+  /* Static ring/spark/CPU/OK/miss cues (#36/#37): readable under higher contrast; no glow. */
   #modern-app .nr-ring {
     border-color: #0a8f55; border-width: 4px;
   }
@@ -704,6 +710,9 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   }
   #modern-app .nr-cpu-claim {
     color: #fff; background: #6a1048; box-shadow: none;
+  }
+  #modern-app .nr-ok-badge {
+    color: #fff; background: #0a6a40; box-shadow: none;
   }
   #modern-app .nr-miss-badge {
     color: #fff; background: #8a1010; box-shadow: none;
@@ -769,7 +778,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-game-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px Highlight;
   }
-  /* Static ring/spark/CPU/miss cues (#36/#37): system colors parity with #29 outlines.
+  /* Static ring/spark/CPU/OK/miss cues (#36/#37): system colors parity with #29 outlines.
      Soft pastels/glow remapped away in Windows HC; pointer-events stay none via base. */
   #modern-app .nr-ring {
     border-color: Highlight; border-width: 4px;
@@ -780,6 +789,9 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   }
   #modern-app .nr-cpu-claim {
     color: Canvas; background: ButtonText; box-shadow: none;
+  }
+  #modern-app .nr-ok-badge {
+    color: Canvas; background: Highlight; box-shadow: none;
   }
   #modern-app .nr-miss-badge {
     color: Canvas; background: LinkText; box-shadow: none;
