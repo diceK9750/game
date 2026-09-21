@@ -811,6 +811,68 @@ test('countdown/resuming entry focuses モード選択へ or reclaim heading; pl
   );
 });
 
+test('countdown/resuming Tab stays on cancel or heading and does not escape to chrome', () => {
+  const b = browserHarness();
+  const screenOf = (name) => walk(b.app).find(n => n.dataset && n.dataset.screen === name);
+  const btnIn = (root, text) => walk(root).find(n => n.tagName === 'BUTTON' && n.textContent === text);
+  const headerSound = walk(b.app).find(n => n.tagName === 'BUTTON' && n.getAttribute('aria-label') === 'BGMのオン・オフ');
+
+  // Countdown: single 「モード選択へ」 stop; Tab/Shift+Tab stay put; chrome reclaim.
+  b.render('ready', {cells: []});
+  b.render('countdown', {cells: [], countdown: 3});
+  const countScreen = screenOf('countdown');
+  const countTitle = btnIn(countScreen, 'モード選択へ');
+  const countLabel = walk(countScreen).find(n => n.tagName === 'H1');
+  assert.ok(countTitle && countLabel, 'countdown exposes モード選択へ + heading');
+  assert.equal(countTitle.hidden, false, 'countdown shows モード選択へ');
+  assert.equal(b.document.activeElement, countTitle, 'countdown entry still focuses モード選択へ (#55)');
+
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, countTitle, 'countdown Tab stays on モード選択へ');
+  assert.notEqual(b.document.activeElement, headerSound, 'countdown Tab must not escape to ♪ chrome');
+  countTitle.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, countTitle, 'countdown Shift+Tab also stays on モード選択へ');
+
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, countTitle, 'Tab from chrome re-enters countdown on モード選択へ');
+
+  // Same-screen tick must not yank focus while trap is active.
+  headerSound.focus();
+  b.render('countdown', {cells: [], countdown: 2});
+  assert.equal(b.document.activeElement, headerSound, 'countdown→countdown still keeps current focus');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, countTitle, 'Tab after tick still reclaims onto モード選択へ');
+
+  // Resuming: cancel hidden; Tab reclaims onto heading (not ♪ / hidden button).
+  b.render('playing', {cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  b.render('resuming', {cells: [], countdown: 2});
+  assert.equal(countTitle.hidden, true, 'resuming hides モード選択へ');
+  assert.equal(b.document.activeElement, countLabel, 'resuming entry still reclaims heading (#55)');
+
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, countLabel, 'resuming Tab stays on countdown heading');
+  assert.notEqual(b.document.activeElement, headerSound, 'resuming Tab must not escape to ♪ chrome');
+  assert.notEqual(b.document.activeElement, countTitle, 'must not focus hidden モード選択へ');
+  countLabel.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(b.document.activeElement, countLabel, 'resuming Shift+Tab also stays on heading');
+
+  headerSound.focus();
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(b.document.activeElement, countLabel, 'Tab from chrome re-enters resuming on heading');
+
+  // Confirm trap still works after countdown (#45 regression guard).
+  b.render('playing', {cells: Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}))});
+  b.render('confirm', {confirm_action: 'pause', cells: []});
+  const resume = btnIn(screenOf('confirm'), 'プレイを続ける');
+  assert.equal(b.document.activeElement, resume, 'pause entry still focuses resume');
+  b.app.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.notEqual(b.document.activeElement, headerSound, 'confirm Tab still trapped after countdown');
+});
+
 test('confirm/help entry focuses primary dialog control without Tab hunting', () => {
   const b = browserHarness();
   const cellsState = Array.from({length: 40}, (_, i) => ({n: i + 1, owner: null}));

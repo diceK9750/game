@@ -540,8 +540,9 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
-  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/ready/home so focus
-  // cannot escape to header chrome (♪) or a hidden board behind the overlay.
+  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/ready/home/
+  // countdown/resuming so focus cannot escape to header chrome (♪) or a hidden
+  // board behind the overlay.
   function dialogTabStops(root) {
     const stops = [];
     (function visit(node) {
@@ -561,6 +562,9 @@
     // Game chooser: trap among .nr-game-choices cards only (#53). Header ♪ /
     // ゲーム選択 stay outside. Entry focus stays first enabled card (#51).
     if (screen === 'home') return homeChoices;
+    // Countdown cancel-only (#57 / entry #55): trap on the shared countdown
+    // section. Resuming reuses the same DOM; button hide is handled in stops.
+    if (screen === 'countdown' || screen === 'resuming') return countdown;
     return null;
   }
   function dialogTrapStops(screen) {
@@ -581,6 +585,15 @@
       // disabled cards (絵しりとり unavailable → 数字さがし alone). Entry (#51).
       return dialogTabStops(homeChoices);
     }
+    if (screen === 'countdown' || screen === 'resuming') {
+      // Cancel-only ring: visible 「モード選択へ」. Resuming hides that button —
+      // reclaim onto the countdown heading (tabIndex -1) so Tab cannot escape to
+      // ♪. Entry focus (#55) and play-start #41 / resume #42 stay intact.
+      const stops = dialogTabStops(countdown);
+      if (stops.length) return stops;
+      countLabel.tabIndex = -1;
+      return [countLabel];
+    }
     const root = dialogTrapRoot(screen);
     return root ? dialogTabStops(root) : [];
   }
@@ -593,10 +606,11 @@
         command(state?.confirm_action === 'pause' ? 'yes' : 'no');
       }
     } else if (dialogTrapRoot(state?.screen) && event.key === 'Tab') {
-      // Cycle visible confirm/help/finished/review/ready/home controls only
-      // (#45/#47/#48/#52/#53). Esc (#16), entry (#43 help→戻る), finished replay
-      // focus+Enter (#17), ready 「1から順番」 (#50), home first-card (#51), and
-      // pause→resume cell restore (#42) stay intact.
+      // Cycle visible confirm/help/finished/review/ready/home/countdown controls
+      // only (#45/#47/#48/#52/#53/#57). Esc (#16), entry (#43 help→戻る), finished
+      // replay focus+Enter (#17), ready 「1から順番」 (#50), home first-card (#51),
+      // countdown 「モード選択へ」 (#55), and pause→resume cell restore (#42) stay
+      // intact. Resuming reclaims the heading when cancel is hidden.
       const stops = dialogTrapStops(state.screen);
       if (stops.length) {
         event.preventDefault();
