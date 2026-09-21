@@ -259,6 +259,52 @@ test('blocked solo exposes rescue without any reading choices', () => {
   assert.ok(view.page.querySelectorAll('.sh-card').every(b => b.disabled));
 });
 
+test('blocked entry focuses rescue primary; overlays and play-start spared', () => {
+  const {view, state, doc} = harness();
+  const cards12 = Array.from({length: 12}, () => ({
+    id: 'apple', icon: '🍎', words: ['りんご'], owner: null
+  }));
+  const btn = (root, text) => root.querySelectorAll('button').find(b => b.textContent === text);
+
+  // playing → blocked: land on 「つなぎ直す」 (nr-primary), not HUD heading / disabled cards.
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const cards = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden);
+  assert.equal(doc.activeElement, cards[0], 'play start still focuses first playable (#35)');
+  cards[3].focus();
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 2});
+  const rescue = btn(view.page, 'つなぎ直す あと2回');
+  assert.ok(rescue && String(rescue.className).includes('nr-primary'));
+  assert.equal(rescue.hidden, false);
+  assert.equal(doc.activeElement, rescue, 'blocked entry focuses つなぎ直す');
+  assert.ok(cards.every(c => c.disabled), 'all cards disabled while blocked');
+
+  // Same-phase blocked updates leave mouse/keyboard focus alone.
+  const prompt = view.page.querySelector('.sh-prompt');
+  prompt.focus();
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 2, message: 'still blocked'});
+  assert.equal(doc.activeElement, prompt, 'blocked→blocked keeps current focus');
+
+  // blocked → playing (after relink): restore play-start first-playable focus (#35).
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'playing', turn: 'you', relinks: 1});
+  assert.equal(doc.activeElement, cards[0], 'blocked→playing restores first playable (#35)');
+
+  // Pause overlay still wins entry focus (#44); no rescue steal while paused.
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 1});
+  assert.equal(doc.activeElement, btn(view.page, 'つなぎ直す あと1回'), 're-blocked focuses rescue again');
+  view.update({...state, mode: 'solo', total: 12, cards: [], phase: 'paused'});
+  assert.equal(doc.activeElement, btn(view.page, 'プレイを続ける'), 'pause entry still focuses resume (#44)');
+
+  // Dictionary overlay: keep back-button focus (no rescue steal) (#44/#46).
+  view.update({...state, mode: 'solo', phase: 'intro', cards: []});
+  const open = view.page.querySelectorAll('.sh-dict-open')[0];
+  open.events.click();
+  const dictFocus = doc.activeElement;
+  assert.equal(dictFocus && dictFocus.textContent, '← 絵しりとりに戻る', 'dict entry focuses back');
+  view.update({...state, mode: 'solo', total: 12, cards: cards12, phase: 'blocked', turn: 'you', relinks: 2});
+  assert.equal(view.isOverlayOpen(), true);
+  assert.equal(doc.activeElement, dictFocus, 'open dictionary keeps focus (no rescue steal)');
+});
+
 test('shiritori deal motion respects reduced-motion and data-reduced', () => {
   const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
   assert.match(css, /#modern-app\[data-reduced='true'\] \.sh-icon \{ animation: none/);
