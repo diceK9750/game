@@ -509,13 +509,17 @@
     });
     // Durable miss outlines outlast correct/CPU FX (#18). Keep latest-wins HUD from regressing
     // to an older lingering miss once a newer correct/CPU copy has already been shown.
+    // Event guidance (miss/correct/CPU) also feeds the polite live region so SR hear
+    // durable「ちがう数字」etc.; visual .nr-feedback stays non-live (#97 strip).
     const idleCopy = state.streak >= 3 ? `${state.streak}連続正解！いいリズム。` : battle ? '青はあなた、ピンクはCPU。先に見つけよう。' : 'あわてず、ひとつずつ。';
+    let stageGuidance = '';
     if (recentStarted < 0) {
       stageCopyFloor = -1;
       feedback.textContent = idleCopy;
     } else if (recentStarted >= stageCopyFloor) {
       stageCopyFloor = recentStarted;
       feedback.textContent = recent;
+      stageGuidance = recent;
     } else {
       feedback.textContent = idleCopy;
     }
@@ -596,7 +600,7 @@
       const own = rows.filter(row => row.owner === 'you');
       reviewSummary.textContent = own.length ? `あなたが見つけた数字：${own.length}個。最速 ${formatTime(Math.min(...own.map(row => finite(row.seconds))))}。青があなた、ピンクがCPUです。` : 'ピンクがCPUの獲得した数字です。ゆったりモードで練習してみよう。';
     }
-    const nextAnnouncement = playing ? `次の数字は${state.target}。${integer(state.completed)}個見つけました。ミス${integer(state.mistakes)}回。` : state.screen === 'finished' ? `${resultTitle.textContent} ${resultScore.textContent}` : state.screen === 'confirm' ? confirmTitle.textContent : '';
+    const nextAnnouncement = playing ? `次の数字は${state.target}。${integer(state.completed)}個見つけました。ミス${integer(state.mistakes)}回。${stageGuidance}` : state.screen === 'finished' ? `${resultTitle.textContent} ${resultScore.textContent}` : state.screen === 'confirm' ? confirmTitle.textContent : '';
     if (nextAnnouncement !== announcement) { announcement = nextAnnouncement; live.textContent = announcement; }
     if (changedScreen) {
       // Remember the board cell that had focus before pause/overlays hide it, so
