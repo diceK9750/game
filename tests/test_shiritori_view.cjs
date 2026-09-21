@@ -675,3 +675,110 @@ test('intro setup Tab cycles mode/count/difficulty/start only (parity ready #52)
   view.page.emit('keydown', {key: 'Tab', shiftKey: false});
   assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no intro trap bleed)');
 });
+
+test('finished result Tab cycles replay/mode/dict and does not escape (parity #48)', () => {
+  const {view, state, queue, doc} = harness();
+  const collectStops = (root) => {
+    const stops = [];
+    (function visit(node) {
+      if (!node || node.hidden) return;
+      if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+      for (const child of node.children || []) visit(child);
+    })(root);
+    return stops;
+  };
+
+  // Battle result: entry replay (#19); Tab cycles retry/mode/dict only.
+  view.update({...state, phase: 'playing'});
+  view.update({
+    ...state,
+    phase: 'finished',
+    winner: 'you',
+    history: [{id: 'apple', word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+  });
+  const result = view.page.querySelector('.sh-result');
+  assert.ok(result && result.hidden === false, 'result screen is visible');
+  const retry = result.querySelectorAll('button').find(b => b.textContent === 'もう一度遊ぶ');
+  const setup = result.querySelectorAll('button').find(b => b.textContent === 'モード選択');
+  const dict = result.querySelector('.sh-dict-open');
+  assert.ok(retry && setup && dict, 'result actions stay available');
+  assert.equal(doc.activeElement, retry, 'result entry still focuses primary replay (#19)');
+
+  const finishedStops = collectStops(result);
+  assert.deepEqual(finishedStops, [retry, setup, dict], 'finished exposes retry/mode/dict');
+  // Intro dict (outside result) must not join the ring.
+  const introDict = view.page.querySelectorAll('.sh-dict-open')[0];
+  assert.ok(introDict && introDict !== dict);
+  assert.ok(!finishedStops.includes(introDict), 'intro 読み方ずかん stays outside result trap');
+
+  for (let i = 0; i < finishedStops.length; i++) {
+    const expected = finishedStops[(i + 1) % finishedStops.length];
+    view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+    assert.equal(doc.activeElement, expected, `finished Tab step ${i + 1} stays in result`);
+    assert.notEqual(doc.activeElement, introDict, 'Tab must not escape to intro dict');
+  }
+  retry.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: true});
+  assert.equal(doc.activeElement, finishedStops[finishedStops.length - 1], 'Shift+Tab wraps inside finished');
+
+  // Focus already outside ring (heading): Tab pulls back onto replay (first stop).
+  const heading = result.querySelectorAll('h1').find(h => h.textContent === 'あなたの勝利！');
+  assert.ok(heading, 'finished result title is present');
+  heading.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, retry, 'Tab from heading re-enters result on replay');
+
+  // #19 Enter/Space retry still works when focus is not on a visible button.
+  heading.focus();
+  const beforeEnter = queue.length;
+  view.page.emit('keydown', {key: 'Enter', repeat: false});
+  assert.equal(queue.at(-1).action, 'sh_start', 'Enter still retries from non-button focus (#19)');
+  assert.equal(queue.length, beforeEnter + 1);
+  setup.focus();
+  const afterSetup = queue.length;
+  view.page.emit('keydown', {key: ' ', repeat: false});
+  assert.equal(queue.length, afterSetup, 'mode-select button keeps native Space activation');
+
+  // Solo finished: same three stops (no hidden review equivalent).
+  view.update({...state, phase: 'intro', mode: 'solo', cards: []});
+  view.update({
+    ...state,
+    phase: 'finished',
+    mode: 'solo',
+    winner: 'you',
+    history: [{id: 'apple', word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+  });
+  assert.equal(doc.activeElement, retry, 'solo result still focuses replay (#19)');
+  const soloStops = collectStops(result);
+  assert.deepEqual(soloStops, [retry, setup, dict], 'solo finished keeps retry/mode/dict');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, setup, 'solo Tab moves to モード選択');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, dict, 'solo Tab moves to 読み方ずかん');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, retry, 'solo Tab wraps to replay');
+
+  // Overlay trap still wins when dictionary opens from result (#46 regression).
+  dict.events.click();
+  assert.equal(view.isOverlayOpen(), true, 'dictionary opens from result');
+  const dictBack = view.page.querySelector('.sh-dict-header').querySelector('button');
+  assert.equal(doc.activeElement, dictBack, 'dict entry still focuses back (#44)');
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.notEqual(doc.activeElement, retry, 'dict Tab must not escape to result replay');
+  assert.ok(
+    view.page.querySelector('.sh-dictionary').contains(doc.activeElement),
+    'dict Tab stays inside dictionary overlay'
+  );
+  // Close dict so later playing check is not still trapped in the overlay.
+  dictBack.events.click();
+  assert.equal(view.isOverlayOpen(), false, 'dictionary closes back to result');
+  assert.equal(doc.activeElement, dict, 'dict close restores result 読み方ずかん focus');
+
+  // Playing: Tab is not trapped (no result trap bleed).
+  const cards12 = Array.from({length: 12}, () => ({id: 'apple', icon: '🍎', words: ['りんご'], owner: null}));
+  view.update({...state, total: 12, cards: cards12, phase: 'playing', turn: 'you'});
+  const first = view.page.querySelectorAll('.sh-card').filter(c => !c.hidden)[0];
+  first.focus();
+  view.page.emit('keydown', {key: 'Tab', shiftKey: false});
+  assert.equal(doc.activeElement, first, 'playing leaves Tab alone (no result trap bleed)');
+});

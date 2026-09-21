@@ -1472,6 +1472,7 @@ test('shiritori overlay Tab reclaim wiring keeps chrome parity with confirm trap
   const sh = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
   assert.match(sh, /function trapOverlayTab/);
   assert.match(sh, /activeOverlayRoot/);
+  assert.match(sh, /function resultTabStops/);
   assert.match(js, /state\?\.screen === 'shiritori' && event\.key === 'Tab'/);
   assert.match(js, /trapOverlayTab\?\.\(event\)/);
 });
