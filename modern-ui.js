@@ -525,8 +525,28 @@
     resultTime.textContent = formatTime(state.elapsed); resultMiss.textContent = `${integer(state.mistakes)} 回`; resultStreak.textContent = `${integer(state.max_streak)} 回`;
     award.hidden = !state.perfect; awardValue.textContent = `+ ${integer(state.bonus).toLocaleString()} pt`;
     resultCard.dataset.perfect = String(!!state.perfect);
-    record.textContent = state.hint_used ? 'ヒント使用のため、ベスト記録には保存されません。' : state.is_new_best ? '✦ 自己ベスト更新！' : battle && state.best_points != null ? `自己ベスト ${state.best_points} 点` : state.best_time != null ? `自己ベスト ${formatTime(state.best_time)}` : '';
-    if (state.screen === 'finished' && state.storage_saved === false) record.textContent += ' このブラウザに保存できませんでした。記録はページを閉じると失われる場合があります。';
+    // Record line kinds drive contrast: new-best pill vs muted prior-best vs hint/warn.
+    let recordKind = '';
+    if (state.hint_used) {
+      recordKind = 'hint';
+      record.textContent = 'ヒント使用のため、ベスト記録には保存されません。';
+    } else if (state.is_new_best) {
+      recordKind = 'new';
+      record.textContent = '✦ 自己ベスト更新！';
+    } else if (battle && state.best_points != null) {
+      recordKind = 'best';
+      record.textContent = `自己ベスト ${state.best_points} 点`;
+    } else if (state.best_time != null) {
+      recordKind = 'best';
+      record.textContent = `自己ベスト ${formatTime(state.best_time)}`;
+    } else {
+      record.textContent = '';
+    }
+    if (state.screen === 'finished' && state.storage_saved === false) {
+      record.textContent += ' このブラウザに保存できませんでした。記録はページを閉じると失われる場合があります。';
+      if (recordKind !== 'new') recordKind = 'warn';
+    }
+    record.dataset.record = recordKind;
     reviewButton.hidden = !battle;
     if (state.screen === 'review') {
       const rows = Array.isArray(state.history) ? state.history : [];

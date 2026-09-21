@@ -219,10 +219,12 @@
   .nr-result-stats .nr-stat > span { font-size: 8px; margin: 0; }
   .nr-result-stats .nr-stat > strong { font-size: 12px; font-weight: 650; color: var(--nr-muted); }
   .nr-result-stats > .nr-muted { flex-basis: 100%; margin: 0 !important; line-height: 1.2; font-size: 10px; }
-  .nr-result-card .nr-award { padding: 3px; }
+  .nr-result-card .nr-award { padding: 4px 6px; }
   .nr-result-card .nr-award > strong { font-size: 19px; line-height: 1.1; }
+  .nr-result-card .nr-award > span { font-size: 9px; letter-spacing: 1px; }
   .nr-award > small { display: none; }
   .nr-result-card .nr-record { font-size: 10px; min-height: 0; line-height: 1.2; }
+  .nr-result-card .nr-record[data-record='new'] { font-size: 11px; padding: 3px 8px; }
   .nr-result-actions { gap: 4px; margin: 0; }
   .nr-result-actions > .nr-button, .nr-result-card > .nr-quiet { min-height: 44px; padding: 5px; font-size: 12px !important; }
   .sh-result { padding: 8px; gap: 4px; overflow: clip; }

@@ -329,14 +329,41 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-result-stats .nr-stat > strong { font-size: 14px; font-weight: 650; color: var(--nr-muted); }
 .nr-result-stats .nr-stat > span { font-size: 8px; opacity: .9; }
 .nr-result-stats > .nr-muted { font-size: 12px; opacity: .85; }
-.nr-record { font-size: 12px; color: var(--nr-gold); margin-top: 14px !important; min-height: 18px; }
+.nr-record { font-size: 12px; color: var(--nr-muted); margin-top: 14px !important; min-height: 18px; font-weight: 650; }
+/* New best: pill badge so “自己ベスト更新” reads above muted prior-best copy. */
+.nr-record[data-record='new'] {
+  display: inline-block; font-size: 13px; font-weight: 850; letter-spacing: .3px;
+  color: #fff8e7; background: #2f220ff5; border: 1px solid #f0d08acc; border-radius: 999px;
+  padding: 5px 12px; line-height: 1.3;
+  box-shadow: inset 0 0 0 1px #ffe2a433, 0 0 16px #e1bc6c28;
+}
+.nr-record[data-record='best'] { color: var(--nr-muted); font-weight: 600; }
+.nr-record[data-record='hint'], .nr-record[data-record='warn'] {
+  color: #f0c9a0; font-weight: 700;
+}
 .nr-result-actions { display: flex; gap: 12px; margin-top: 18px; }
 .nr-result-actions > .nr-button { flex: 1; min-height: 48px; }
 .nr-result-card > .nr-quiet { margin-top: 10px; }
-.nr-award { border: 1px solid #edc27666; border-radius: 14px; background: linear-gradient(120deg, #dbac542b, #6e54351c); padding: 12px; margin-top: 16px; color: var(--nr-gold); }
-.nr-award > span, .nr-award > small { display: block; font-size: 10px; letter-spacing: 1px; }
-.nr-award > strong { display: block; font-size: 32px; line-height: 1.5; }
-.nr-result-card[data-perfect='true'] { border-color: #e1bc6c99; box-shadow: 0 0 50px #e1bc6c1c, inset 0 0 60px #e1bc6c0a; }
+/* PERFECT award: dark gold panel + cream label so it contrasts with primary score gold. */
+.nr-award {
+  border: 1px solid #f0d08acc; border-radius: 14px;
+  background: linear-gradient(145deg, #3a2a12f5, #16100af8);
+  padding: 12px; margin-top: 16px; color: #ffe9b0;
+  box-shadow: inset 0 0 0 1px #ffe2a422, 0 0 28px #e1bc6c22;
+}
+.nr-award > span {
+  display: block; font-size: 11px; font-weight: 850; letter-spacing: 1.4px; color: #fff8e7;
+}
+.nr-award > small {
+  display: block; font-size: 10px; letter-spacing: 1px; color: #e8c98a; opacity: .95;
+}
+.nr-award > strong {
+  display: block; font-size: 32px; line-height: 1.5; color: #ffe7a8;
+  text-shadow: 0 0 12px #e1bc6c55;
+}
+.nr-result-card[data-perfect='true'] {
+  border-color: #f0d08acc; box-shadow: 0 0 50px #e1bc6c28, inset 0 0 60px #e1bc6c12;
+}
 .nr-history { list-style: none; padding: 0; margin: 20px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .nr-history li { display: grid; grid-template-columns: 24px 30px 1fr 1.4fr; align-items: center; gap: 5px; text-align: left; padding: 8px; border-radius: 8px; background: #57ae9c1c; border: 1px solid #8ed9c727; font-size: 10px; }
 .nr-history li.nr-history-cpu { background: #d281a51c; border-color: #e19bba27; }
@@ -467,7 +494,9 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-result-stats { grid-area: stats; margin: 0; padding: 10px 0; }
   .nr-award { grid-area: award; margin: 0; padding: 8px; }
   .nr-award > strong { font-size: 27px; }
+  .nr-award > span { font-size: 10px; }
   .nr-record { grid-area: record; margin: 0 !important; font-size: 11px; }
+  .nr-record[data-record='new'] { font-size: 12px; padding: 4px 10px; }
   .nr-result-actions { grid-area: actions; margin: 4px 0 0; gap: 6px; }
   .nr-result-actions .nr-button { font-size: 12px !important; padding: 9px; }
   .nr-result-card > .nr-quiet { grid-area: review; margin: 0; }
@@ -636,6 +665,18 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-miss-badge {
     color: #fff; background: #8a1010; box-shadow: none;
   }
+  /* Result PERFECT award + new-record pill: solid dark panel / thick border. */
+  #modern-app .nr-award {
+    border: 2px solid #c9a227; background: #1a140c; color: #fff8e7; box-shadow: none;
+  }
+  #modern-app .nr-award > span { color: #fff8e7; }
+  #modern-app .nr-award > small { color: #ffe9b0; opacity: 1; }
+  #modern-app .nr-award > strong { color: #fff4c8; text-shadow: none; }
+  #modern-app .nr-record[data-record='new'] {
+    border: 2px solid #c9a227; background: #000; color: #fff; box-shadow: none;
+  }
+  #modern-app .nr-record[data-record='hint'],
+  #modern-app .nr-record[data-record='warn'] { color: #ffe0b0; }
 }
 
 /* forced-colors LAST: wins over reduced-motion pastels + contrast-more for durable outlines + static FX. */
@@ -705,6 +746,21 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-settings-toast {
     border: 2px solid CanvasText; background: Canvas; color: CanvasText; box-shadow: none;
   }
+  /* Result PERFECT award + new-record: system colors when HC remaps gold panels. */
+  #modern-app .nr-award {
+    border: 2px solid Highlight; background: Canvas; color: CanvasText; box-shadow: none;
+  }
+  #modern-app .nr-award > span,
+  #modern-app .nr-award > small,
+  #modern-app .nr-award > strong {
+    color: CanvasText; text-shadow: none; forced-color-adjust: none;
+  }
+  #modern-app .nr-record[data-record='new'] {
+    border: 2px solid Highlight; background: Highlight; color: HighlightText; box-shadow: none;
+    forced-color-adjust: none;
+  }
+  #modern-app .nr-record[data-record='hint'],
+  #modern-app .nr-record[data-record='warn'] { color: LinkText; }
   /* Numbers HUD お題 cue: Highlight ring when HC remaps gold pulse. */
   #modern-app .nr-target[data-cue='true'] {
     border: 3px solid Highlight; box-shadow: none; animation: none; transform: none;
