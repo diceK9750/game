@@ -372,8 +372,8 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-award { animation: nr-award-in 750ms ease-out both; }
 @keyframes nr-award-in { 0% { transform: translateY(12px) scale(.92); opacity: 0; }
   65% { transform: translateY(-2px) scale(1.02); opacity: 1; } 100% { transform: none; opacity: 1; } }
-/* High-contrast / forced-colors: keep miss/CPU/correct durable outlines readable
-   when soft pastels and glow shadows are remapped or dropped. */
+/* High-contrast / forced-colors: keep miss/CPU/correct/hint/cpu-selecting outlines
+   readable when soft pastels and glow shadows are remapped or dropped. */
 @media (prefers-contrast: more) {
   #modern-app .nr-cell[data-feedback='wrong'] {
     outline: 4px solid #d0181c; outline-offset: -3px; background: #ffd0d0;
@@ -385,6 +385,19 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   }
   #modern-app .nr-cell[data-feedback='cpu'] {
     outline: 4px solid #b01878; outline-offset: -3px;
+    box-shadow: inset 0 0 0 2px #6a1048;
+  }
+  #modern-app .nr-cell[data-hint='true'] {
+    outline: 4px solid #0a8f55; outline-offset: -4px;
+    box-shadow: inset 0 0 0 2px #066b40;
+  }
+  #modern-app .sh-card[data-hint='true'] {
+    outline: 4px solid #a07000; outline-offset: -3px;
+    box-shadow: inset 0 0 0 3px #8a6000; animation: none;
+  }
+  #modern-app .nr-cell[data-cpu-selecting='true'],
+  #modern-app .sh-card[data-cpu-selecting='true'] {
+    outline: 4px solid #b01878; outline-offset: -1px;
     box-shadow: inset 0 0 0 2px #6a1048;
   }
   #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
@@ -401,6 +414,16 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   }
   #modern-app .nr-cell[data-feedback='cpu'] {
     outline: 4px solid ButtonText; outline-offset: -3px; box-shadow: none;
+  }
+  #modern-app .nr-cell[data-hint='true'] {
+    outline: 4px solid Highlight; outline-offset: -4px; box-shadow: none;
+  }
+  #modern-app .sh-card[data-hint='true'] {
+    outline: 4px solid Highlight; outline-offset: -3px; box-shadow: none; animation: none;
+  }
+  #modern-app .nr-cell[data-cpu-selecting='true'],
+  #modern-app .sh-card[data-cpu-selecting='true'] {
+    outline: 4px solid ButtonText; outline-offset: -1px; box-shadow: none;
   }
   #modern-app .nr-cell:focus-visible::before, #modern-app .sh-card:focus-visible::before {
     box-shadow: inset 0 0 0 4px Highlight;
