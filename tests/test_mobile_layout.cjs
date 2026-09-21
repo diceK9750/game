@@ -66,7 +66,7 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
   assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(player, /canvas \{ touch-action: none;/);
-  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
   // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
@@ -154,7 +154,7 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.match(js, /markHostInsets/);
   assert.match(js, /data-host-insets/);
   assert.match(mobile, /Host owns device insets/);
-  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
 });
@@ -201,7 +201,7 @@ test('short-landscape result stacks primary score above cast so award cannot col
   // Two-column result grid + replay actions column intact (#17/#19 focus target).
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
-  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
 });
 
 test('short-landscape result packs secondary stats denser beside stacked score (#76)', () => {
@@ -220,7 +220,7 @@ test('short-landscape result packs secondary stats denser beside stacked score (
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 10px; \}/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
-  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
 });
 
 test('short-landscape shiritori packs secondary stats denser (#77)', () => {
@@ -246,7 +246,7 @@ test('short-landscape shiritori packs secondary stats denser (#77)', () => {
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
   assert.match(player, /shiritori-ui\.css\?v=sh-result-stats-ls-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-result-stats-ls-1/);
-  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
 });
 
 
@@ -276,7 +276,7 @@ test('short-landscape / mobile review-history density: compact summary + capped 
   assert.match(js, /onHistorySummary/);
   assert.match(js, /sh-result-history/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
-  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
 });
 
 
@@ -305,5 +305,5 @@ test('short-landscape result-actions / dict density: stack buttons + pin dict (#
   assert.match(js, /result\.append\(dictResult\)/);
   assert.match(js, /読み方ずかん/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
-  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
 });

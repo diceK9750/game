@@ -428,7 +428,7 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -472,10 +472,10 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   // #80 hide still wired; #17 focus target unchanged.
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
-  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=practice-solo-cast-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -496,6 +496,38 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
     player_points: 12, cpu_points: 5, goal: 12});
   assert.equal(kohIn(resultDuo()).hidden, false, 'battle result still shows LUNA');
 });
+
+test('practice play-stage solo cast centers RIN with absolute+left after LUNA hide (#83)', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  // Solo play: center RIN via absolute+left (parity denser result #82); battle duo left/right intact.
+  assert.match(css, /\.nr-play-stage:has\(> \.nr-koh\[hidden\]\) \{ justify-content: center; position: relative; \}/);
+  assert.match(css, /\.nr-play-stage:has\(> \.nr-koh\[hidden\]\) \.nr-rin \{[\s\S]*?position: absolute;[\s\S]*?left: 0;[\s\S]*?right: 0;[\s\S]*?margin-inline: auto/);
+  // Absolute media still pins battle RIN left / LUNA right.
+  assert.match(css, /\.nr-play-stage \.nr-rin \{ left: 0; \} \.nr-play-stage \.nr-koh \{ right: 0; \}/);
+  // #80/#82 keep: JS hide + denser result solo-cast.
+  assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
+    /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
+  assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
+  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
+  assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
+  assert.match(index, /player\.html\?v=practice-play-solo-1/);
+
+  const b = browserHarness();
+  const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
+  const kohIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-koh'));
+  const rinIn = (parent) => parent && parent.children.find(n => String(n.className).includes('nr-rin'));
+
+  b.render('playing', {kind: 'practice', cells: state().cells});
+  assert.equal(kohIn(playStage()).hidden, true, 'practice play still hides LUNA (#80)');
+  assert.equal(rinIn(playStage()).hidden, false, 'practice play keeps RIN');
+
+  b.render('playing', {kind: 'battle', cells: state().cells});
+  assert.equal(kohIn(playStage()).hidden, false, 'battle play still shows LUNA');
+  assert.equal(rinIn(playStage()).hidden, false, 'battle play still shows RIN');
+});
+
 
 
 test('modern view starts only after render and releases ownership on backend fallback', () => {
@@ -1871,7 +1903,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
-  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
 });
@@ -1906,7 +1938,7 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   assert.match(css, /\.nr-result-score \{[^}]*font-variant-numeric: tabular-nums/);
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
-  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
 });
 
@@ -1947,7 +1979,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-award \{[\s\S]*?border: 2px solid Highlight/);
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
-  assert.match(player, /modern-ui\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
   assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
 });
