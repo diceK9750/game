@@ -850,6 +850,15 @@ test('confirm Tab cycles dialog controls and does not escape to chrome', () => {
   assert.equal(b.document.activeElement, cell, 'playing leaves Tab alone (no preventDefault cycle)');
 });
 
+test('shiritori overlay Tab reclaim wiring keeps chrome parity with confirm trap', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  const sh = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  assert.match(sh, /function trapOverlayTab/);
+  assert.match(sh, /activeOverlayRoot/);
+  assert.match(js, /state\?\.screen === 'shiritori' && event\.key === 'Tab'/);
+  assert.match(js, /trapOverlayTab\?\.\(event\)/);
+});
+
 test('Escape toggles pause confirm and dismisses retry/title without quitting', () => {
   const b = browserHarness();
   b.render('playing');

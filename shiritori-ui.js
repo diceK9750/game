@@ -145,6 +145,38 @@
     result.append(discovery);
     function pose(p, value) { p.image.style.backgroundPosition = value; }
     function pressed(buttons, values, value) { buttons.forEach((b,i) => b.setAttribute('aria-pressed', String(values[i] === value))); }
+    // Visible buttons inside an open overlay only (#46 / numbers #45 parity).
+    function dialogTabStops(root) {
+      const stops = [];
+      (function visit(node) {
+        if (!node || node.hidden) return;
+        if (node.tagName === 'BUTTON' && !node.disabled) stops.push(node);
+        const kids = node.children || [];
+        for (let i = 0; i < kids.length; i++) visit(kids[i]);
+      })(root);
+      return stops;
+    }
+    function activeOverlayRoot() {
+      if (dictionaryOpen && dictionary && !dictionary.page.hidden) return dictionary.page;
+      if (helpOpen && !helpPage.hidden) return helpPage;
+      if (!restartPage.hidden) return restartPage;
+      if (latest?.phase === 'paused' && !pause.hidden) return pause;
+      return null;
+    }
+    function trapOverlayTab(event) {
+      if (event.key !== 'Tab') return false;
+      const root = activeOverlayRoot();
+      if (!root) return false;
+      const stops = dialogTabStops(root);
+      if (!stops.length) return false;
+      event.preventDefault();
+      const active = document.activeElement;
+      let idx = stops.indexOf(active);
+      if (event.shiftKey) idx = idx <= 0 ? stops.length - 1 : idx - 1;
+      else idx = (idx < 0 || idx === stops.length - 1) ? 0 : idx + 1;
+      stops[idx].focus({preventScroll: true});
+      return true;
+    }
     page.addEventListener('keydown', event => {
       if (event.key === 'Escape') {
         if (helpOpen) { closeHelp.click(); event.preventDefault(); return; }
@@ -152,6 +184,9 @@
         if (['playing','blocked'].includes(latest?.phase)) command('sh_pause');
         return;
       }
+      // Overlay Tab trap (#46): cycle pause/restart/setup/dict/help controls only.
+      // Entry focus (#44), Esc, and play-start card focus (#35) stay unchanged.
+      if (trapOverlayTab(event)) return;
       // Arrow keys move among playable .sh-card buttons (parity with number-rush nextPlayable).
       // Enter/Space stay native button activation; mouse/touch paths unchanged.
       if (latest?.phase === 'playing' && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
@@ -171,7 +206,7 @@
         if (!onVisibleButton) { event.preventDefault(); command('sh_start'); }
       }
     });
-    return {page, isOverlayOpen:()=>dictionaryOpen || helpOpen,
+    return {page, isOverlayOpen:()=>dictionaryOpen || helpOpen, trapOverlayTab,
       headerAction(action) {
         if (action==='help' && latest?.phase==='intro' && !dictionaryOpen) { helpOpen=true; intro.hidden=true; helpPage.hidden=false; closeHelp.focus(); }
         if (action==='retry' && ['playing','blocked'].includes(latest?.phase)) { restartRequested='sh_restart'; command('sh_pause'); }
