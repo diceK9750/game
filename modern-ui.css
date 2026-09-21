@@ -163,7 +163,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-start-group span { display: block; font-size: 10px; margin-top: 6px; font-weight: 500; }
 .nr-settings { display: flex; justify-content: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 .nr-setting { background: #11283366; font-size: 11px !important; padding: 8px 12px; min-height: 36px; }
-/* #102: settings/options pressed clarity — BGM ♪ + 効果音/演出 already set
+/* #103: settings/options pressed clarity — BGM ♪ + 効果音/演出 already set
    aria-pressed, but lacked the selected chrome segment/range already have.
    Gold border + mint wash so ON / ひかえめ read at a glance beside the label. */
 .nr-setting[aria-pressed='true'],
@@ -672,7 +672,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   #modern-app .nr-hint[data-used='true'] {
     color: #ecf5f3; background: #0d3a30; border: 2px solid #6bb89a;
   }
-  /* #102: settings toggles stay readable under prefers-contrast. */
+  /* #103: settings toggles stay readable under prefers-contrast. */
   #modern-app .nr-setting[aria-pressed='true'],
   #modern-app .nr-icon-button[aria-pressed='true'] {
     border: 2px solid #c9a227; background: #1a140c; color: #fff4c8; box-shadow: none;
@@ -785,7 +785,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     color: Canvas; background: LinkText; box-shadow: none;
   }
 
-  /* #102: settings pressed chrome when HC remaps gold wash. */
+  /* #103: settings pressed chrome when HC remaps gold wash. */
   #modern-app .nr-setting[aria-pressed='true'],
   #modern-app .nr-icon-button[aria-pressed='true'] {
     border: 2px solid Highlight; background: Highlight; color: HighlightText;
