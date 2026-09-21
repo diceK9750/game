@@ -81,7 +81,7 @@
   .nr-stat > strong { font-size: 11px; }
   .nr-cpu-row { margin-top: 2px; }
   .nr-feedback { display: none; }
-  .nr-stage-middle > .nr-setting { position: static; min-height: 44px; margin: 2px 0; }
+  .nr-stage-middle > .nr-hint { position: static; min-height: 44px; margin: 2px 0; }
   .sh-stage { height: 100%; min-height: 0; gap: 4px; }
   .sh-hud { flex-shrink: 0; padding: 2px 4px; gap: 4px; }
   .sh-hud .nr-character, .sh-hud .nr-character-art { width: clamp(28px, 7dvh, 42px); height: auto; flex-basis: auto; }
@@ -163,7 +163,7 @@
     display: flex; flex-direction: row; align-items: center; gap: 4px; height: 100%;
   }
   .nr-play-stats, .nr-cpu-row { margin: 0; }
-  .nr-stage-middle > .nr-setting {
+  .nr-stage-middle > .nr-hint {
     flex: 0 0 auto; min-height: 44px; min-width: 44px; margin: 0;
   }
   .nr-stage-middle > .timed-chains { flex: 1; min-width: 0; }
@@ -268,7 +268,7 @@
   .nr-play { gap: 2px; padding: 0; }
   .nr-hud { min-height: 32px; gap: 2px; }
   .nr-play-stage { min-height: 32px; }
-  .nr-stage-middle > .nr-setting {
+  .nr-stage-middle > .nr-hint {
     flex: 0 0 auto; min-height: 32px; min-width: 32px; margin: 0; padding: 4px 6px;
   }
   .nr-board { padding: 1px; gap: 1px; }

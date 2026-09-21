@@ -1777,3 +1777,46 @@ test('numbers YOU score-card cue wiring lives in modern-ui.js with animationend 
   assert.match(js, /youHud\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
 });
+
+
+test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(js, /button\('ヒントを見る', 'hint', undefined, 'nr-hint'\)/);
+  assert.ok(!/button\('ヒントを見る', 'hint', undefined, 'nr-setting'\)/.test(js));
+  assert.match(js, /hint\.dataset\.used/);
+  assert.match(js, /使うとベスト記録対象外/);
+  assert.match(css, /\.nr-hint \{/);
+  assert.match(css, /\.nr-hint\[data-used='true'\]/);
+  assert.match(css, /\.nr-stage-middle > \.nr-hint \{ min-height: 44px/);
+  // Short desktop must not shrink below a readable 36px / 11px chip.
+  assert.match(css, /\.nr-stage-middle > \.nr-hint \{ position: absolute;[\s\S]*?min-height: 36px;[\s\S]*?font-size: 11px !important/);
+  assert.ok(!/\.nr-stage-middle > \.nr-setting \{/.test(css));
+  assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
+  assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
+  assert.match(player, /modern-ui\.css\?v=hint-affordance-1/);
+  assert.match(player, /modern-ui\.js\?v=hint-affordance-1/);
+  assert.match(player, /mobile-layout\.css\?v=hint-affordance-1/);
+});
+
+test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
+  const b = browserHarness();
+  b.render('playing', {kind: 'practice', hint_used: false});
+  const hint = walk(b.app).find(n =>
+    n.tagName === 'BUTTON' && String(n.className).includes('nr-hint'));
+  assert.ok(hint, 'nr-hint button mounted');
+  assert.equal(hint.hidden, false, 'practice shows hint');
+  assert.equal(hint.dataset.used, 'false');
+  assert.equal(hint.textContent, 'ヒントを見る');
+  assert.match(hint.getAttribute('aria-label') || '', /使うとベスト記録対象外/);
+  assert.ok(!String(hint.className).includes('nr-setting'), 'hint is not muted settings chrome');
+
+  b.render('playing', {kind: 'practice', hint_used: true, hint_index: 3});
+  assert.equal(hint.dataset.used, 'true');
+  assert.equal(hint.textContent, 'ヒント（記録対象外）');
+  assert.match(hint.getAttribute('aria-label') || '', /ヒント使用済み/);
+
+  b.render('playing', {kind: 'battle', hint_used: false, player_points: 0, cpu_points: 0});
+  assert.equal(hint.hidden, true, 'battle hides practice hint');
+});
