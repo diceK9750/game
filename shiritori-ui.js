@@ -45,9 +45,10 @@
     const intro = E('div', 'nr-ready sh-ready');
     const hero = E('div', 'nr-intro');
     const heroRin = portrait('rin', 'RIN / あなた'), heroRival = portrait('koh', 'LUNA / ライバル');
+    const heroVersus = E('span', 'nr-versus', 'VS');
     add(hero, E('span', 'nr-eyebrow', 'PICTURE WORD CHALLENGE'), E('h1', '', '絵を見つけて、つなごう。'),
       E('p', 'nr-intro-copy', 'お題の文字につながる絵をタップ。読み方は自動で選択。\nどの枚数でも、全札をつなげられる配置でスタート！'),
-      add(E('div', 'nr-hero-cast'), heroRin.wrap, E('span', 'nr-versus', 'VS'), heroRival.wrap));
+      add(E('div', 'nr-hero-cast'), heroRin.wrap, heroVersus, heroRival.wrap));
     const setup = E('div', 'nr-setup nr-surface sh-ready-settings');
     const modeButtons = [button('CPUと対戦', 'sh_mode', 'battle'), button('ひとりで練習', 'sh_mode', 'solo')];
     const modeGroup = add(E('div', 'nr-segment sh-actions sh-modes'), ...modeButtons);
@@ -358,6 +359,8 @@
       stock.textContent = `山札 ${s.stock || 0}枚`; completed.textContent = `${s.completed || 0} / ${s.total || 24}枚 つながった`;
       hint.textContent = `ヒント ${s.hints}回`; hint.disabled = !mine || !s.hints || s.phase !== 'playing';
       relink.hidden = s.phase !== 'blocked'; relink.textContent = `つなぎ直す あと${s.relinks}回`;
+      // Solo has no rival — hide LUNA on ready hero-cast + play arena + result cast (parity #80/#86).
+      heroRival.wrap.hidden = solo; heroVersus.hidden = solo;
       endSolo.hidden = !solo; koh.wrap.hidden = solo; resultKoh.wrap.hidden = solo;
       const last = s.history[s.history.length - 1];
       pose(rin, last?.owner === 'you' ? '50% 0%' : '0% 0%'); pose(koh, last?.owner === 'cpu' ? '50% 0%' : '0% 0%');

@@ -993,7 +993,7 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1011,7 +1011,7 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1090,7 +1090,7 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.match(js, /taskWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1150,7 +1150,7 @@ test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
   assert.match(sh, /\.sh-result-cast > \.nr-result-score/);
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
 });
 
@@ -1218,9 +1218,9 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   assert.match(js, /もう一度遊ぶ/);
 
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
   assert.match(player, /mobile-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(index, /player\.html\?v=sh-play-hud-87-1/);
+  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
 
   const {view, state, doc} = harness();
   view.update({
@@ -1279,7 +1279,7 @@ test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #
   assert.match(layout, /\.sh-arena \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\) clamp\(40px, 15vw, 180px\);/);
   assert.match(js, /koh\.wrap\.hidden = solo/);
   assert.match(player, /character-layout\.css\?v=sh-play-hud-87-1/);
-  assert.match(index, /player\.html\?v=sh-play-hud-87-1/);
+  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
 
   const {view, state} = harness();
   view.update({
@@ -1305,4 +1305,57 @@ test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #
   const battleArena = view.page.querySelector('.sh-arena');
   const battleKoh = battleArena.children[battleArena.children.length - 1];
   assert.equal(battleKoh.hidden, false, 'battle play still shows LUNA');
+});
+
+
+test('shiritori solo hides LUNA+VS on ready hero-cast (parity #86 numbers; #88)', () => {
+  const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  assert.match(js, /heroRival\.wrap\.hidden = solo;\s*heroVersus\.hidden = solo;/);
+  assert.match(js, /koh\.wrap\.hidden = solo;\s*resultKoh\.wrap\.hidden = solo/);
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
+  assert.match(index, /player\.html\?v=sh-ready-cast-88-1/);
+
+  const {view, state, doc} = harness();
+  const heroCast = () => view.page.querySelector('.nr-hero-cast');
+  // Harness portrait() mocks lack nr-rin/nr-koh — cast children: rin, VS, koh.
+  const rinIn = (cast) => cast.children[0];
+  const versusIn = (cast) => cast.children[1];
+  const kohIn = (cast) => cast.children[2];
+
+  view.update({...state, phase: 'intro', mode: 'battle', cards: []});
+  assert.equal(kohIn(heroCast()).hidden, false, 'battle ready shows LUNA');
+  assert.equal(versusIn(heroCast()).hidden, false, 'battle ready shows VS');
+  assert.equal(rinIn(heroCast()).hidden, false, 'battle ready shows RIN');
+  assert.equal(versusIn(heroCast()).className, 'nr-versus', 'middle cast child is VS');
+
+  view.update({...state, phase: 'intro', mode: 'solo', cards: []});
+  assert.equal(kohIn(heroCast()).hidden, true, 'solo ready hides LUNA');
+  assert.equal(versusIn(heroCast()).hidden, true, 'solo ready hides VS');
+  assert.equal(rinIn(heroCast()).hidden, false, 'solo ready keeps RIN');
+
+  // Play+result hide still wired; intro entry focus still heading h1 (#56).
+  view.update({...state, phase: 'playing', mode: 'solo', cards: state.cards || []});
+  const arena = view.page.querySelector('.sh-arena');
+  assert.equal(arena.children[arena.children.length - 1].hidden, true, 'solo play still hides LUNA');
+  view.update({
+    ...state,
+    phase: 'finished',
+    mode: 'solo',
+    winner: 'you',
+    total: 24,
+    mistakes: 0,
+    hints: 0,
+    relinks: 0,
+    history: [{word: 'りんご', icon: '🍎', owner: 'you', readings: ['りんご']}],
+    chain: {you: {best: 1, bonus: 0}, cpu: {best: 0, bonus: 0}},
+  });
+  const resultCast = view.page.querySelector('.sh-result-cast');
+  assert.equal(resultCast.children[2].hidden, true, 'solo result still hides LUNA');
+
+  // Leave finished → intro so entry focus runs (same-phase keeps focus).
+  view.update({...state, phase: 'intro', mode: 'solo', cards: []});
+  const introHeading = view.page.querySelector('.sh-ready').querySelector('h1');
+  assert.equal(doc.activeElement, introHeading, 'solo intro still focuses heading h1');
 });
