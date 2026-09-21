@@ -201,7 +201,7 @@ test('short-landscape result stacks primary score above cast so award cannot col
   // Two-column result grid + replay actions column intact (#17/#19 focus target).
   assert.match(css, /\.nr-result-card > \.nr-result-actions \{ grid-column: 2 !important/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
-  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
+  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
 });
 
 test('short-landscape result packs secondary stats denser beside stacked score (#76)', () => {
@@ -220,7 +220,7 @@ test('short-landscape result packs secondary stats denser beside stacked score (
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 360px\)/);
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{ font-size: 10px; \}/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
-  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
+  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
 });
 
 test('short-landscape shiritori packs secondary stats denser (#77)', () => {
@@ -246,7 +246,7 @@ test('short-landscape shiritori packs secondary stats denser (#77)', () => {
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /shiritori-ui\.js\?v=sh-solo-cast-84-1/);
-  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
+  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
 });
 
 
@@ -276,7 +276,7 @@ test('short-landscape / mobile review-history density: compact summary + capped 
   assert.match(js, /onHistorySummary/);
   assert.match(js, /sh-result-history/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
-  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
+  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
 });
 
 
@@ -305,5 +305,5 @@ test('short-landscape result-actions / dict density: stack buttons + pin dict (#
   assert.match(js, /result\.append\(dictResult\)/);
   assert.match(js, /読み方ずかん/);
   assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
-  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
+  assert.match(index, /player\.html\?v=sh-arena-solo-85-1/);
 });
