@@ -447,6 +447,19 @@
       // Result→replay: land on primary retry so Enter/Space restarts without Tab hunting.
       if (state.screen === 'finished' && previousScreen) {
         resultRetry.focus({preventScroll: true});
+      } else if (state.screen === 'playing' && previousScreen) {
+        // Play start: land on first playable .nr-cell so arrow nav has a clear origin
+        // without Tab hunting (parity with shiritori #35). Confirm/help/pause are other
+        // screens — never steal focus onto cells while they show. Same-screen updates
+        // leave mouse/touch focus alone (changedScreen guard).
+        const playable = cells.findIndex(item => !item.cell.disabled);
+        if (playable >= 0) {
+          keyboardCell = playable;
+          cells[playable].cell.focus({preventScroll: true});
+        } else {
+          const focusTarget = play.querySelector('.nr-target, h1, button:not(:disabled)');
+          if (focusTarget) { if (focusTarget.tagName !== 'BUTTON') focusTarget.tabIndex = -1; focusTarget.focus({preventScroll: true}); }
+        }
       } else if (previousScreen && document.activeElement && app.contains(document.activeElement) && document.activeElement.closest('[hidden]')) {
         const focusTarget = screenMap[state.screen].querySelector('button.nr-primary:not(:disabled), h1, .nr-target, button:not(:disabled)');
         if (focusTarget) { if (focusTarget.tagName !== 'BUTTON') focusTarget.tabIndex = -1; focusTarget.focus({preventScroll: true}); }
