@@ -317,13 +317,14 @@
 
   const helpScreen = section('help', 'nr-centered');
   const instructions = E('ol', 'nr-instructions');
+  // Named so render can swap kind-aware score bullet (practice must not say ライバル; #95 / parity #90/#92/#93/#94).
+  const helpRivalHeading = E('h2', '', 'ライバルより先に見つけよう');
+  const helpRivalBody = E('p', '', '青いYOUがあなた、ピンクのCPUがルナ。先に見つけると1点。全体の6割で勝利です。');
   // Named so render can swap kind-aware pause clause (practice must not invent CPU; #94 / parity #90).
   const helpPracticePause = E('p', '', 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。');
-  for (const [heading, text] of [
-    ['お題と同じ数字をタップ', '盤面はいつも5行×8列。1から順番、またはランダムなお題を探します。'],
-    ['ライバルより先に見つけよう', '青いYOUがあなた、ピンクのCPUがルナ。先に見つけると1点。全体の6割で勝利です。'],
-    ['ミスしても、すぐ次へ', 'まちがいは爆弾の演出でお知らせ。同じマスはすぐ押し直せます。正解後も待ち時間はありません。'],
-  ]) add(instructions, add(E('li'), E('h2', '', heading), E('p', '', text)));
+  add(instructions, add(E('li'), E('h2', '', 'お題と同じ数字をタップ'), E('p', '', '盤面はいつも5行×8列。1から順番、またはランダムなお題を探します。')));
+  add(instructions, add(E('li'), helpRivalHeading, helpRivalBody));
+  add(instructions, add(E('li'), E('h2', '', 'ミスしても、すぐ次へ'), E('p', '', 'まちがいは爆弾の演出でお知らせ。同じマスはすぐ押し直せます。正解後も待ち時間はありません。')));
   add(instructions, add(E('li'), E('h2', '', '練習と休憩も、気軽に'), helpPracticePause));
   const helpBack = button('戻る', 'back', undefined, 'nr-primary');
   add(helpScreen, add(E('div', 'nr-help-card nr-surface'), E('span', 'nr-eyebrow', 'HOW TO PLAY'), E('h1', '', '遊び方'), instructions, E('p', 'nr-muted', 'PC：クリック、または矢印キー＋Enter。Escで一時停止。結果画面はEnter／Spaceでもう一度。スマートフォンは横持ちがおすすめ。'), helpBack));
@@ -533,6 +534,13 @@
         ? 'タイマーもライバルも止まっています。準備ができたら再開しよう。'
         : 'タイマーは止まっています。準備ができたら再開しよう。')
       : '現在のプレイを終了します。';
+    // Practice has no rival — help score bullet must not battle-frame (parity pause #90 / intro #92 / award #93 / help-pause #94).
+    helpRivalHeading.textContent = battle
+      ? 'ライバルより先に見つけよう'
+      : '自分のペースで見つけよう';
+    helpRivalBody.textContent = battle
+      ? '青いYOUがあなた、ピンクのCPUがルナ。先に見つけると1点。全体の6割で勝利です。'
+      : '青いYOUがあなた。すべての数字を見つけよう。時間制限なしで、自分のペースでクリアを目指します。';
     // Practice has no CPU — help pause clause must not invent one (parity pause #90 / intro #92 / award #93).
     helpPracticePause.textContent = battle
       ? 'ひとりで練習は時間制限なし。ヒントを使うと記録対象外になります。一時停止中はCPUも時計も止まります。'

@@ -427,8 +427,8 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -463,8 +463,8 @@ test('practice hides LUNA+VS on ready hero-cast (parity #80 play+result; #86)', 
   assert.match(js, /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -515,8 +515,8 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -552,8 +552,8 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -1945,7 +1945,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?#modern-app \.nr-hint/);
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
 });
 
@@ -2021,7 +2021,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.nr-record\[data-record='new'\]/);
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
 });
 
@@ -2103,8 +2103,8 @@ test('practice ready solo hero-cast denser/centered after LUNA+VS hide (shared #
     /heroKoh\.wrap\.hidden = !battle;\s*heroVersus\.hidden = !battle;/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-progress-91-1/);
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const heroCast = () => walk(b.app).find(n => n.className === 'nr-hero-cast');
@@ -2140,8 +2140,8 @@ test('practice pause copy omits rival/CPU; battle keeps rival stopped (#90)', ()
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const mutedIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-muted'));
@@ -2168,8 +2168,8 @@ test('practice ready intro-copy omits rival; battle keeps ライバル (#92)', (
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const introIn = (screen) => walk(screen).find(n => n.tagName === 'P' && String(n.className).includes('nr-intro-copy'));
@@ -2196,8 +2196,8 @@ test('practice PERFECT award blurb omits 先取; battle keeps it (#93)', () => {
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const awardOf = () => walk(b.app).find(n => n.className === 'nr-award');
@@ -2234,8 +2234,8 @@ test('practice help pause clause omits CPU; battle keeps it (#94)', () => {
 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /modern-ui\.js\?v=help-pause-copy-94-1/);
-  assert.match(index, /player\.html\?v=help-pause-copy-94-1/);
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
 
   const b = browserHarness();
   const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
@@ -2254,4 +2254,47 @@ test('practice help pause clause omits CPU; battle keeps it (#94)', () => {
   assert.match(practiceCopy, /一時停止中は時計も止まります/, 'practice help pause mentions clock only');
   assert.doesNotMatch(practiceCopy, /CPU/, 'practice help pause must not invent CPU');
   assert.doesNotMatch(practiceCopy, /ライバル/, 'practice help pause must not invent rival');
+});
+
+test('practice help rival bullet uses pace copy; battle keeps rival (#95)', () => {
+  const js = fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8');
+  assert.match(js, /ライバルより先に見つけよう/);
+  assert.match(js, /自分のペースで見つけよう/);
+  assert.match(js, /すべての数字を見つけよう。時間制限なしで、自分のペースでクリアを目指します。/);
+  // Kind-aware assignment: battle keeps rival heading/body; practice drops phantom rivalry.
+  assert.match(js, /helpRivalHeading\.textContent = battle\s*\n\s*\? 'ライバルより先に見つけよう'/);
+  assert.match(js, /: '自分のペースで見つけよう'/);
+  assert.match(js, /helpRivalBody\.textContent = battle\s*\n\s*\? '青いYOUがあなた、ピンクのCPUがルナ。先に見つけると1点。全体の6割で勝利です。'/);
+  assert.match(js, /: '青いYOUがあなた。すべての数字を見つけよう。時間制限なしで、自分のペースでクリアを目指します。'/);
+  // Static help list must not hardcode rival-only bullet as the sole practice-visible line.
+  assert.doesNotMatch(js, /\['ライバルより先に見つけよう', '青いYOUがあなた、ピンクのCPUがルナ。先に見つけると1点。全体の6割で勝利です。'\]/);
+
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /modern-ui\.js\?v=help-rival-bullet-95-1/);
+  assert.match(index, /player\.html\?v=help-rival-bullet-95-1/);
+
+  const b = browserHarness();
+  const helpOf = () => walk(b.app).find(n => n.dataset?.screen === 'help');
+  const rivalLi = () => {
+    const help = helpOf();
+    const items = walk(help).filter(n => n.tagName === 'LI');
+    // Second help item is the score/pace bullet (heading swaps by kind).
+    return items[1];
+  };
+  const headingOf = () => walk(rivalLi()).find(n => n.tagName === 'H2');
+  const bodyOf = () => walk(rivalLi()).find(n => n.tagName === 'P');
+
+  b.render('help', {kind: 'battle', cells: []});
+  assert.match(headingOf().textContent, /ライバルより先に見つけよう/, 'battle help keeps rival heading');
+  assert.match(bodyOf().textContent, /ピンクのCPUがルナ/, 'battle help keeps CPU scoring body');
+  assert.match(bodyOf().textContent, /6割で勝利/, 'battle help keeps win-line body');
+
+  b.render('help', {kind: 'practice', cells: []});
+  assert.match(headingOf().textContent, /自分のペースで見つけよう/, 'practice help heading is pace-focused');
+  assert.doesNotMatch(headingOf().textContent, /ライバル/, 'practice help heading must not invent rival');
+  const practiceBody = bodyOf().textContent;
+  assert.match(practiceBody, /すべての数字を見つけよう/, 'practice help body is find-all');
+  assert.match(practiceBody, /自分のペース/, 'practice help body mentions pace');
+  assert.doesNotMatch(practiceBody, /ライバル|CPU|6割|先に見つけると1点/, 'practice help body must not invent rivalry/scoring');
 });
