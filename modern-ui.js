@@ -372,7 +372,7 @@
         item.effectId = data.effect_id;
         const type = data.effect === 'wrong' ? 'wrong' : data.effect === 'cpu' ? 'cpu' : 'correct';
         const effect = E('span', `nr-fx nr-fx-${type}`);
-        if (type === 'wrong') add(effect, E('i', 'nr-bomb'), E('i', 'nr-burst'));
+        if (type === 'wrong') add(effect, E('i', 'nr-bomb'), E('i', 'nr-burst'), E('span', 'nr-miss-badge', 'ミス'));
         else if (type === 'cpu') add(effect, E('i', 'nr-ring nr-ring-cpu'), E('span', 'nr-cpu-claim', 'CPU'));
         else add(effect, E('i', 'nr-ring'), E('i', 'nr-spark', '✦'));
         item.effect.replaceChildren(effect);
