@@ -281,7 +281,29 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
 .nr-cpu-timer > div { height: 100%; background: #ecacc9; transform-origin: left; transition: transform 100ms linear; }
 .nr-cpu-timer[data-urgent='true'] > div { background: #ffc880; }
 .nr-feedback { font-size: 11px; margin-top: 6px !important; color: #c1d9d5; }
-.nr-stage-middle > .nr-setting { min-height: 30px; padding: 5px 12px; margin-top: 7px; }
+/* Practice hint: dedicated affordance (not muted .nr-setting chrome).
+   Mint border + ≥44px hit target so it reads as a help action beside the board. */
+.nr-hint {
+  color: #123139;
+  background: linear-gradient(135deg, #b8f5d8cc, #79d4c5aa);
+  border-color: #9cf0d0;
+  box-shadow: 0 4px 14px #56bfa328;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: .02em;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 14px;
+}
+.nr-hint:hover:not(:disabled) { background: #c8ffe8; border-color: #b8ffe3; }
+.nr-hint[data-used='true'] {
+  color: #d8f5ea;
+  background: #1a3d3ccc;
+  border-color: #6bb89a88;
+  box-shadow: none;
+  font-weight: 700 !important;
+}
+.nr-stage-middle > .nr-hint { min-height: 44px; padding: 8px 14px; margin-top: 7px; }
 .nr-centered { display: flex; align-items: safe center; justify-content: center; padding-left: 4px; padding-right: 4px; }
 .nr-dialog, .nr-help-card, .nr-review-card, .nr-count-card, .nr-result-card { width: 100%; max-width: 650px; padding: 32px; text-align: center; flex-shrink: 0; }
 .nr-centered h1 { font-size: clamp(24px, 3vw, 36px); font-weight: 850; line-height: 1.4; }
@@ -410,7 +432,7 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
   .nr-stage-middle { max-width: 760px; } .nr-play-stats { gap: 12px; } .nr-stat { display: flex; align-items: baseline; gap: 5px; }
   .nr-stat > span { font-size: 8px; letter-spacing: .3px; margin: 0; } .nr-stat > strong { font-size: 11px; }
   .nr-cpu-row { margin-top: 4px; gap: 8px; } .nr-cpu-clock { font-size: 8px; min-width: 88px; } .nr-cpu-timer { height: 3px; }
-  .nr-feedback { font-size: 8px; margin-top: 2px !important; } .nr-stage-middle > .nr-setting { position: absolute; right: 18px; bottom: 7px; padding: 4px 10px; min-height: 28px; font-size: 9px !important; }
+  .nr-feedback { font-size: 8px; margin-top: 2px !important; } .nr-stage-middle > .nr-hint { position: absolute; right: 14px; bottom: 6px; padding: 6px 12px; min-height: 36px; min-width: 44px; font-size: 11px !important; }
   #modern-app[data-kind='practice'] .nr-play-stage .nr-koh { visibility: hidden; }
   .nr-centered { align-items: safe center; } .nr-dialog, .nr-help-card, .nr-review-card, .nr-count-card, .nr-result-card { padding: 22px; }
   .nr-count-card { padding: 15px; } .nr-count-card .nr-eyebrow { margin-bottom: 4px; } .nr-count-card h1 { font-size: 20px; } .nr-count-number { font-size: 75px; }
@@ -573,6 +595,12 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     border: 2px solid #c9a227; box-shadow: inset 0 0 0 2px #8a6000; animation: none; transform: none;
   }
   #modern-app .nr-score-card.nr-you[data-cue='true'] > strong { text-shadow: none; color: #fff4c8; }
+  #modern-app .nr-hint {
+    color: #041820; background: #b8ffe3; border: 2px solid #0a8f55; box-shadow: none;
+  }
+  #modern-app .nr-hint[data-used='true'] {
+    color: #ecf5f3; background: #0d3a30; border: 2px solid #6bb89a;
+  }
   #modern-app .sh-task[data-cue='true'] {
     border: 2px solid #c9a227; box-shadow: inset 0 0 0 2px #8a6000; animation: none; transform: none;
   }
@@ -605,8 +633,16 @@ html[data-scroll-lock='true'], html[data-scroll-lock='true'] body { overscroll-b
     color: #fff; background: #8a1010; box-shadow: none;
   }
 }
+
 /* forced-colors LAST: wins over reduced-motion pastels + contrast-more for durable outlines + static FX. */
 @media (forced-colors: active) {
+  #modern-app .nr-hint {
+    color: ButtonText; background: ButtonFace; border: 2px solid Highlight; forced-color-adjust: none;
+  }
+  #modern-app .nr-hint[data-used='true'] {
+    color: GrayText; background: ButtonFace; border: 2px solid GrayText;
+  }
+
   #modern-app .nr-cell[data-feedback='wrong'],
   #modern-app .sh-card[data-feedback='wrong'] {
     outline: 4px solid LinkText; outline-offset: -3px; background: Canvas;

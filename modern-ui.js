@@ -293,7 +293,8 @@
   const cpuFill = E('div'); cpuTrack.append(cpuFill);
   const cpuClock = E('span', 'nr-cpu-clock');
   const feedback = E('p', 'nr-feedback', 'お題を見て、落ち着いて。');
-  const hint = button('ヒントを見る', 'hint', undefined, 'nr-setting');
+  const hint = button('ヒントを見る', 'hint', undefined, 'nr-hint');
+  hint.setAttribute('aria-label', 'ヒントを見る（使うとベスト記録対象外）');
   const middle = add(E('div', 'nr-stage-middle'), playStats, add(E('div', 'nr-cpu-row'), cpuClock, cpuTrack), feedback, hint);
   const timedChain = window.createTimedChainView?.({E, add, portraits:[playRin,playKoh]});
   if (timedChain) middle.append(timedChain.root);
@@ -448,7 +449,12 @@
     cpuFill.style.transform = `scaleX(${cpuProgress})`; cpuTrack.setAttribute('aria-valuenow', String(Math.round(cpuProgress * 100)));
     cpuClock.textContent = `CPU あと ${Math.max(0, finite(state.cpu_remaining)).toFixed(1)} 秒`;
     cpuTrack.dataset.urgent = String(cpuProgress > .75);
-    hint.hidden = battle; hint.textContent = state.hint_used ? 'ヒント（記録対象外）' : 'ヒントを見る';
+    hint.hidden = battle;
+    hint.dataset.used = String(!!state.hint_used);
+    hint.textContent = state.hint_used ? 'ヒント（記録対象外）' : 'ヒントを見る';
+    hint.setAttribute('aria-label', state.hint_used
+      ? 'ヒント使用済み（このラウンドはベスト記録対象外）'
+      : 'ヒントを見る（使うとベスト記録対象外）');
     let recent = '';
     let recentStarted = -1;
     if (!playing) stageCopyFloor = -1;

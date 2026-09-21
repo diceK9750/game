@@ -49,11 +49,11 @@ test('short landscape parks hint beside HUD so board cells can keep ~44px taps',
   assert.match(css, /grid-template-columns: minmax\(0, 1fr\) auto/);
   assert.match(css, /\.nr-play-stage \{\s*grid-column: 2; grid-row: 1/);
   assert.match(css, /\.nr-board-wrap \{ grid-column: 1 \/ -1; grid-row: 2/);
-  assert.match(css, /\.nr-stage-middle > \.nr-setting \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
+  assert.match(css, /\.nr-stage-middle > \.nr-hint \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 44px; min-width: 44px/);
   assert.match(css, /\.nr-dialog \.nr-button \{ min-height: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=7-host-safe/);
+  assert.match(html, /mobile-layout\.css\?v=hint-affordance-1/);
 });
 
 test('shell and board disable double-tap zoom without blocking pan or Pyxel canvas', () => {
@@ -66,7 +66,7 @@ test('shell and board disable double-tap zoom without blocking pan or Pyxel canv
   assert.match(css, /\.nr-cell \{[^}]*touch-action: manipulation/);
   assert.match(player, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(player, /canvas \{ touch-action: none;/);
-  assert.match(player, /modern-ui\.css\?v=you-score-cue-1/);
+  assert.match(player, /modern-ui\.css\?v=hint-affordance-1/);
   assert.match(index, /html, body \{[^}]*touch-action: manipulation/);
   assert.match(index, /main, #game-box, #game-frame \{ touch-action: manipulation/);
   // Scrollable reading panes keep overflow:auto (manipulation still allows pan).
@@ -82,14 +82,14 @@ test('extreme-short landscape compresses chrome to reclaim board cell height', (
   assert.match(css, /#modern-app \.nr-toolbar \.nr-button \{ min-height: 32px; min-width: 32px/);
   assert.match(css, /\.nr-hud \{ min-height: 32px/);
   assert.match(css, /\.nr-play-stage \{ min-height: 32px/);
-  assert.match(css, /\.nr-stage-middle > \.nr-setting \{[\s\S]*?min-height: 32px; min-width: 32px/);
+  assert.match(css, /\.nr-stage-middle > \.nr-hint \{[\s\S]*?min-height: 32px; min-width: 32px/);
   assert.match(css, /\.nr-board \{ padding: 1px; gap: 1px/);
   // #21 path for common 844×390 (h=390 > 360) still keeps ≥44px chrome.
   assert.match(css, /@media \(orientation: landscape\) and \(max-height: 500px\)/);
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
-  assert.match(css, /\.nr-stage-middle > \.nr-setting \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
+  assert.match(css, /\.nr-stage-middle > \.nr-hint \{\s*flex: 0 0 auto; min-height: 44px; min-width: 44px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=7-host-safe/);
+  assert.match(html, /mobile-layout\.css\?v=hint-affordance-1/);
 });
 
 test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
@@ -110,7 +110,7 @@ test('narrow portrait tightens board gutters for wider 5×8 cell taps', () => {
   assert.match(css, /\.nr-hud \{ grid-column: 1; grid-row: 1; min-height: 44px/);
   assert.match(css, /\.nr-header \{ min-height: 32px/);
   const html = fs.readFileSync(require.resolve('../player.html'), 'utf8');
-  assert.match(html, /mobile-layout\.css\?v=7-host-safe/);
+  assert.match(html, /mobile-layout\.css\?v=hint-affordance-1/);
 });
 
 test('host and player lock overscroll; play posts scroll-lock to the shell', () => {
@@ -127,7 +127,7 @@ test('host and player lock overscroll; play posts scroll-lock to the shell', () 
   assert.match(js, /shouldLockPlayScroll/);
   assert.match(js, /passive: false/);
   assert.match(viewport, /number-rush-scroll-lock/);
-  assert.match(player, /modern-ui\.js\?v=you-score-cue-1/);
+  assert.match(player, /modern-ui\.js\?v=hint-affordance-1/);
   assert.match(index, /viewport\.js\?v=5-scroll-lock/);
 });
 
@@ -154,7 +154,7 @@ test('host owns device insets; modern shell top/home only when standalone', () =
   assert.match(js, /markHostInsets/);
   assert.match(js, /data-host-insets/);
   assert.match(mobile, /Host owns device insets/);
-  assert.match(player, /modern-ui\.css\?v=you-score-cue-1/);
-  assert.match(player, /modern-ui\.js\?v=you-score-cue-1/);
-  assert.match(player, /mobile-layout\.css\?v=7-host-safe/);
+  assert.match(player, /modern-ui\.css\?v=hint-affordance-1/);
+  assert.match(player, /modern-ui\.js\?v=hint-affordance-1/);
+  assert.match(player, /mobile-layout\.css\?v=hint-affordance-1/);
 });
