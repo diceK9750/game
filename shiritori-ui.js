@@ -357,6 +357,11 @@
               const heading = hud.querySelector('h1, strong');
               if (heading) { heading.tabIndex = -1; heading.focus({preventScroll: true}); }
             }
+          } else if (s.phase === 'blocked') {
+            // Blocked (no playable card): land on rescue primary 「つなぎ直す」 so
+            // keyboard users can relink without Tab hunting. Overlays (#44/#46) and
+            // play-start card focus (#35) stay on their own phase paths above.
+            relink.focus({preventScroll: true});
           } else if (s.phase === 'paused') {
             // Pause entry: land on visible resume 「プレイを続ける」 (parity with numbers #43).
             // Restart confirm uses its own open path above; Esc cancel (#16 family) stays key-driven.
