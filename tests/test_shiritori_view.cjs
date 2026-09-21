@@ -993,7 +993,7 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1037,8 +1037,8 @@ test('wrong-card miss outline stays non-live while statusLive carries guidance (
   assert.match(live.textContent, /ちがう絵！お題を確認して、すぐ押し直そう/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1055,7 +1055,7 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1134,7 +1134,7 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.match(js, /taskWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1194,7 +1194,7 @@ test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
   assert.match(sh, /\.sh-result-cast > \.nr-result-score/);
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
 });
 
@@ -1262,9 +1262,9 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   assert.match(js, /もう一度遊ぶ/);
 
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 
   const {view, state, doc} = harness();
   view.update({
@@ -1323,7 +1323,7 @@ test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #
   assert.match(layout, /\.sh-arena \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\) clamp\(40px, 15vw, 180px\);/);
   assert.match(js, /koh\.wrap\.hidden = solo/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 
   const {view, state} = harness();
   view.update({
@@ -1358,8 +1358,8 @@ test('shiritori solo hides LUNA+VS on ready hero-cast (parity #86 numbers; #88)'
   assert.match(js, /koh\.wrap\.hidden = solo;\s*resultKoh\.wrap\.hidden = solo/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
 
   const {view, state, doc} = harness();
   const heroCast = () => view.page.querySelector('.nr-hero-cast');
@@ -1423,8 +1423,8 @@ test('shiritori ready solo hero-cast denser/centered after LUNA+VS hide (parity 
   assert.match(player, /modern-ui\.css\?v=count-tap-110-1/);
   assert.match(player, /mobile-layout\.css\?v=count-tap-110-1/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
-  assert.match(index, /player\.html\?v=count-tap-110-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
   assert.match(fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8'),
     /heroRival\.wrap\.hidden = solo;\s*heroVersus\.hidden = solo;/);
 
@@ -1454,4 +1454,50 @@ test('shiritori ready solo hero-cast denser/centered after LUNA+VS hide (parity 
   view.update({...state, phase: 'intro', mode: 'solo', cards: []});
   const introHeading = view.page.querySelector('.sh-ready').querySelector('h1');
   assert.equal(doc.activeElement, introHeading, 'solo intro still focuses heading h1');
+});
+
+test('shiritori solo help/pause omits phantom rival/CPU; battle keeps them (#111)', () => {
+  const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  // Kind-aware assignment: solo drops 相手/CPU/両者/ライバル; battle keeps.
+  assert.match(js, /guideMode\.textContent = solo\s*\n\s*\? '一人用は時間無制限。詰まったら2回つなぎ直せます。ヒントを使って、自分のペースで最後までつなごう。'/);
+  assert.match(js, /guideBoard\.textContent = solo\s*\n\s*\? '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。'/);
+  assert.match(js, /guideChain\.textContent = solo\s*\n\s*\? '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4\.5秒から徐々に短くなり、最短1\.2秒。ミスで終了します。'/);
+  assert.match(js, /pauseCopy\.textContent = solo\s*\n\s*\? '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'/);
+  assert.match(js, /: '札を隠して休憩中。ライバルも止まっています。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'/);
+
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /shiritori-ui\.js\?v=sh-solo-help-111-1/);
+  assert.match(index, /player\.html\?v=sh-solo-help-111-1/);
+
+  const {view, state} = harness();
+  const guidePs = () => view.page.querySelector('.sh-guide').querySelectorAll('p');
+  const pauseP = () => {
+    const pause = view.page.querySelectorAll('.nr-dialog').find(d =>
+      d.querySelectorAll('h1').some(h => h.textContent === 'ひと休みしよう'));
+    return pause.querySelector('p');
+  };
+
+  view.update({...state, phase: 'intro', mode: 'battle', cards: []});
+  view.headerAction('help');
+  const battleGuide = [...guidePs()].map(p => p.textContent).join('\n');
+  assert.match(battleGuide, /対戦は交互に回答/, 'battle help keeps turn-taking');
+  assert.match(battleGuide, /両者共通/, 'battle help keeps shared-stock clause');
+  assert.match(battleGuide, /CPUも同じ条件で連鎖/, 'battle help keeps CPU chain clause');
+  assert.match(battleGuide, /相手の手番/, 'battle help keeps rival-turn chain pause');
+
+  view.update({...state, phase: 'intro', mode: 'solo', cards: []});
+  view.headerAction('help');
+  const soloGuide = [...guidePs()].map(p => p.textContent).join('\n');
+  assert.match(soloGuide, /一人用は時間無制限/, 'solo help keeps unlimited-time mode');
+  assert.match(soloGuide, /自分のペース/, 'solo help is pace-focused');
+  assert.doesNotMatch(soloGuide, /対戦は交互|時間切れ|相手の手番|CPU|両者/, 'solo help must not invent rivalry/CPU');
+
+  view.update({...state, phase: 'paused', mode: 'battle', cards: []});
+  assert.match(pauseP().textContent, /ライバルも止まっています/, 'battle pause mentions rival stopped');
+
+  view.update({...state, phase: 'paused', mode: 'solo', cards: []});
+  const soloPause = pauseP().textContent;
+  assert.match(soloPause, /札を隠して休憩中/, 'solo pause keeps hide-board copy');
+  assert.doesNotMatch(soloPause, /ライバル|CPU/, 'solo pause must not invent rival/CPU');
 });
