@@ -993,8 +993,52 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
+});
+
+test('polite live region announces durable miss guidance; visual status stays non-live', () => {
+  const {view, state} = harness();
+  const live = view.page.querySelector('.nr-sr-only');
+  const status = view.page.querySelector('.sh-status');
+  assert.ok(live, 'polite status live region present');
+  assert.equal(live.role, 'status');
+  assert.equal(live['aria-live'], 'polite');
+  assert.equal(live['aria-atomic'], 'true');
+  // Visual strip must stay non-live so SR hear one channel (#98 parity; #65 outline separate).
+  assert.equal(status.role, undefined);
+  assert.equal(status['aria-live'], undefined);
+  view.update({...state, required: 'り', completed: 2, mistakes: 0, miss_card: null,
+    message: '「り」から始まる絵をさがそう。'});
+  assert.match(live.textContent, /次は「り」/);
+  assert.match(live.textContent, /2枚つながった/);
+  assert.doesNotMatch(live.textContent, /ちがう絵/);
+  view.update({...state, required: 'り', completed: 2, mistakes: 1, miss_card: 3,
+    message: 'この絵は「り」につながらないよ（使用済み・ん終わりも不可）。 −3秒'});
+  assert.match(status.textContent, /この絵は「り」につながらないよ/);
+  assert.match(live.textContent, /ちがう絵！お題を確認して、すぐ押し直そう/);
+  assert.match(live.textContent, /ミス1回/);
+  assert.equal(view.page.querySelectorAll('.sh-card')[3].dataset.feedback, 'wrong');
+  // Cleared miss_card drops guidance from live; outline TTL path covered elsewhere.
+  view.update({...state, required: 'り', completed: 2, mistakes: 1, miss_card: null,
+    message: '「り」から始まる絵をさがそう。'});
+  assert.doesNotMatch(live.textContent, /ちがう絵/);
+  assert.match(live.textContent, /次は「り」/);
+});
+
+test('wrong-card miss outline stays non-live while statusLive carries guidance (#65/#98)', () => {
+  const {view, state} = harness();
+  view.update({...state, miss_card: 1, mistakes: 1, message: 'この絵は「り」につながらないよ'});
+  const card = view.page.querySelectorAll('.sh-card')[1];
+  const live = view.page.querySelector('.nr-sr-only');
+  assert.equal(card.dataset.feedback, 'wrong');
+  assert.equal(card['aria-live'], undefined);
+  assert.equal(card.role, undefined);
+  assert.match(live.textContent, /ちがう絵！お題を確認して、すぐ押し直そう/);
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1011,7 +1055,7 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
 });
 
@@ -1090,7 +1134,7 @@ test('shiritori HUD required cue wiring lives in shiritori-ui.js with animatione
   assert.match(js, /taskWrap\.addEventListener\('animationend'/);
   assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
 });
 
@@ -1150,7 +1194,7 @@ test('shiritori result score hierarchy CSS + cache-bust (#73)', () => {
   assert.match(sh, /\.sh-result-cast > \.nr-result-score/);
   assert.match(sh, /\.sh-result-secondary \.nr-stat > strong/);
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
 });
 
@@ -1218,9 +1262,9 @@ test('shiritori solo result-cast denser RIN+score after LUNA hide (#84 parity #8
   assert.match(js, /もう一度遊ぶ/);
 
   assert.match(player, /shiritori-ui\.css\?v=sh-solo-cast-84-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
-  assert.match(index, /player\.html\?v=miss-live-guidance-98-1/);
+  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
 
   const {view, state, doc} = harness();
   view.update({
@@ -1279,7 +1323,7 @@ test('shiritori solo arena desktop column collapse after LUNA hide (#85 parity #
   assert.match(layout, /\.sh-arena \{[\s\S]*?grid-template-columns: clamp\(40px, 15vw, 180px\) minmax\(0, 1fr\) clamp\(40px, 15vw, 180px\);/);
   assert.match(js, /koh\.wrap\.hidden = solo/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(index, /player\.html\?v=miss-live-guidance-98-1/);
+  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
 
   const {view, state} = harness();
   view.update({
@@ -1314,8 +1358,8 @@ test('shiritori solo hides LUNA+VS on ready hero-cast (parity #86 numbers; #88)'
   assert.match(js, /koh\.wrap\.hidden = solo;\s*resultKoh\.wrap\.hidden = solo/);
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
-  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
-  assert.match(index, /player\.html\?v=miss-live-guidance-98-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
 
   const {view, state, doc} = harness();
   const heroCast = () => view.page.querySelector('.nr-hero-cast');
@@ -1379,8 +1423,8 @@ test('shiritori ready solo hero-cast denser/centered after LUNA+VS hide (parity 
   assert.match(player, /modern-ui\.css\?v=ready-hero-solo-89-1/);
   assert.match(player, /mobile-layout\.css\?v=nr-play-feedback-97-1/);
   assert.match(player, /character-layout\.css\?v=ready-hero-solo-89-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-ready-cast-88-1/);
-  assert.match(index, /player\.html\?v=miss-live-guidance-98-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-miss-live-99-1/);
+  assert.match(index, /player\.html\?v=sh-miss-live-99-1/);
   assert.match(fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8'),
     /heroRival\.wrap\.hidden = solo;\s*heroVersus\.hidden = solo;/);
 
