@@ -989,9 +989,9 @@ test('shiritori miss outline CSS mirrors numbers durable wrong feedback', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid #d0181c/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-feedback='wrong'\][\s\S]*?outline: 4px solid LinkText/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-refill-new-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-refill-new-1/);
-  assert.match(player, /modern-ui\.css\?v=target-cue-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-prompt-cue-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-prompt-cue-1/);
+  assert.match(player, /modern-ui\.css\?v=sh-prompt-cue-1/);
 });
 
 test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => {
@@ -1007,8 +1007,86 @@ test('NEW refill badge CSS is gold-distinct with contrast/forced-colors', () => 
   assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid #a07000/);
   const forcedIdx = modern.indexOf('@media (forced-colors: active)');
   assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card\[data-refilled='true'\][\s\S]*?outline: 4px solid Highlight/);
-  assert.match(player, /shiritori-ui\.css\?v=sh-refill-new-1/);
-  assert.match(player, /shiritori-ui\.js\?v=sh-refill-new-1/);
-  assert.match(player, /modern-ui\.css\?v=target-cue-1/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-prompt-cue-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-prompt-cue-1/);
+  assert.match(player, /modern-ui\.css\?v=sh-prompt-cue-1/);
 });
 
+test('shiritori HUD required cue CSS pulses on change and stays static under reduced-motion', () => {
+  const css = fs.readFileSync(require.resolve('../shiritori-ui.css'), 'utf8');
+  const modern = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  assert.match(css, /\.sh-task\[data-cue='true'\]\[data-pulse='0'\]/);
+  assert.match(css, /\.sh-task\[data-cue='true'\]\[data-pulse='1'\]/);
+  assert.match(css, /@keyframes sh-task-cue-a/);
+  assert.match(css, /@keyframes sh-task-cue-b/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.sh-task\[data-cue='true'\][\s\S]*?animation: none !important/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.sh-task\[data-cue='true'\][\s\S]*?animation: none !important/);
+  const contrastIdx = modern.indexOf('@media (prefers-contrast: more)');
+  assert.match(modern.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-task\[data-cue='true'\]/);
+  const forcedIdx = modern.indexOf('forced-colors LAST');
+  assert.match(modern.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-task\[data-cue='true'\]/);
+});
+
+test('shiritori HUD flashes cue when required changes; animationend clears; leave live clears', () => {
+  const {view, state} = harness();
+  view.update({...state, phase: 'intro', cards: []});
+  const wrap = view.page.querySelector('.sh-task');
+  assert.ok(wrap, 'sh-task mounted');
+  assert.equal(wrap.dataset.cue, 'false');
+
+  view.update({...state, phase: 'playing', required: 'り', last_word: 'しりとり'});
+  assert.equal(wrap.dataset.cue, 'true', 'entering live cues initial required');
+  const pulseEnter = wrap.dataset.pulse;
+  const prompt = view.page.querySelector('.sh-prompt');
+  assert.match(prompt.textContent, /「り」/);
+
+  // Same required re-render: no pulse flip / stay cued until animationend.
+  view.update({...state, phase: 'playing', required: 'り', last_word: 'しりとり', remaining: 19});
+  assert.equal(wrap.dataset.pulse, pulseEnter, 'identical required does not restart pulse');
+
+  wrap.emit('animationend', {target: wrap});
+  assert.equal(wrap.dataset.cue, 'false');
+
+  view.update({...state, phase: 'playing', required: 'ん', last_word: 'りんご', completed: 1});
+  assert.equal(wrap.dataset.cue, 'true', 'required change re-cues');
+  assert.match(prompt.textContent, /「ん」/);
+  assert.notEqual(wrap.dataset.pulse, pulseEnter, 'pulse flips to restart CSS animation');
+  const pulseChange = wrap.dataset.pulse;
+
+  view.update({...state, phase: 'playing', required: 'ご', last_word: 'りんご', completed: 2});
+  assert.equal(wrap.dataset.cue, 'true');
+  assert.match(prompt.textContent, /「ご」/);
+  assert.notEqual(wrap.dataset.pulse, pulseChange);
+
+  view.update({...state, phase: 'paused', required: 'ご'});
+  assert.equal(wrap.dataset.cue, 'false', 'leaving live clears cue');
+});
+
+test('shiritori HUD reduced-motion keeps static cue until next required or leave live', () => {
+  const {view, state} = harness();
+  view.update({...state, phase: 'playing', required: 'あ', last_word: 'スタート'});
+  const wrap = view.page.querySelector('.sh-task');
+  assert.equal(wrap.dataset.cue, 'true');
+  // No animationend under reduced — cue stays until next change.
+  view.update({...state, phase: 'playing', required: 'あ', last_word: 'スタート', remaining: 18});
+  assert.equal(wrap.dataset.cue, 'true');
+  view.update({...state, phase: 'playing', required: 'か', last_word: 'あか'});
+  assert.equal(wrap.dataset.cue, 'true');
+  assert.match(view.page.querySelector('.sh-prompt').textContent, /「か」/);
+  view.update({...state, phase: 'finished', required: 'か', winner: 'you', history: []});
+  assert.equal(wrap.dataset.cue, 'false');
+});
+
+test('shiritori HUD required cue wiring lives in shiritori-ui.js with animationend dismiss', () => {
+  const js = fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8');
+  const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
+  assert.match(js, /flashRequiredCue/);
+  assert.match(js, /clearRequiredCue/);
+  assert.match(js, /prevRequiredKey/);
+  assert.match(js, /dataset\.cue/);
+  assert.match(js, /taskWrap\.addEventListener\('animationend'/);
+  assert.doesNotMatch(js, /setTimeout|setInterval|innerHTML|fetch\(/);
+  assert.match(player, /shiritori-ui\.css\?v=sh-prompt-cue-1/);
+  assert.match(player, /shiritori-ui\.js\?v=sh-prompt-cue-1/);
+  assert.match(player, /modern-ui\.css\?v=sh-prompt-cue-1/);
+});

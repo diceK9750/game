@@ -79,7 +79,24 @@
     const rin = portrait('rin', 'RIN / あなた'), koh = portrait('koh', 'LUNA / CPU');
     const hud = E('div', 'sh-hud nr-surface');
     const prompt = E('strong', 'sh-prompt'), turn = E('span'), clock = E('strong', 'sh-clock');
-    add(hud, add(E('div', 'sh-task'), turn, prompt), clock);
+    const taskWrap = add(E('div', 'sh-task'), turn, prompt);
+    add(hud, taskWrap, clock);
+    // Required-kana change cue: pulse HUD when 「required」 flips so players notice the new start.
+    // Full motion uses CSS animationend (no timer APIs); reduced keeps static until next change / leave live.
+    taskWrap.dataset.cue = 'false';
+    taskWrap.dataset.pulse = '0';
+    let prevRequiredKey = null;
+    function clearRequiredCue() {
+      taskWrap.dataset.cue = 'false';
+    }
+    function flashRequiredCue() {
+      taskWrap.dataset.cue = 'true';
+      taskWrap.dataset.pulse = taskWrap.dataset.pulse === '0' ? '1' : '0';
+    }
+    taskWrap.addEventListener('animationend', (event) => {
+      if (event.target !== taskWrap) return;
+      clearRequiredCue();
+    });
     const status = E('p', 'sh-status'); status.setAttribute('role', 'status');
     const stock = E('span', 'sh-stock'), completed = E('span');
     const board = E('div', 'sh-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', 'しりとりの絵札');
@@ -308,6 +325,17 @@
       const mine = s.turn === 'you';
       turn.textContent = solo ? '一人でじっくり' : mine ? 'あなたの番' : 'ルナが考えています…';
       prompt.textContent = `${s.last_word} →「${s.required}」`;
+      const requiredKey = String(s.required ?? '');
+      if (live) {
+        if (prevRequiredKey !== requiredKey) {
+          // First enter live or required change — visual cue.
+          flashRequiredCue();
+          prevRequiredKey = requiredKey;
+        }
+      } else {
+        if (prevRequiredKey !== null || taskWrap.dataset.cue === 'true') clearRequiredCue();
+        prevRequiredKey = null;
+      }
       clock.textContent = solo ? '時間無制限' : mine ? `${s.remaining.toFixed(1)} 秒` : '…';
       clock.dataset.urgent = String(!solo && mine && s.remaining < 5);
       status.textContent = s.message + (newFind ? ` · ${newFind}` : '');
