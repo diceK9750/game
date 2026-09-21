@@ -86,7 +86,23 @@ test('prefers-reduced-motion keeps static cpu-claim and award without waiting fo
   assert.match(media, /data-feedback='cpu'/);
   assert.match(media, /\.nr-cpu-claim/);
   assert.match(media, /\.nr-award/);
-  assert.match(media, /\.nr-fx \{ opacity: 0; \}/);
+  // Static ring/spark stand-ins (not blank .nr-fx); miss bomb/burst stay hidden.
+  assert.match(media, /\.nr-fx \{ opacity: 1; animation: none !important; \}/);
+  assert.match(media, /\.nr-bomb,[\s\S]*?\.nr-burst \{ opacity: 0; \}/);
+  assert.match(media, /\.nr-ring,[\s\S]*?\.nr-spark \{[\s\S]*?opacity: 1; transform: none/);
+});
+
+test('data-reduced keeps static ring/spark/CPU badge stand-ins instead of blanking .nr-fx', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  // Parent opacity:0 would hide nested .nr-cpu-claim despite its own opacity:1.
+  assert.doesNotMatch(css, /#modern-app\[data-reduced='true'\] \.nr-fx \{ opacity: 0/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-fx \{ opacity: 1; animation: none !important; \}/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-bomb,[\s\S]*?\.nr-burst \{ opacity: 0; \}/);
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-ring,[\s\S]*?\.nr-spark \{[\s\S]*?opacity: 1; transform: none/);
+  // Outlines (#28/#29) remain; FX layer never intercepts taps.
+  assert.match(css, /#modern-app\[data-reduced='true'\] \.nr-cell\[data-feedback='correct'\]/);
+  assert.match(css, /\.nr-fx \{[^}]*pointer-events: none/);
+  assert.match(css, /\.nr-cell-effect \{[^}]*pointer-events: none/);
 });
 
 test('prefers-reduced-motion kills pose joy/shake; sprite data-pose is the static fallback', () => {
