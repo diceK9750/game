@@ -162,7 +162,9 @@ test('forced-colors and prefers-contrast keep miss/CPU/correct/hint/cpu-selectin
   assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?data-cpu-selecting='true'[\s\S]*?outline: 4px solid #b01878/);
   const forcedIdx = css.indexOf('@media (forced-colors: active)');
   assert.ok(forcedIdx > 0, 'forced-colors media query present');
-  const forced = css.slice(forcedIdx, css.indexOf('/* Effects remain understandable', forcedIdx));
+  // forced-colors is LAST so it wins over reduced-motion pastels (#39).
+  assert.ok(forcedIdx > css.indexOf('/* Effects remain understandable'), 'forced-colors after reduced-motion section');
+  const forced = css.slice(forcedIdx);
   // System colors so Windows HC / forced-colors themes keep semantic outlines.
   assert.match(forced, /data-feedback='wrong'[^{]*\{[^}]*outline: 4px solid LinkText/);
   assert.match(forced, /data-feedback='correct'[^{]*\{[^}]*outline: 4px solid Highlight/);
@@ -194,7 +196,8 @@ test('forced-colors and prefers-contrast keep static ring/spark/CPU/miss FX cues
   assert.match(contrast, /\.nr-miss-badge \{[\s\S]*?background: #8a1010;[\s\S]*?box-shadow: none/);
   const forcedIdx = css.indexOf('@media (forced-colors: active)');
   assert.ok(forcedIdx > 0, 'forced-colors media query present');
-  const forced = css.slice(forcedIdx, css.indexOf('/* Effects remain understandable', forcedIdx));
+  assert.ok(forcedIdx > css.indexOf('/* Effects remain understandable'), 'forced-colors after reduced-motion section');
+  const forced = css.slice(forcedIdx);
   // System colors parity with #29 cell outlines (Highlight/ButtonText/LinkText).
   assert.match(forced, /\.nr-ring \{[\s\S]*?border-color: Highlight/);
   assert.match(forced, /\.nr-ring-cpu \{ border-color: ButtonText; \}/);
@@ -223,6 +226,35 @@ test('nr-cell keyboard focus uses ::before ring so durable outlines stay visible
   assert.match(css.slice(contrastIdx), /prefers-contrast: more[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px #c9a227/);
   const forcedIdx = css.indexOf('@media (forced-colors: active)');
   assert.match(css.slice(forcedIdx), /forced-colors: active[\s\S]*?\.sh-card:focus-visible::before[\s\S]*?box-shadow: inset 0 0 0 4px Highlight/);
+});
+
+test('forced-colors wins over reduced-motion pastel outlines; CPU ::after uses system colors', () => {
+  const css = fs.readFileSync(require.resolve('../modern-ui.css'), 'utf8');
+  const effectsIdx = css.indexOf('/* Effects remain understandable');
+  const forcedIdx = css.indexOf('@media (forced-colors: active)');
+  assert.ok(effectsIdx > 0 && forcedIdx > effectsIdx, 'forced-colors follows reduced-motion section');
+  // Only one forced-colors block, and it is the last media query of that kind.
+  assert.equal(css.indexOf('@media (forced-colors: active)'), css.lastIndexOf('@media (forced-colors: active)'));
+  // Pastel durable outlines are nested so they do not apply under HC.
+  assert.match(css, /@media \(forced-colors: none\) \{[\s\S]*?data-reduced='true'[\s\S]*?data-feedback='wrong'/);
+  const rmIdx = css.lastIndexOf('@media (prefers-reduced-motion: reduce)');
+  assert.ok(rmIdx > 0 && rmIdx < forcedIdx);
+  const rm = css.slice(rmIdx, forcedIdx);
+  assert.match(rm, /@media \(forced-colors: none\) \{[\s\S]*?data-feedback='wrong'[\s\S]*?#f67f81/);
+  assert.match(rm, /data-feedback='correct'/);
+  assert.match(rm, /data-feedback='cpu'/);
+  // Animation / static FX kills stay outside the nest (still in RM block).
+  assert.match(rm, /\.nr-fx \{ opacity: 1; animation: none !important; \}/);
+  assert.match(rm, /\.nr-miss-badge \{[\s\S]*?opacity: 1; transform: none/);
+  const forced = css.slice(forcedIdx);
+  // Corner CPU label no longer stuck on #751887 under HC.
+  assert.match(forced, /data-cpu-selecting='true'\]::after[\s\S]*?background: ButtonText/);
+  assert.match(forced, /data-cpu-selecting='true'\]::after[\s\S]*?color: Canvas/);
+  assert.doesNotMatch(forced, /#751887/);
+  // Durable outlines + static FX cues still system-colored.
+  assert.match(forced, /data-feedback='wrong'[^{]*\{[^}]*outline: 4px solid LinkText/);
+  assert.match(forced, /\.nr-ring \{[\s\S]*?border-color: Highlight/);
+  assert.match(forced, /\.nr-miss-badge \{[\s\S]*?background: LinkText/);
 });
 
 test('markHostInsets tags embedded iframe and clears standalone', () => {
