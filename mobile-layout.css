@@ -162,6 +162,18 @@
   .nr-play-stage .nr-character { display: none; }
   .nr-board-wrap { grid-column: 1 / -1; grid-row: 2; }
   .nr-board { padding: 2px; gap: 2px; }
+  /* #91: pin round-progress into the board grid cell (top) so it does not
+     auto-place into an implicit 3rd row after #21's 2-row play chrome.
+     Keep 3px bar + aria; ≤360 still display:none. */
+  .nr-round-progress {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    align-self: start;
+    z-index: 2;
+    margin: 0;
+    height: 3px;
+    pointer-events: none;
+  }
   .nr-stage-middle {
     display: flex; flex-direction: row; align-items: center; gap: 4px; height: 100%;
   }
