@@ -428,7 +428,7 @@ test('practice hides LUNA cast on play stage and result (parity shiritori solo; 
   const player = fs.readFileSync(require.resolve('../player.html'), 'utf8');
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=practice-play-solo-1/);
+  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -473,9 +473,9 @@ test('practice result solo-cast denser/centered after LUNA hide; drop redundant 
   assert.match(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'),
     /playKoh\.wrap\.hidden = !battle;\s*resultKoh\.wrap\.hidden = !battle/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
-  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=practice-play-solo-1/);
+  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
 
   const b = browserHarness();
   const resultDuo = () => walk(b.app).find(n => n.className === 'nr-result-duo');
@@ -512,7 +512,7 @@ test('practice play-stage solo cast centers RIN with absolute+left after LUNA hi
   assert.match(css, /\.nr-result-duo:has\(> \.nr-koh\[hidden\]\) \{ gap: 12px; justify-content: center; \}/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(index, /player\.html\?v=practice-play-solo-1/);
+  assert.match(index, /player\.html\?v=sh-solo-cast-84-1/);
 
   const b = browserHarness();
   const playStage = () => walk(b.app).find(n => n.className === 'nr-play-stage');
@@ -1905,7 +1905,7 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(css, /forced-colors LAST[\s\S]*?#modern-app \.nr-hint/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
 });
 
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
@@ -1939,7 +1939,7 @@ test('result screen primary score outweighs secondary stats (hierarchy #73)', ()
   // Secondary: muted / smaller than play HUD defaults when inside result stats.
   assert.match(css, /\.nr-result-stats \.nr-stat > strong \{[^}]*font-size: 14px;[^}]*color: var\(--nr-muted\)/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
-  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
 });
 
 test('finished result still focuses primary replay after score hierarchy (#17)', () => {
@@ -1981,7 +1981,7 @@ test('result award/record contrast: dark PERFECT panel + new-best pill (#74)', (
   assert.match(mobile, /\.nr-result-card \.nr-record\[data-record='new'\]/);
   assert.match(player, /modern-ui\.css\?v=practice-play-solo-1/);
   assert.match(player, /modern-ui\.js\?v=practice-cast-hide-1/);
-  assert.match(player, /mobile-layout\.css\?v=practice-solo-cast-1/);
+  assert.match(player, /mobile-layout\.css\?v=sh-solo-cast-84-1/);
 });
 
 test('finished result sets record data-record kinds for contrast styling', () => {

@@ -115,12 +115,15 @@
 .sh-dialog { padding: 24px; border-radius: 20px; width: min(520px, 100%); max-height: 100%; overflow: auto; background: #17313e; display: grid; gap: 14px; }
 .sh-choices { display: flex; gap: 8px; flex-wrap: wrap; }
 .sh-choices button { flex: 1; min-height: 52px; }
-.sh-result-cast { display: flex; justify-content: center; gap: 40px; }
+.sh-result-cast { display: flex; justify-content: center; align-items: center; gap: 40px; }
 .sh-result-cast .nr-character { width: 100px; }
 .sh-result-cast .nr-character-art { width: 100px; height: 100px; }
+/* #84: solo result cast after LUNA hide — denser RIN+score (parity numbers #82).
+   Score lives in cast (.nr-result-duo parity); JS [hidden] owns hide. Keep #19/#80. */
+.sh-result-cast:has(> .nr-koh[hidden]) { gap: 12px; justify-content: center; }
 /* Result primary score reuses .nr-result-score; secondary stays muted (#73).
    Secondary packs .nr-stat cells (numbers .nr-result-stats parity) + muted chain. */
-.sh-result > .nr-result-score { display: block; margin: 4px auto 0; }
+.sh-result-cast > .nr-result-score { display: block; margin: 0; }
 .sh-result-secondary {
   display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap;
   gap: 4px 8px; margin: 6px 0 0; padding: 8px 0;
@@ -144,8 +147,10 @@
   .sh-status { min-height: 16px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
   .sh-actions button { min-height: 36px; padding: 6px 10px; }
   .sh-intro { margin: 0 auto; }
-  .sh-result-cast { display: none; }
-  .sh-result > .nr-result-score { font-size: 36px; letter-spacing: 0; margin-top: 0; }
+  /* Keep score; hide portraits only (parity numbers ≤360 hide cast chars). */
+  .sh-result-cast .nr-character { display: none; }
+  .sh-result-cast { gap: 0; }
+  .sh-result-cast > .nr-result-score { font-size: 36px; letter-spacing: 0; margin-top: 0; }
   .sh-result-secondary { margin-top: 2px; padding: 4px 0; gap: 2px 6px; }
   .sh-result-secondary .nr-stat > strong { font-size: 11px; }
   .sh-result-secondary > .nr-muted { font-size: 10px; }

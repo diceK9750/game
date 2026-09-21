@@ -143,7 +143,7 @@
     const log = E('ol', 'sh-log');
     const resultRetry = button('もう一度遊ぶ', 'sh_start', undefined, 'nr-primary');
     const resultSetup = button('モード選択', 'sh_setup', undefined, 'nr-secondary');
-    add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultKoh.wrap), resultScore, reason, resultSecondary,
+    add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultScore, resultKoh.wrap), reason, resultSecondary,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
     add(page, intro, stage, pause, result);
