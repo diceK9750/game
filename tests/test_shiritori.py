@@ -2,7 +2,7 @@ import random
 import unittest
 from unittest.mock import patch
 
-from shiritori import CARDS, PERFECT_RING, ShiritoriRound, tail
+from shiritori import CARDS, PERFECT_RING, PERFECT_CANONICAL_SEGMENT, ShiritoriRound, tail, head, normalize_reading
 
 
 class ShiritoriTests(unittest.TestCase):
@@ -23,9 +23,9 @@ class ShiritoriTests(unittest.TestCase):
         self.assertEqual(len(CARDS), len({c[0] for c in CARDS}))
         for _, _, words in CARDS:
             self.assertGreaterEqual(len(words), 3)
-            self.assertEqual(len(words), len({w[0] for w in words}))
-            self.assertEqual(len(words), len(set(words)))
-            self.assertTrue(all(all('ぁ' <= c <= 'ん' or c == 'ー' for c in word) for word in words))
+            self.assertEqual(len(words), len({head(w) for w in words}))
+            self.assertEqual(len(words), len({normalize_reading(w) for w in words}))
+            self.assertTrue(all(all('ぁ' <= c <= 'ゖ' or 'ァ' <= c <= 'ヶ' or c == 'ー' for c in word) for word in words))
         self.assertEqual(tail('おもちゃ'), 'や')
         self.assertEqual(tail('ぎたー'), 'た')
         self.assertEqual(tail('うさぎ'), 'ぎ')
@@ -41,7 +41,7 @@ class ShiritoriTests(unittest.TestCase):
 
     def test_dictionary_catalog_and_cpu_do_not_award_discoveries(self):
         game=ShiritoriRound()
-        self.assertEqual(sum(len(c['words']) for c in game.snapshot()['catalog']),239)
+        self.assertEqual(sum(len(c['words']) for c in game.snapshot()['catalog']),248)
         game.start()
         game.turn='cpu'
         game.take(*game.moves()[0])
@@ -132,7 +132,7 @@ class ShiritoriTests(unittest.TestCase):
     def test_solo_can_end_at_rest_and_wrong_reading_does_not_spend_cards(self):
         game = ShiritoriRound(mode='solo')
         game.start()
-        i = next(i for i,c in enumerate(game.cards) if not any(w[0] == game.required and tail(w) != 'ん' and w not in game.seen for w in c[2]))
+        i = next(i for i,c in enumerate(game.cards) if not any(head(w) == game.required and tail(w) != 'ん' and normalize_reading(w) not in game.seen for w in c[2]))
         before = len(game.stock)
         game.command('card', i)
         self.assertEqual(game.mistakes, 1)
@@ -168,19 +168,18 @@ class ShiritoriTests(unittest.TestCase):
                         self.assertEqual(game.phase, 'finished')
                         for a,b in zip(game.history, game.history[1:]):
                             if not b['relinked']:
-                                self.assertEqual(tail(a['word']), b['word'][0])
+                                self.assertEqual(tail(a['word']), head(b['word']))
 
-    def test_every_rotation_count_and_mode_has_a_real_perfect_route(self):
-        by_id = {c[0]: c for c in CARDS}
+    def test_many_seeds_counts_and_modes_have_a_real_perfect_route(self):
         self.assertEqual(len(PERFECT_RING),len(set(PERFECT_RING)))
         for offset in range(len(PERFECT_RING)):
             for total in (12,24,36,48):
                 for mode in ('solo','battle'):
                     rng = random.Random(offset)
-                    rng.randrange = lambda *args, n=offset: n
                     game = ShiritoriRound(rng=rng,total=total,mode=mode,clock=lambda:0)
                     game.start()
-                    self.assertEqual(game.last_word,by_id[PERFECT_RING[offset]][2][0])
+                    path = tuple((s.identity, s.reading) for s in game.initial_perfect_route)
+                    self.assertTrue(any(path[i:i+6] == PERFECT_CANONICAL_SEGMENT for i in range(total-5)))
                     self.assertEqual(len({c[0] for c in game.cards+game.stock}),total)
                     for _ in range(total):
                         self.assertEqual(game.phase,'playing')
@@ -196,9 +195,9 @@ class ShiritoriTests(unittest.TestCase):
                     self.assertEqual(game.stock,[])
                     self.assertEqual(len(game.used),len(game.cards))
 
-    def test_certified_fallback_also_completes_every_rotation(self):
+    def test_certified_fallback_also_completes_all_counts_and_modes(self):
         with patch('shiritori.starting_route', return_value=None):
-            self.test_every_rotation_count_and_mode_has_a_real_perfect_route()
+            self.test_many_seeds_counts_and_modes_have_a_real_perfect_route()
 
     def test_full_catalog_remains_available_in_normal_deals(self):
         dealt = set()
@@ -230,7 +229,7 @@ class ShiritoriTests(unittest.TestCase):
         self.assertEqual(len(self.game.history), 1)
 
     def test_wrong_reading_costs_three_seconds_not_the_card(self):
-        index = next(i for i, c in enumerate(self.game.cards) if not any(w[0] == self.game.required and tail(w) != 'ん' and w not in self.game.seen for w in c[2]))
+        index = next(i for i, c in enumerate(self.game.cards) if not any(head(w) == self.game.required and tail(w) != 'ん' and normalize_reading(w) not in self.game.seen for w in c[2]))
         self.game.command('card', index)
         self.assertEqual(self.game.mistakes, 1)
         self.assertNotIn(index, self.game.used)
@@ -397,13 +396,13 @@ class ShiritoriTests(unittest.TestCase):
                 words = [row['word'] for row in game.history]
                 self.assertEqual(len(words), len(set(words)))
                 for a, b in zip(words, words[1:]):
-                    self.assertEqual(tail(a), b[0])
+                    self.assertEqual(tail(a), head(b))
 
     def test_wrong_card_sets_durable_miss_outline_then_expires(self):
         """Wrong taps mark the card for ~1.2s so short-landscape HUD truncation still leaves a cue."""
         from shiritori import MISS_OUTLINE_SECONDS
         index = next(i for i, c in enumerate(self.game.cards) if not any(
-            w[0] == self.game.required and tail(w) != 'ん' and w not in self.game.seen for w in c[2]))
+            head(w) == self.game.required and tail(w) != 'ん' and normalize_reading(w) not in self.game.seen for w in c[2]))
         self.game.command('card', index)
         self.assertEqual(self.game.mistakes, 1)
         self.assertEqual(self.game.miss_card, index)

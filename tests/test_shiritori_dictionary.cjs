@@ -76,3 +76,29 @@ test('dictionary close() mirrors back and is idempotent',()=>{
   dict.close();
   assert.equal(closed,1,'second close is idempotent');
 });
+
+test('kana spelling migration preserves old discoveries and does not double count',()=>{
+  const {window,storage,data}=harness();
+  data.set('number-rush.shiritori.dictionary.v1',JSON.stringify({version:1,found:[
+    'gorilla:ごりら','gorilla:ゴリラ','apple:ふるーつ','unknown:ごりら',null]}));
+  const c=window.createShiritoriCollection(storage);
+  c.configure([{id:'gorilla',words:['ゴリラ']},{id:'apple',words:['りんご','フルーツ','しんしゅうりんご']}]);
+  assert.equal(c.count,2);
+  assert.equal(c.has('gorilla','ゴリラ'),true);
+  assert.equal(c.has('apple','フルーツ'),true);
+  assert.equal(c.discover('gorilla','ごりら'),false);
+  assert.equal(c.discover('apple','しんしゅうりんご'),true);
+  assert.equal(c.count,3);
+  assert.equal(c.cards[0].words[0],'ゴリラ');
+  const reloaded=window.createShiritoriCollection(storage); reloaded.configure(c.cards);
+  assert.equal(reloaded.count,3);
+});
+
+test('dictionary challenge excludes same-head decoys across kana scripts',()=>{
+  const {window,storage}=harness();
+  const c=window.createShiritoriCollection(storage);
+  c.configure([{id:'tomato',words:['トマト']},{id:'bird',words:['とり']},{id:'apple',words:['りんご']}]);
+  const quiz=c.challenge(()=>0);
+  assert.equal(quiz.word,'トマト');
+  assert.ok(!quiz.options.some(card=>card.id==='bird'));
+});

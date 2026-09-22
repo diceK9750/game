@@ -2,7 +2,11 @@
 (function () {
   'use strict';
   const KEY = 'number-rush.shiritori.dictionary.v1';
-  const keyOf = (id, word) => `${id}:${word}`;
+  // Stable pronunciation keys preserve v1 collections across spelling updates.
+  // Match Python normalize_reading; boundary small-kana folding is separate.
+  const normalize = word => word.normalize('NFC').replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0)-0x60));
+  const head = word => normalize(word)[0]?.replace(/[ゃゅょぁぃぅぇぉっゎ]/g, c => 'やゆよあいうえおつわ'['ゃゅょぁぃぅぇぉっゎ'.indexOf(c)]);
+  const keyOf = (id, word) => `${id}:${normalize(word)}`;
   window.createShiritoriCollection = function (storage) {
     let catalog = [], valid = new Set(), found = new Set(), warning = '', revision = 0;
     function mergeSaved() {
@@ -11,7 +15,12 @@
         if (!raw) return;
         const saved = JSON.parse(raw);
         if (saved?.version !== 1 || !Array.isArray(saved.found)) throw Error('format');
-        for (const key of saved.found) if (valid.has(key)) found.add(key);
+        for (const savedKey of saved.found) {
+          if (typeof savedKey !== 'string' || !savedKey.includes(':')) continue;
+          const split = savedKey.indexOf(':');
+          const key = keyOf(savedKey.slice(0, split), savedKey.slice(split+1));
+          if (valid.has(key)) found.add(key);
+        }
       } catch (_) { warning = '保存データを読み込めません。このページ内で収集を続けられます。'; }
     }
     return {
@@ -43,7 +52,7 @@
         if (!missing.length) return null;
         const target = missing[Math.floor(random() * missing.length)];
         const shuffle = items => { for (let i=items.length-1;i>0;i--) { const j=Math.floor(random()*(i+1)); [items[i],items[j]]=[items[j],items[i]]; } return items; };
-        const decoys = shuffle(catalog.filter(c => !c.words.some(w => w[0] === target.word[0]))).slice(0,5);
+        const decoys = shuffle(catalog.filter(c => !c.words.some(w => head(w) === head(target.word)))).slice(0,5);
         return {...target, options:shuffle([target.card,...decoys])};
       }
     };
@@ -74,7 +83,7 @@
     function newChallenge() {
       pending=collection.challenge(); solved=false; quiz.hidden=false; next.hidden=true; answer.textContent='';
       if (!pending) { question.textContent='全読み方コンプリート！'; choices.replaceChildren(); return; }
-      question.textContent=`「${pending.word[0]}」から始まる読み方の絵はどれ？`;
+      question.textContent=`「${head(pending.word)}」から始まる読み方の絵はどれ？`;
       choices.replaceChildren(...pending.options.map(c=>{
         const b=localButton('',()=>{
           if (solved) return;

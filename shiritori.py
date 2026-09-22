@@ -1,88 +1,98 @@
 """Illustrated word-chain duel. Pure Python rules with an injectable clock/RNG."""
 import random
 import time
+import unicodedata
+from functools import lru_cache
+from typing import NamedTuple
 from timed_chain import TimedChain
 
 # Emoji are platform pictograms, not artwork copied from a commercial game.
 # Finite picture names, categories and visible features; one reading per head.
 CARDS = (
-    ("apple", "🍎", ("りんご", "くだもの", "ふるーつ", "たべもの")),
-    ("gorilla", "🦍", ("ごりら", "さる", "どうぶつ", "るいじんえん")),
-    ("trumpet", "🎺", ("らっぱ", "がっき", "とらんぺっと", "きんかんがっき")),
-    ("panda", "🐼", ("ぱんだ", "くま", "どうぶつ", "じゃいあんとぱんだ")),
+    ("apple", "🍎", ("りんご", "くだもの", "フルーツ", "たべもの", "しんしゅうりんご", "すりおろしりんご")),
+    ("gorilla", "🦍", ("ゴリラ", "さる", "どうぶつ", "るいじんえん")),
+    ("trumpet", "🎺", ("ラッパ", "がっき", "トランペット", "きんかんがっき")),
+    ("panda", "🐼", ("パンダ", "くま", "どうぶつ", "ジャイアントパンダ")),
     ("daruma", "🔴", ("だるま", "おきもの", "えんぎもの", "にんぎょう")),
     ("camel", "🐪", ("らくだ", "どうぶつ", "ひとこぶらくだ")),
-    ("radish", "🥕", ("にんじん", "やさい", "きゃろっと", "こんさい", "たべもの")),
-    ("dog", "🐕", ("いぬ", "こいぬ", "どうぶつ", "ぺっと")),
-    ("teddy", "🧸", ("ぬいぐるみ", "くま", "おもちゃ", "てでぃべあ", "にんぎょう")),
-    ("orange", "🍊", ("みかん", "くだもの", "ふるーつ", "たべもの")),
+    ("radish", "🥕", ("にんじん", "やさい", "キャロット", "こんさい", "たべもの")),
+    ("dog", "🐕", ("いぬ", "こいぬ", "どうぶつ", "ペット")),
+    ("teddy", "🧸", ("ぬいぐるみ", "くま", "おもちゃ", "テディベア", "にんぎょう")),
+    ("orange", "🍊", ("みかん", "くだもの", "フルーツ", "たべもの")),
     ("turtle", "🐢", ("かめ", "りくがめ", "どうぶつ", "はちゅうるい")),
-    ("glasses", "👓", ("めがね", "がんきょう", "れんず", "ふれーむ")),
-    ("cat", "🐈", ("ねこ", "こねこ", "どうぶつ", "ぺっと")),
+    ("glasses", "👓", ("めがね", "がんきょう", "レンズ", "フレーム")),
+    ("cat", "🐈", ("ねこ", "こねこ", "どうぶつ", "ペット")),
     ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく")),
     ("moon", "🌙", ("つき", "よぞら", "みかづき", "てんたい")),
-    ("fox", "🦊", ("きつね", "どうぶつ", "けもの", "ふぉっくす")),
-    ("mouse", "🐁", ("ねずみ", "どうぶつ", "まうす", "けもの")),
+    ("fox", "🦊", ("きつね", "どうぶつ", "けもの", "フォックス")),
+    ("mouse", "🐁", ("ねずみ", "どうぶつ", "マウス", "けもの")),
     ("ear", "👂", ("みみ", "からだ", "じかく", "ちょうかくきかん")),
     ("bee", "🐝", ("みつばち", "はち", "むし", "こんちゅう")),
-    ("butterfly", "🦋", ("ちょう", "むし", "こんちゅう", "ばたふらい")),
-    ("rabbit", "🐇", ("うさぎ", "どうぶつ", "らびっと", "けもの")),
-    ("guitar", "🎸", ("ぎたー", "がっき", "えれきぎたー", "げんがっき")),
-    ("octopus", "🐙", ("たこ", "うみのいきもの", "なんたいどうぶつ", "おくとぱす")),
-    ("bird", "🐦", ("ことり", "とり", "どうぶつ", "ばーど")),
+    ("butterfly", "🦋", ("ちょう", "むし", "こんちゅう", "バタフライ")),
+    ("rabbit", "🐇", ("うさぎ", "どうぶつ", "ラビット", "けもの")),
+    ("guitar", "🎸", ("ギター", "がっき", "エレキギター", "げんがっき")),
+    ("octopus", "🐙", ("たこ", "うみのいきもの", "なんたいどうぶつ", "オクトパス")),
+    ("bird", "🐦", ("とり", "ことり", "どうぶつ", "バード")),
     ("squirrel", "🐿️", ("りす", "どうぶつ", "けもの")),
-    ("melon", "🍉", ("すいか", "くだもの", "ふるーつ", "たべもの")),
-    ("umbrella", "☂️", ("かさ", "あまがさ", "ようがさ", "れいんぐっず")),
-    ("fish", "🐟", ("さかな", "ぎょるい", "うみのいきもの", "ふぃっしゅ")),
+    ("melon", "🍉", ("すいか", "くだもの", "フルーツ", "たべもの")),
+    ("umbrella", "☂️", ("かさ", "あまがさ", "ようがさ", "レイングッズ")),
+    ("fish", "🐟", ("さかな", "ぎょるい", "うみのいきもの", "フィッシュ")),
     ("eggplant", "🍆", ("なす", "やさい", "たべもの", "しょくざい")),
-    ("bell", "🔔", ("すず", "かね", "べる", "がっき")),
-    ("trousers", "👖", ("ずぼん", "ふく", "じーんず", "でにむ", "ぼとむす")),
-    ("ship", "🚢", ("ふね", "のりもの", "きせん", "しっぷ")),
-    ("mushroom", "🍄", ("きのこ", "しょくざい", "まっしゅるーむ")),
-    ("ice", "🧊", ("こおり", "あいすきゅーぶ", "ろっくあいす", "ひょうかい")),
-    ("car", "🚗", ("くるま", "じどうしゃ", "のりもの", "まいかー")),
-    ("mountain", "⛰️", ("やま", "さん", "まうんてん", "みね")),
-    ("peach", "🍑", ("もも", "くだもの", "ぴーち", "ふるーつ", "たべもの")),
-    ("bread", "🍞", ("ぱん", "しょくぱん", "とーすと", "ぶれっど", "たべもの")),
-    ("lion", "🦁", ("らいおん", "どうぶつ", "しし", "けもの")),
+    ("bell", "🔔", ("すず", "かね", "ベル", "がっき")),
+    ("trousers", "👖", ("ズボン", "ふく", "ジーンズ", "デニム", "ボトムス")),
+    ("ship", "🚢", ("ふね", "のりもの", "きせん", "シップ")),
+    ("mushroom", "🍄", ("きのこ", "しょくざい", "マッシュルーム")),
+    ("ice", "🧊", ("こおり", "アイスキューブ", "ロックアイス", "ひょうかい")),
+    ("car", "🚗", ("くるま", "じどうしゃ", "のりもの", "マイカー")),
+    ("mountain", "⛰️", ("やま", "さん", "マウンテン", "みね")),
+    ("peach", "🍑", ("もも", "くだもの", "ピーチ", "フルーツ", "たべもの")),
+    ("bread", "🍞", ("パン", "しょくパン", "トースト", "ブレッド", "たべもの")),
+    ("lion", "🦁", ("ライオン", "どうぶつ", "しし", "けもの")),
     ("top", "🌀", ("こま", "おもちゃ", "かいてんたい")),
     ("pillow", "🛏️", ("まくら", "しんぐ", "ねどこ")),
     ("otter", "🦦", ("らっこ", "どうぶつ", "うみのいきもの")),
-    ("koala", "🐨", ("こあら", "どうぶつ", "ゆうたいるい")),
-    ("ramune", "🍾", ("らむね", "のみもの", "たんさんいんりょう")),
-    ("tie", "👔", ("ねくたい", "ふく", "えりもと")),
+    ("koala", "🐨", ("コアラ", "どうぶつ", "ゆうたいるい")),
+    ("ramune", "🍾", ("ラムネ", "のみもの", "たんさんいんりょう")),
+    ("tie", "👔", ("ネクタイ", "ふく", "えりもと")),
     ("chair", "🪑", ("いす", "かぐ", "ざせき")),
-    ("zucchini", "🥒", ("ずっきーに", "やさい", "たべもの")),
+    ("zucchini", "🥒", ("ズッキーニ", "やさい", "たべもの")),
     ("chicken", "🐔", ("にわとり", "とり", "どうぶつ")),
-    ("backpack", "🎒", ("りゅっく", "かばん", "にもつ")),
-    ("scarf", "🧣", ("まふらー", "えりまき", "ぼうかんぐ")),
-    ("radio", "📻", ("らじお", "じゅしんき", "おんきょうきき")),
+    ("backpack", "🎒", ("リュック", "かばん", "にもつ")),
+    ("scarf", "🧣", ("マフラー", "えりまき", "ぼうかんぐ")),
+    ("radio", "📻", ("ラジオ", "じゅしんき", "おんきょうきき")),
     ("riceball", "🍙", ("おにぎり", "ごはん", "たべもの")),
-    ("dragon", "🐉", ("りゅう", "どらごん", "でんせつのいきもの")),
+    ("dragon", "🐉", ("りゅう", "ドラゴン", "でんせつのいきもの")),
     ("cow", "🐄", ("うし", "どうぶつ", "かちく")),
-    ("salt", "🧂", ("しお", "ちょうみりょう", "そると")),
-    ("plate", "🍽️", ("おさら", "しょっき", "ぷれーと")),
-    ("lavender", "🪻", ("らべんだー", "はな", "しょくぶつ")),
-    ("diamond", "💎", ("だいや", "ほうせき", "きせき")),
+    ("salt", "🧂", ("しお", "ちょうみりょう", "ソルト")),
+    ("plate", "🍽️", ("おさら", "しょっき", "プレート")),
+    ("lavender", "🪻", ("ラベンダー", "はな", "しょくぶつ")),
+    ("diamond", "💎", ("ダイヤ", "ほうせき", "きせき")),
     ("beans", "🫘", ("まめ", "しょくざい", "たね")),
     ("medaka", "🐟", ("めだか", "さかな", "ぎょるい")),
-    ("sand", "🏖️", ("すな", "はまべ", "びーち")),
+    ("sand", "🏖️", ("すな", "はまべ", "ビーチ")),
     ("pot", "🍲", ("なべ", "りょうり", "しょっき")),
-    ("bagel", "🥯", ("べーぐる", "ぱん", "たべもの")),
-    ("loupe", "🔍", ("るーぺ", "むしめがね", "かくだいきょう")),
-    ("paint", "🎨", ("ぺんき", "とりょう", "いろ")),
-    ("knife", "🔪", ("ないふ", "ほうちょう", "かとらりー")),
+    ("bagel", "🥯", ("ベーグル", "パン", "たべもの")),
+    ("loupe", "🔍", ("ルーペ", "むしめがね", "かくだいきょう")),
+    ("paint", "🎨", ("ペンキ", "とりょう", "いろ")),
+    ("knife", "🔪", ("ナイフ", "ほうちょう", "カトラリー")),
+    ("tomato", "🍅", ("トマト", "やさい", "たべもの")),
+    ("parsley", "🌿", ("パセリ", "ハーブ", "やさい", "かおりづけ")),
 )
-# Each distinct picture's primary reading connects to the next, including wrap.
-# A window of at most 48 cards leaves the initial prompt outside the board.
+# Indivisible display-reading block in every initial certified route.
+PERFECT_CANONICAL_SEGMENT = (
+    ('tomato', 'トマト'), ('bird', 'とり'), ('apple', 'りんご'),
+    ('gorilla', 'ゴリラ'), ('trumpet', 'ラッパ'), ('parsley', 'パセリ'),
+)
+# Certified fallback spine, not a freely rotating ring: rotation could split
+# the canonical block. Retain the existing name for the catalog witness.
 PERFECT_RING = (
-    'apple', 'gorilla', 'trumpet', 'panda', 'daruma', 'tree', 'moon', 'fox',
-    'mouse', 'bee', 'butterfly', 'rabbit', 'guitar', 'octopus', 'top', 'pillow',
-    'otter', 'koala', 'ramune', 'tie', 'chair', 'melon', 'turtle', 'glasses',
-    'cat', 'ice', 'squirrel', 'bell', 'zucchini', 'chicken', 'backpack', 'car',
+    'tomato', 'bird', 'apple', 'gorilla', 'trumpet', 'parsley',
+    'squirrel', 'bell', 'zucchini', 'chicken', 'backpack', 'car',
     'scarf', 'radio', 'riceball', 'dragon', 'cow', 'salt', 'plate', 'lavender',
     'diamond', 'mountain', 'beans', 'medaka', 'umbrella', 'fish', 'eggplant',
-    'sand', 'pot', 'bagel', 'loupe', 'paint', 'mushroom', 'bird',
+    'sand', 'pot', 'bagel', 'loupe', 'paint', 'mushroom', 'koala', 'camel',
+    'daruma', 'tree', 'moon', 'fox', 'mouse', 'bee', 'butterfly', 'rabbit',
+    'guitar', 'octopus', 'top', 'pillow', 'otter', 'ice',
 )
 SMALL = str.maketrans("ゃゅょぁぃぅぇぉっゎ", "やゆよあいうえおつわ")
 
@@ -91,53 +101,87 @@ SMALL = str.maketrans("ゃゅょぁぃぅぇぉっゎ", "やゆよあいうえ�
 MISS_OUTLINE_SECONDS = 1.2
 
 
+@lru_cache(maxsize=2048)
+def normalize_reading(word):
+    """Comparison key only; never replace a display/history reading with it.
+
+    NFC joins voiced kana. Keep internal small kana and long marks (different
+    words must not collapse); head/tail apply the house boundary rules.
+    """
+    return ''.join(chr(ord(c) - 0x60) if 'ァ' <= c <= 'ヶ' else c
+                   for c in unicodedata.normalize('NFC', word))
+
+
+@lru_cache(maxsize=2048)
+def head(word):
+    return normalize_reading(word)[:1].translate(SMALL)
+
+
+@lru_cache(maxsize=2048)
 def tail(word):
     """House rule: long marks use preceding kana; small kana become full-size."""
-    return word.rstrip("ー")[-1].translate(SMALL)
+    return normalize_reading(word).rstrip("ー")[-1:].translate(SMALL)
+
+
+@lru_cache(maxsize=4096)
+def _readings_from(card, required):
+    """Catalog-local cache; no board/stock state is retained here."""
+    return tuple((word, normalize_reading(word)) for word in card[2]
+                 if head(word) == required and tail(word) != 'ん')
 
 
 def chain_moves(cards, required, seen):
     """Pure legal-move enumeration; None is a consumed board slot."""
+    required = head(required)
+    seen = {normalize_reading(w) for w in seen}
     return [(i, word) for i, card in enumerate(cards) if card is not None
-            for word in card[2] if word[0] == required and tail(word) != "ん" and word not in seen]
+            for word, key in _readings_from(card, required) if key not in seen]
 
 
 def starting_route(required, total, seen, rng, node_budget=256):
-    """Randomized catalog-wide chain; a bounded miss uses the certified ring."""
+    """Bounded randomized chain with the six-card block as one atomic edge."""
+    reserved = {identity for identity, _ in PERFECT_CANONICAL_SEGMENT}
     by_head = {}
     for card in CARDS:
+        if card[0] in reserved:
+            continue
         for word in card[2]:
             if tail(word) != "ん":
-                by_head.setdefault(word[0], []).append((card[0], word))
+                by_head.setdefault(head(word), []).append(((card[0], word),))
+    by_head.setdefault('と', []).append(PERFECT_CANONICAL_SEGMENT)
     nodes = 0
 
-    def search(head, route, ids, words):
+    def search(required, route, ids, words):
         nonlocal nodes
         if len(route) == total:
-            return route
+            return route if reserved <= ids else None
         if nodes >= node_budget:
             return None
         nodes += 1
-        choices = list(by_head.get(head, ()))
+        choices = list(by_head.get(required, ()))
         rng.shuffle(choices)
-        for identity, word in choices:
-            if identity in ids or word in words:
+        for block in choices:
+            new_ids = {identity for identity, _ in block}
+            new_words = {normalize_reading(word) for _, word in block}
+            if new_ids & ids or new_words & words or len(route) + len(block) > total:
                 continue
-            found = search(tail(word), route + [(identity, word)], ids | {identity}, words | {word})
+            if not reserved <= (ids | new_ids) and total - len(route) - len(block) < 6:
+                continue
+            found = search(tail(block[-1][1]), route + list(block), ids | new_ids, words | new_words)
             if found is not None:
                 return found
             if nodes >= node_budget:
                 break
         return None
 
-    return search(required, [], set(), set(seen))
+    return search(head(required), [], set(), {normalize_reading(w) for w in seen})
 
 
 def chain_step(cards, stock, seen, move):
     """Simulate the real refill/rescue rules without touching the live round."""
     i, word = move
     cards, stock = list(cards), list(stock)
-    seen = seen | {word}
+    seen = {normalize_reading(w) for w in seen} | {normalize_reading(word)}
     required = tail(word)
     cards[i] = stock.pop(0) if stock else None
     if cards[i] is not None and not chain_moves(cards, required, seen):
@@ -154,7 +198,8 @@ def longest_chain_move(cards, stock, required, seen, node_budget=4096):
     A full route is a proof of possibility, not a prediction of player input.
     On cutoff, scores are achieved path lengths, never invented exact optima.
     """
-    initial = (tuple(cards), tuple(stock), required, frozenset(seen))
+    required = head(required)
+    initial = (tuple(cards), tuple(stock), required, frozenset(normalize_reading(w) for w in seen))
     candidates = chain_moves(initial[0], required, initial[3])
     if not candidates:
         return None, {"length": 0, "perfect": False, "exact": True, "nodes": 0, "route": ()}
@@ -205,6 +250,30 @@ def longest_chain_move(cards, stock, required, seen, node_budget=4096):
     return best_move, {"length": best_length, "perfect": False, "exact": all_exact, "nodes": total_nodes, "route": best_route}
 
 
+class PerfectStep(NamedTuple):
+    identity: str
+    reading: str
+    key: str
+    required: str
+
+
+def certify_route(state, identity_route):
+    """Resolve identities on the current board, replay refill, prove exhaustion.
+
+    Never infer availability from board+stock membership alone: a connector
+    stranded in stock must actually become visible under chain_step's rules.
+    """
+    witnesses = []
+    for identity, word in identity_route:
+        move = next((m for m in chain_moves(state[0], state[2], state[3])
+                     if state[0][m[0]][0] == identity and m[1] == word), None)
+        if move is None:
+            return None
+        witnesses.append((state, move, PerfectStep(identity, word, normalize_reading(word), tail(word))))
+        state = chain_step(state[0], state[1], state[3], move)
+    return witnesses if not any(state[0]) and not state[1] else None
+
+
 class ShiritoriRound:
     def __init__(self, difficulty="normal", rng=None, clock=None, mode="battle", total=24):
         self.rng = rng or random.Random()
@@ -240,25 +309,26 @@ class ShiritoriRound:
         self.revision = 0
         self.cpu_move = None
         self._chain_advice = {}
+        self.perfect_route = ()  # Identity-based certificate, never sent to UI.
+        self.initial_perfect_route = ()
         self.chain = TimedChain(self.clock())
 
     def start(self):
         self.chain = TimedChain(self.clock())
         self._chain_advice.clear()
         by_id = {card[0]: card for card in CARDS}
-        offset = self.rng.randrange(len(PERFECT_RING))
-        seed = by_id[PERFECT_RING[offset]][2][0]
-        route_ids = [PERFECT_RING[(offset + step) % len(PERFECT_RING)] for step in range(1, self.total + 1)]
+        seed = self.rng.choice(CARDS)[2][0]
         route_words = starting_route(tail(seed), self.total, {seed}, self.rng)
         if route_words is None:
-            route_words = [(key, by_id[key][2][0]) for key in route_ids]
+            seed = 'トースト'
+            route_words = [(key, by_id[key][2][0]) for key in PERFECT_RING[:self.total]]
         chosen = [by_id[key] for key, _ in route_words]
         self.cards, self.stock = chosen[:24], chosen[24:]
         self.rng.shuffle(self.cards)
         self.used = {}
         self.history = []
         self.last_word, self.required = seed, tail(seed)
-        self.seen = {seed}
+        self.seen = {normalize_reading(seed)}
         self.turn, self.phase = "you", "playing"
         self.winner = None
         self.cpu_move = None
@@ -273,25 +343,16 @@ class ShiritoriRound:
         self.deadline = self.clock() + self.limit
         # Replay the witness using the same transition rules as planning.
         state = (tuple(self.cards), tuple(self.stock), self.required, frozenset(self.seen))
-        witnesses = []
-        for identity, word in route_words:
-            index = next(i for i, c in enumerate(state[0]) if c is not None and c[0] == identity)
-            move = (index, word)
-            if move not in chain_moves(state[0], state[2], state[3]):
-                raise ValueError('Invalid perfect starting route')
-            witnesses.append((state, move))
-            state = chain_step(state[0], state[1], state[3], move)
-        if any(state[0]) or state[1]:
-            raise ValueError('Perfect starting route did not consume the deck')
-        route = tuple(move for _, move in witnesses)
-        for i, (state, move) in enumerate(witnesses):
-            self._chain_advice[state] = (move, {'length': len(route)-i, 'perfect': True,
-                                               'exact': True, 'nodes': 0, 'route': route[i:]})
+        witnesses = certify_route(state, route_words)
+        if witnesses is None:
+            raise ValueError('Invalid perfect starting route or refill witness')
+        self.remember_perfect(witnesses)
+        self.initial_perfect_route = self.perfect_route
         self.revision += 1
 
     def moves(self):
-        return [(i, word) for i, card in enumerate(self.cards) if i not in self.used
-                for word in card[2] if word[0] == self.required and tail(word) != "ん" and word not in self.seen]
+        return chain_moves(tuple(None if i in self.used else c for i, c in enumerate(self.cards)),
+                           self.required, self.seen)
 
     def finish(self, winner, reason):
         self.phase, self.winner, self.message = "finished", winner, reason
@@ -325,25 +386,47 @@ class ShiritoriRound:
             return
         self.cpu_move, self.cpu_plan = self.chain_advice()
 
-    def chain_advice(self):
-        """Share advice with hints; reuse only an exact matching game state.
+    def remember_perfect(self, witnesses):
+        """Install only a fully replayed proof, with exact-state suffix caches."""
+        self._chain_advice.clear()
+        self.perfect_route = tuple(step for _, _, step in witnesses)
+        route = tuple(move for _, move, _ in witnesses)
+        for i, (state, move, _) in enumerate(witnesses):
+            self._chain_advice[state] = (move, {'length': len(route)-i, 'perfect': True,
+                'exact': True, 'nodes': 0, 'route': route[i:], 'witness': self.perfect_route[i:]})
 
-        Retain proven perfect suffixes so bounded replanning cannot lose them.
-        A player's different choice invalidates the old plan automatically.
+    def chain_advice(self):
+        """Exact proof first, identity re-sync second, bounded replanning last.
+
+        A search cutoff is UNKNOWN, not proof that perfect is impossible.
+        Display/history spelling never participates in the state comparison.
         """
         board = tuple(None if i in self.used else c for i, c in enumerate(self.cards))
-        state = (board, tuple(self.stock), self.required, frozenset(self.seen))
+        state = (board, tuple(self.stock), head(self.required), frozenset(normalize_reading(w) for w in self.seen))
         if state in self._chain_advice:
             return self._chain_advice[state]
+        remaining_ids = {c[0] for c in board + tuple(self.stock) if c is not None}
+        suffix = [(s.identity, s.reading) for s in self.perfect_route if s.identity in remaining_ids]
+        if suffix and {identity for identity, _ in suffix} == remaining_ids:
+            # Also accept another reading of the next picture (apple: し/す -> ご).
+            # Each candidate is replayed to the end; matching tails alone is not proof.
+            candidates = [suffix] + [[(suffix[0][0], word)] + suffix[1:]
+                for i, word in chain_moves(board, state[2], state[3])
+                if board[i][0] == suffix[0][0] and word != suffix[0][1]]
+            for candidate in candidates:
+                witnesses = certify_route(state, candidate)
+                if witnesses:
+                    self.remember_perfect(witnesses)
+                    return self._chain_advice[state]
         self._chain_advice.clear()
-        move, plan = longest_chain_move(board, self.stock, self.required, self.seen)
+        move, plan = longest_chain_move(*state)
         self._chain_advice[state] = (move, plan)
         if plan['perfect']:
-            for offset, step in enumerate(plan['route']):
-                suffix = plan['route'][offset:]
-                self._chain_advice[state] = (step, {"length": len(suffix), "perfect": True,
-                                                  "exact": True, "nodes": 0, "route": suffix})
-                state = chain_step(state[0], state[1], state[3], step)
+            replay, identities = state, []
+            for index, word in plan['route']:
+                identities.append((replay[0][index][0], word))
+                replay = chain_step(replay[0], replay[1], replay[3], (index, word))
+            self.remember_perfect(certify_route(state, identities))
         return move, plan
 
     def take(self, index, word):
@@ -357,7 +440,7 @@ class ShiritoriRound:
         self.used[index] = owner
         self.history.append({"word": word, "owner": owner, "icon": self.cards[index][1], "id": self.cards[index][0], "readings": self.cards[index][2], "relinked": self.break_next})
         self.break_next = False
-        self.seen.add(word)
+        self.seen = {normalize_reading(w) for w in self.seen} | {normalize_reading(word)}
         self.last_word, self.required = word, tail(word)
         self.selected = self.hint = None
         self.revision += 1
@@ -374,7 +457,7 @@ class ShiritoriRound:
             # in stock. Exchange only the newly dealt card, not existing cards.
             if not self.moves():
                 for j, card in enumerate(self.stock):
-                    if any(w[0] == self.required and tail(w) != "ん" and w not in self.seen for w in card[2]):
+                    if chain_moves((card,), self.required, self.seen):
                         self.cards[index], self.stock[j] = card, self.cards[index]
                         break
             self.refilled = index
@@ -394,7 +477,7 @@ class ShiritoriRound:
         self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
 
     def check_solo_blocked(self):
-        if self.relinks and any(tail(w) != "ん" and w not in self.seen
+        if self.relinks and any(tail(w) != "ん" and normalize_reading(w) not in self.seen
                                 for i, c in enumerate(self.cards) if i not in self.used for w in c[2]):
             self.phase = "blocked"
             self.message = "つながる絵がないよ。「つなぎ直す」で別の文字から続けよう。"
@@ -429,14 +512,14 @@ class ShiritoriRound:
             self.start()
         elif action == "relink" and self.phase == "blocked" and self.mode == "solo" and self.relinks:
             choices = [(i, w) for i, c in enumerate(self.cards) if i not in self.used
-                       for w in c[2] if tail(w) != "ん" and w not in self.seen]
+                       for w in c[2] if tail(w) != "ん" and normalize_reading(w) not in self.seen]
             if choices:
                 self.chain.miss('you')
                 self.chain.sync(self.clock(), ('you',))
                 self.relinks -= 1
                 self.miss_card = None
                 self.miss_until = 0
-                self.required = choices[0][1][0]
+                self.required = head(choices[0][1])
                 self.last_word = "つなぎ直し"
                 self.break_next = True
                 self.hint = choices[0][0]
