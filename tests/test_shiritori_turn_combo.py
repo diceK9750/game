@@ -92,11 +92,13 @@ class BattleTurnComboTests(unittest.TestCase):
         self.game.command('card', wrong)
         self.assertEqual(self.game.winner, 'cpu')
 
-    def test_cpu_uses_normal_delay_for_repeated_certified_answers(self):
+    def test_hard_cpu_uses_normal_delay_for_five_certified_answers(self):
+        self.game.difficulty = 'hard'
+        self.game.rng.random = lambda: 0.0
         self.player_hit()
         self.expire_combo()
         self.assertEqual(self.game.turn, 'cpu')
-        for count in range(1, 8):
+        for count in range(1, 6):
             expected, plan = self.game.chain_advice()
             self.assertTrue(plan['perfect'])
             self.assertEqual(self.game.cpu_move, expected)
@@ -107,14 +109,13 @@ class BattleTurnComboTests(unittest.TestCase):
             self.game.update()
             self.assertEqual(self.game.history[-1]['owner'], 'cpu')
             self.assertEqual(self.game.history[-1]['word'], expected[1])
-            self.assertEqual(self.game.chain.players['cpu']['count'], count)
-            self.assertEqual(self.game.turn, 'cpu')
-            self.assertAlmostEqual(self.game.combo_remaining(), TimedChain.window(count))
-        self.assertLess(self.game.combo_remaining(), 2.2)
-        self.expire_combo()
+            if count < 5:
+                self.assertEqual(self.game.chain.players['cpu']['count'], count)
+                self.assertEqual(self.game.turn, 'cpu')
+                self.assertAlmostEqual(self.game.combo_remaining(), TimedChain.window(count))
         self.assertEqual(self.game.turn, 'you')
-        self.assertEqual(len(self.game.history), 8)
-        self.assertEqual(self.game.chain.players['cpu']['best'], 7)
+        self.assertEqual(len(self.game.history), 6)
+        self.assertEqual(self.game.chain.players['cpu']['best'], 5)
         self.assertIsNone(self.game.winner)
 
     def test_hint_during_combo_uses_next_certified_step_without_time_cost(self):
@@ -175,6 +176,7 @@ class BattleTurnComboTests(unittest.TestCase):
         self.assertEqual(self.game.history[-1]['owner'], 'cpu')
 
     def test_cpu_combo_and_its_next_answer_both_pause(self):
+        self.game.rng.random = lambda: 0.0
         self.player_hit()
         self.expire_combo()
         self.now[0] = self.game.cpu_due
@@ -200,6 +202,7 @@ class BattleTurnComboTests(unittest.TestCase):
                 game = ShiritoriRound(total=total, mode='battle', rng=random.Random(7),
                                       clock=lambda: self.now[0])
                 game.start()
+                game.rng.random = lambda: 0.0
                 for count in range(3):
                     move, plan = game.chain_advice()
                     self.assertTrue(plan['perfect'])

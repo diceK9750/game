@@ -134,6 +134,15 @@ test('one tap submits a card with no reading dialog and keeps stable 24 slots', 
   assert.equal(cards[0].disabled, false);
 });
 
+test('rival difficulty note stays concise without perfect-route exposition', () => {
+  const {view,state}=harness();
+  view.update({...state,phase:'intro'});
+  const note=view.page.querySelectorAll('.sh-setting-note')
+    .find(e=>e.textContent.includes('通常の回答期限'));
+  assert.equal(note.textContent,
+    '通常の回答期限20秒。誤答は−3秒。');
+});
+
 test('battle HUD distinguishes ordinary turn time from player and CPU combo time', () => {
   const {view, state} = harness();
   const task = view.page.querySelector('.sh-task');

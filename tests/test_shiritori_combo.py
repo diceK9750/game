@@ -87,6 +87,7 @@ class TimedChainTests(unittest.TestCase):
         now=[0.]
         g=ShiritoriRound(mode='battle',clock=lambda:now[0],rng=random.Random(7))
         g.start()
+        g.rng.random = lambda: 0.0
         now[0] += .1
         g.command('card', g.chain_advice()[0][0])
         now[0] += 4.6
@@ -95,9 +96,7 @@ class TimedChainTests(unittest.TestCase):
         for _ in range(3):
             now[0]+=2.2
             g.update()
-        self.assertEqual(g.chain.players['cpu']['count'],3)
-        now[0] += g.chain.players['cpu']['remaining'] + .01
-        g.update()
+        self.assertEqual(g.chain.players['cpu']['best'],3)
         self.assertEqual(g.turn, 'you')
         for _ in range(3):
             now[0] += .1

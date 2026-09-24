@@ -358,7 +358,7 @@
       modeHint.textContent = solo ? '時間無制限。自分のペースで最後までつなごう。' : '正解後は連鎖ゲージが切れるまで同じ側が続けて回答！';
       countHint.textContent = s.total > 24 ? `画面24枚＋山札${s.total - 24}枚。使った場所に補充。` : `${s.total}枚を並べてスタート。補充なし。`;
       levels.hidden = solo;
-      limit.textContent = `通常の回答期限${s.limit}秒。誤答は−3秒。ルナは全札完走を優先し、長くつながる手を探します。`;
+      limit.textContent = `通常の回答期限${s.limit}秒。誤答は−3秒。`;
       start.textContent = solo ? '一人でスタート' : '対戦スタート';
       const mine = s.turn === 'you';
       turn.textContent = solo ? '一人でじっくり' : s.combo_active ? mine ? 'あなたの連鎖中！' : 'ルナの連鎖中…' : mine ? 'あなたの番' : 'ルナが考えています…';

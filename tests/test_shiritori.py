@@ -336,6 +336,7 @@ class ShiritoriTests(unittest.TestCase):
         self.assertIn(row['word'], [word for _, word in legal])
 
     def test_cpu_cursor_target_is_its_committed_answer_and_pause_preserves_it(self):
+        self.game.rng.random = lambda: 0.0
         self.game.turn='cpu'
         self.game.deadline=2.2
         self.game.cpu_due=2.2

@@ -275,6 +275,10 @@ def certify_route(state, identity_route):
 
 
 class ShiritoriRound:
+    CPU_CONTINUE_CHANCE = {'easy': .10, 'normal': .65, 'hard': .90}
+    CPU_MAX_STREAK = {'easy': 2, 'normal': 3, 'hard': 5}
+    CPU_ANSWER_DELAY = 2.2
+
     def __init__(self, difficulty="normal", rng=None, clock=None, mode="battle", total=24):
         self.rng = rng or random.Random()
         self.clock = clock or time.monotonic
@@ -376,6 +380,17 @@ class ShiritoriRound:
             return 0.0
         return self.chain.players[self.combo_owner]['remaining']
 
+    def cpu_should_continue_combo(self):
+        """Decide once after a CPU hit; answer quality stays with chain_advice()."""
+        if self.mode != 'battle' or self.turn != 'cpu' or self.combo_owner != 'cpu':
+            return False
+        count = self.chain.players['cpu']['count']
+        if count >= self.CPU_MAX_STREAK[self.difficulty]:
+            return False
+        if self.combo_remaining() <= self.CPU_ANSWER_DELAY:
+            return False
+        return self.rng.random() < self.CPU_CONTINUE_CHANCE[self.difficulty]
+
     def handoff(self):
         """Pass a completed combo without treating it as a miss or timeout."""
         owner = self.turn
@@ -383,7 +398,7 @@ class ShiritoriRound:
         self.combo_owner = None
         self.turn = 'cpu' if owner == 'you' else 'you'
         now = self.clock()
-        self.deadline = now + (2.2 if self.turn == 'cpu' else self.limit)
+        self.deadline = now + (self.CPU_ANSWER_DELAY if self.turn == 'cpu' else self.limit)
         self.cpu_due = self.deadline if self.turn == 'cpu' else 0
         self.cpu_move = None
         self.message = 'ルナの番。つながる絵を探しています…' if self.turn == 'cpu' else 'あなたの番。つながる絵を探そう！'
@@ -510,8 +525,11 @@ class ShiritoriRound:
                 self.finish(owner, f"{'ルナ' if owner == 'you' else 'リン'}がつなげる絵がなくなった！")
         else:
             if self.mode == 'battle' and owner == 'cpu':
-                self.cpu_due = self.clock() + 2.2
-                self.prepare_cpu()
+                if self.cpu_should_continue_combo():
+                    self.cpu_due = self.clock() + self.CPU_ANSWER_DELAY
+                    self.prepare_cpu()
+                else:
+                    self.handoff()
 
         self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
 
@@ -616,7 +634,7 @@ class ShiritoriRound:
                 "combo_remaining": round(self.combo_remaining(), 1) if combo_active else 0,
                 "turn_remaining": round(self.remaining(), 1) if self.phase in ('playing', 'paused') else 0,
                 "cpu_target": self.cpu_move[0] if self.cpu_move is not None and self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else None,
-                "cpu_progress": max(0, min(1, 1-max(0, self.cpu_due-self.clock())/2.2)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
+                "cpu_progress": max(0, min(1, 1-max(0, self.cpu_due-self.clock())/self.CPU_ANSWER_DELAY)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
                 "last_word": self.last_word, "remaining": round(self.remaining(), 1) if self.phase in ("playing", "paused") else 0,
                 "limit": self.limit, "difficulty": self.difficulty, "message": self.message, "winner": self.winner,
                 "mistakes": self.mistakes, "miss_card": self.active_miss_card(),
