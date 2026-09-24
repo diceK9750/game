@@ -62,9 +62,9 @@
     const limit = E('p', 'sh-setting-note');
     add(levels, E('h2', 'nr-field-label', 'ライバルの強さ'), add(E('div', 'nr-segment sh-actions sh-levels'), ...levelButtons), limit);
     // Named so update can swap kind-aware help (solo must not invent 相手/CPU/両者; parity numbers #90/#94/#95).
-    const guideMode = E('p', '', '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。');
+    const guideMode = E('p', '', '対戦では正解後も連鎖ゲージが残る間は同じ側が続けて回答。ゲージが切れると相手の番です。通常の回答期限切れ、またはつながる札がないと負け。');
     const guideBoard = E('p', '', '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。');
-    const guideChain = E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。対戦は相手の手番中、自分のゲージが止まります。CPUも同じ条件で連鎖します。');
+    const guideChain = E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。CPUも同じ条件で連鎖します。');
     const guide = add(E('details', 'sh-guide'), E('summary', '', '遊び方・読み方のルール'),
       E('p', '', '絵を1回タップするだけ！必要な頭文字につながる未使用の読み方を自動確定。「ん」終わりは自動で除外します。各絵に頭文字の異なる3種類以上の読み方があります。'),
       guideMode, guideBoard,
@@ -328,13 +328,13 @@
       // Solo has no rival — help/pause must not invent 相手/CPU/両者/ライバル (parity numbers #90/#94/#95).
       guideMode.textContent = solo
         ? '一人用は時間無制限。詰まったら2回つなぎ直せます。ヒントを使って、自分のペースで最後までつなごう。'
-        : '対戦は交互に回答。時間切れ・つながる札がないと負け。一人用は時間無制限で、詰まったら2回つなぎ直せます。';
+        : '対戦では正解後も連鎖ゲージが残る間は同じ側が続けて回答。ゲージが切れると相手の番です。通常の回答期限切れ、またはつながる札がないと負け。';
       guideBoard.textContent = solo
         ? '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。'
         : '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。';
       guideChain.textContent = solo
         ? '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。'
-        : '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。対戦は相手の手番中、自分のゲージが止まります。CPUも同じ条件で連鎖します。';
+        : '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。CPUも同じ条件で連鎖します。';
       pauseCopy.textContent = solo
         ? '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'
         : '札を隠して休憩中。ライバルも止まっています。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。';
@@ -355,13 +355,13 @@
       if (!restartPage.hidden) pause.hidden=true;
       if (dictionaryOpen || helpOpen) intro.hidden=result.hidden=true;
       pressed(modeButtons, ['battle','solo'], s.mode); pressed(countButtons, counts, s.total); pressed(levelButtons, ['easy','normal','hard'], s.difficulty);
-      modeHint.textContent = solo ? '時間無制限。自分のペースで最後までつなごう。' : 'ライバルと交互に回答。制限時間内につながる絵を見つけよう。';
+      modeHint.textContent = solo ? '時間無制限。自分のペースで最後までつなごう。' : '正解後は連鎖ゲージが切れるまで同じ側が続けて回答！';
       countHint.textContent = s.total > 24 ? `画面24枚＋山札${s.total - 24}枚。使った場所に補充。` : `${s.total}枚を並べてスタート。補充なし。`;
       levels.hidden = solo;
-      limit.textContent = `1手${s.limit}秒。誤答は−3秒。ルナは全札完走を優先し、長くつながる手を探します。`;
+      limit.textContent = `通常の回答期限${s.limit}秒。誤答は−3秒。ルナは全札完走を優先し、長くつながる手を探します。`;
       start.textContent = solo ? '一人でスタート' : '対戦スタート';
       const mine = s.turn === 'you';
-      turn.textContent = solo ? '一人でじっくり' : mine ? 'あなたの番' : 'ルナが考えています…';
+      turn.textContent = solo ? '一人でじっくり' : s.combo_active ? mine ? 'あなたの連鎖中！' : 'ルナの連鎖中…' : mine ? 'あなたの番' : 'ルナが考えています…';
       prompt.textContent = `${s.last_word} →「${s.required}」`;
       const requiredKey = String(s.required ?? '');
       if (live) {
@@ -374,8 +374,8 @@
         if (prevRequiredKey !== null || taskWrap.dataset.cue === 'true') clearRequiredCue();
         prevRequiredKey = null;
       }
-      clock.textContent = solo ? '時間無制限' : mine ? `${s.remaining.toFixed(1)} 秒` : '…';
-      clock.dataset.urgent = String(!solo && mine && s.remaining < 5);
+      clock.textContent = solo ? '時間無制限' : s.combo_active ? `連鎖 ${s.combo_remaining.toFixed(1)}秒` : mine ? `${s.remaining.toFixed(1)} 秒` : '…';
+      clock.dataset.urgent = String(!solo && mine && (s.combo_active ? s.combo_remaining < 1.5 : s.remaining < 5));
       status.textContent = s.message + (newFind ? ` · ${newFind}` : '');
       // Durable miss guidance feeds polite live region so SR hear「ちがう絵」even when
       // short-landscape .sh-status ellipsizes; visual strip + #65 outline stay non-live (#98).
@@ -383,7 +383,7 @@
         ? 'ちがう絵！お題を確認して、すぐ押し直そう。'
         : '';
       const nextAnnouncement = live
-        ? `次は「${s.required}」。${s.completed || 0}枚つながった。ミス${s.mistakes || 0}回。${missGuidance}`
+        ? `次は「${s.required}」。${s.completed || 0}枚つながった。ミス${s.mistakes || 0}回。${s.combo_active && mine ? 'コンボ中。続けて選べます。' : ''}${missGuidance}`
         : s.phase === 'finished'
           ? `${resultTitle.textContent}`
           : '';

@@ -306,6 +306,9 @@ class ShiritoriRound:
         self.turn = "you"
         self.deadline = 0
         self.saved_remaining = 0
+        self.combo_owner = None
+        self.cpu_due = 0
+        self.saved_cpu_remaining = 0
         self.revision = 0
         self.cpu_move = None
         self._chain_advice = {}
@@ -330,6 +333,8 @@ class ShiritoriRound:
         self.last_word, self.required = seed, tail(seed)
         self.seen = {normalize_reading(seed)}
         self.turn, self.phase = "you", "playing"
+        self.combo_owner = None
+        self.cpu_due = 0
         self.winner = None
         self.cpu_move = None
         self.selected = self.hint = None
@@ -360,23 +365,56 @@ class ShiritoriRound:
         self.miss_card = None
         self.miss_until = 0
         self.chain.sync(self.clock(), ())
+        self.combo_owner = None
         self.revision += 1
 
     def remaining(self):
         return max(0, self.saved_remaining if self.phase == "paused" else self.deadline - self.clock())
 
+    def combo_remaining(self):
+        if self.combo_owner is None:
+            return 0.0
+        return self.chain.players[self.combo_owner]['remaining']
+
+    def handoff(self):
+        """Pass a completed combo without treating it as a miss or timeout."""
+        owner = self.turn
+        self.chain.miss(owner)
+        self.combo_owner = None
+        self.turn = 'cpu' if owner == 'you' else 'you'
+        now = self.clock()
+        self.deadline = now + (2.2 if self.turn == 'cpu' else self.limit)
+        self.cpu_due = self.deadline if self.turn == 'cpu' else 0
+        self.cpu_move = None
+        self.message = 'ルナの番。つながる絵を探しています…' if self.turn == 'cpu' else 'あなたの番。つながる絵を探そう！'
+        self.revision += 1
+        if self.turn == 'cpu':
+            self.prepare_cpu()
+        self.chain.sync(now, (self.turn,) if self.phase == 'playing' else ())
+
     def update(self):
-        self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
+        now = self.clock()
+        self.chain.sync(now, (self.turn,) if self.phase == 'playing' else ())
         if self.phase != "playing":
             return
         if self.mode == "solo":
+            return
+        if self.combo_owner is not None:
+            if self.combo_remaining() <= 0:
+                self.handoff()
+                return
+            if self.turn == 'cpu' and now >= self.cpu_due:
+                if self.cpu_move is None:
+                    self.prepare_cpu()
+                if self.cpu_move is not None:
+                    self.take(*self.cpu_move)
             return
         if self.turn == "you" and self.remaining() <= 0:
             self.finish("cpu", "時間切れ。次は読み方の候補も使ってみよう！")
         elif self.turn == "cpu":
             if self.cpu_move is None:
                 self.prepare_cpu()
-            if self.remaining() <= 0 and self.cpu_move is not None:
+            if now >= self.cpu_due and self.cpu_move is not None:
                 self.take(*self.cpu_move)
 
     def prepare_cpu(self):
@@ -432,6 +470,8 @@ class ShiritoriRound:
     def take(self, index, word):
         owner = self.turn
         self.chain.hit(owner, self.clock())
+        if self.mode == 'battle':
+            self.combo_owner = owner
         self.cpu_move = None
         self.miss_card = None
         self.miss_until = 0
@@ -447,7 +487,6 @@ class ShiritoriRound:
         if self.required == "ん":
             self.finish("cpu" if owner == "you" else "you", "「ん」で終わったので負け！別の読み方にも注目しよう。")
             return
-        self.turn = "you" if self.mode == "solo" else "cpu" if owner == "you" else "you"
         self.message = f"{'リン' if owner == 'you' else 'ルナ'}：{word} → 次は「{self.required}」"
         self.refilled = None
         if self.stock:
@@ -468,10 +507,10 @@ class ShiritoriRound:
             if self.mode == "solo":
                 self.check_solo_blocked()
             else:
-                self.finish(owner, f"{'ルナ' if self.turn == 'cpu' else 'リン'}がつなげる絵がなくなった！")
+                self.finish(owner, f"{'ルナ' if owner == 'you' else 'リン'}がつなげる絵がなくなった！")
         else:
-            self.deadline = self.clock() + (2.2 if self.turn == "cpu" else self.limit)
-            if self.turn == "cpu":
+            if self.mode == 'battle' and owner == 'cpu':
+                self.cpu_due = self.clock() + 2.2
                 self.prepare_cpu()
 
         self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
@@ -500,12 +539,15 @@ class ShiritoriRound:
             self.start()
         elif action == "pause" and self.phase in ("playing", "blocked"):
             self.saved_remaining = self.remaining()
+            self.saved_cpu_remaining = max(0, self.cpu_due - self.clock()) if self.turn == 'cpu' else 0
             self.resume_phase = self.phase
             self.phase = "paused"
             self.chain.sync(self.clock(), ())
             self.selected = None
         elif action == "resume" and self.phase == "paused":
             self.deadline = self.clock() + self.saved_remaining
+            if self.turn == 'cpu':
+                self.cpu_due = self.clock() + self.saved_cpu_remaining
             self.phase = self.resume_phase
             self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
         elif action == "restart" and self.phase == "paused":
@@ -534,6 +576,7 @@ class ShiritoriRound:
                     self.take(*move)
                 else:
                     self.chain.miss('you')
+                    self.combo_owner = None
                     self.mistakes += 1
                     self.miss_card = value
                     self.miss_until = self.clock() + MISS_OUTLINE_SECONDS
@@ -549,7 +592,7 @@ class ShiritoriRound:
                 move, plan = self.chain_advice()
                 self.chain.sync(self.clock(), (self.turn,))
                 # Thinking for a hint must not consume the player's turn time.
-                if self.mode == "battle":
+                if self.mode == "battle" and self.deadline > started:
                     self.deadline += max(0, self.clock() - started)
                 self.hint = move[0]
                 self.message = ("完走につながるルートを発見！光る絵をつなごう。" if plan['perfect']
@@ -565,10 +608,15 @@ class ShiritoriRound:
 
     def snapshot(self):
         visible = self.phase in ("playing", "blocked", "finished")
+        self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
+        combo_active = self.combo_owner is not None and self.phase in ('playing', 'paused') and self.combo_remaining() > 0
         return {"phase": self.phase, "turn": self.turn, "required": self.required,
                 "chain": self.chain.snapshot(self.clock(), (self.turn,) if self.phase == "playing" else ()),
+                "combo_active": combo_active, "combo_owner": self.combo_owner if combo_active else None,
+                "combo_remaining": round(self.combo_remaining(), 1) if combo_active else 0,
+                "turn_remaining": round(self.remaining(), 1) if self.phase in ('playing', 'paused') else 0,
                 "cpu_target": self.cpu_move[0] if self.cpu_move is not None and self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else None,
-                "cpu_progress": max(0, min(1, 1-self.remaining()/2.2)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
+                "cpu_progress": max(0, min(1, 1-max(0, self.cpu_due-self.clock())/2.2)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
                 "last_word": self.last_word, "remaining": round(self.remaining(), 1) if self.phase in ("playing", "paused") else 0,
                 "limit": self.limit, "difficulty": self.difficulty, "message": self.message, "winner": self.winner,
                 "mistakes": self.mistakes, "miss_card": self.active_miss_card(),

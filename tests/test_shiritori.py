@@ -323,6 +323,7 @@ class ShiritoriTests(unittest.TestCase):
     def test_cpu_uses_public_legal_moves_and_turn_delay(self):
         self.game.turn = 'cpu'
         self.game.deadline = 2.2
+        self.game.cpu_due = 2.2
         legal = self.game.moves()
         self.now = 2
         self.game.update()
@@ -337,6 +338,7 @@ class ShiritoriTests(unittest.TestCase):
     def test_cpu_cursor_target_is_its_committed_answer_and_pause_preserves_it(self):
         self.game.turn='cpu'
         self.game.deadline=2.2
+        self.game.cpu_due=2.2
         self.game.update()
         index,word=self.game.cpu_move
         self.assertEqual(self.game.snapshot()['cpu_target'],index)
@@ -350,7 +352,8 @@ class ShiritoriTests(unittest.TestCase):
         self.now=22
         self.game.update()
         self.assertEqual(self.game.history[-1]['word'],word)
-        self.assertIsNone(self.game.snapshot()['cpu_target'])
+        self.assertEqual(self.game.turn, 'cpu')
+        self.assertIsNotNone(self.game.snapshot()['cpu_target'])
 
     def test_blocked_opponent_and_all_used_draw(self):
         self.game.stock = []

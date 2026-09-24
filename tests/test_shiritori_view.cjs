@@ -134,6 +134,26 @@ test('one tap submits a card with no reading dialog and keeps stable 24 slots', 
   assert.equal(cards[0].disabled, false);
 });
 
+test('battle HUD distinguishes ordinary turn time from player and CPU combo time', () => {
+  const {view, state} = harness();
+  const task = view.page.querySelector('.sh-task');
+  const clock = view.page.querySelector('.sh-clock');
+  view.update({...state, remaining: 14});
+  assert.equal(task.children[0].textContent, 'あなたの番');
+  assert.equal(clock.textContent, '14.0 秒');
+  view.update({...state, remaining: 0, combo_active: true, combo_owner: 'you', combo_remaining: 3.8});
+  assert.equal(task.children[0].textContent, 'あなたの連鎖中！');
+  assert.equal(clock.textContent, '連鎖 3.8秒');
+  assert.match(view.page.querySelector('[role=status]')?.textContent || view.page.querySelector('.nr-sr-only').textContent,
+    /コンボ中。続けて選べます/);
+  view.update({...state, turn: 'cpu', combo_active: true, combo_owner: 'cpu', combo_remaining: 2.3});
+  assert.equal(task.children[0].textContent, 'ルナの連鎖中…');
+  assert.equal(clock.textContent, '連鎖 2.3秒');
+  view.update({...state, turn: 'cpu', combo_active: false});
+  assert.equal(task.children[0].textContent, 'ルナが考えています…');
+  assert.equal(clock.textContent, '…');
+});
+
 test('shiritori rival frame follows target only on CPU turns and clears for pause',()=>{
   const {view,state}=harness(); view.update({...state,turn:'cpu',cpu_target:10,cpu_progress:1});
   const cards=view.page.querySelectorAll('.sh-card');
@@ -1411,17 +1431,17 @@ test('shiritori solo help/pause omits phantom rival/CPU; battle keeps them (#111
   view.update({...state, phase: 'intro', mode: 'battle', cards: []});
   view.headerAction('help');
   const battleGuide = [...guidePs()].map(p => p.textContent).join('\n');
-  assert.match(battleGuide, /対戦は交互に回答/, 'battle help keeps turn-taking');
+  assert.match(battleGuide, /連鎖ゲージが残る間は同じ側が続けて回答/, 'battle help explains repeated turns');
+  assert.match(battleGuide, /ゲージが切れると相手の番/, 'battle help explains handoff');
   assert.match(battleGuide, /両者共通/, 'battle help keeps shared-stock clause');
   assert.match(battleGuide, /CPUも同じ条件で連鎖/, 'battle help keeps CPU chain clause');
-  assert.match(battleGuide, /相手の手番/, 'battle help keeps rival-turn chain pause');
 
   view.update({...state, phase: 'intro', mode: 'solo', cards: []});
   view.headerAction('help');
   const soloGuide = [...guidePs()].map(p => p.textContent).join('\n');
   assert.match(soloGuide, /一人用は時間無制限/, 'solo help keeps unlimited-time mode');
   assert.match(soloGuide, /自分のペース/, 'solo help is pace-focused');
-  assert.doesNotMatch(soloGuide, /対戦は交互|時間切れ|相手の手番|CPU|両者/, 'solo help must not invent rivalry/CPU');
+  assert.doesNotMatch(soloGuide, /対戦|時間切れ|相手の番|CPU|両者/, 'solo help must not invent rivalry/CPU');
 
   view.update({...state, phase: 'paused', mode: 'battle', cards: []});
   assert.match(pauseP().textContent, /ライバルも止まっています/, 'battle pause mentions rival stopped');

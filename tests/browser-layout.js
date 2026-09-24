@@ -21,6 +21,8 @@ function snapshot(game, mode, phase) {
     s.screen='shiritori';s.cells=[];
     s.shiritori={phase:shPhase,mode,total:mode==='solo'?48:24,difficulty:'hard',turn:'you',
       required:'り',last_word:updated?'ことばをつなげるしりとり':'しりとり',remaining:18.7,limit:20,hints:3,hint:null,
+      combo_active:updated&&mode==='battle'&&shPhase==='playing',combo_owner:updated&&mode==='battle'&&shPhase==='playing'?'you':null,
+      combo_remaining:updated&&mode==='battle'&&shPhase==='playing'?1.2:0,
       selected:null,message:updated?'新しい読み方を発見！次の絵もつないでパーフェクトを目指そう。':'「り」からはじめよう',
       mistakes:2,history:[],winner:'you',stock:mode==='solo'?23:0,completed:updated?21:0,relinks:2,seen:[],
       chain:s.chain,catalog:[{id:'apple',icon:'🍎',words:['りんご','くだもの','たべもの']}],

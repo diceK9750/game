@@ -78,21 +78,30 @@ class TimedChainTests(unittest.TestCase):
                     now[0]+=.1
                     g.take(*move)
                 self.assertEqual(g.phase,'finished')
-                self.assertEqual(g.chain.players['you']['best'],total if mode=='solo' else total//2)
-                if mode=='battle':
-                    self.assertEqual(g.chain.players['cpu']['best'],total//2)
-                self.assertEqual(len(g.discoveries),total if mode=='solo' else total//2)
+                self.assertEqual(g.chain.players['you']['best'], total)
+                if mode == 'battle':
+                    self.assertEqual(g.chain.players['cpu']['best'], 0)
+                self.assertEqual(len(g.discoveries), total)
 
     def test_shiritori_real_cpu_turn_pause_and_wrong_input(self):
         now=[0.]
         g=ShiritoriRound(mode='battle',clock=lambda:now[0],rng=random.Random(7))
         g.start()
+        now[0] += .1
+        g.command('card', g.chain_advice()[0][0])
+        now[0] += 4.6
+        g.update()
+        self.assertEqual(g.turn, 'cpu')
         for _ in range(3):
-            now[0]+=.1
-            g.command('card',g.chain_advice()[0][0])
-            now[0]+=2.21
+            now[0]+=2.2
             g.update()
         self.assertEqual(g.chain.players['cpu']['count'],3)
+        now[0] += g.chain.players['cpu']['remaining'] + .01
+        g.update()
+        self.assertEqual(g.turn, 'you')
+        for _ in range(3):
+            now[0] += .1
+            g.command('card', g.chain_advice()[0][0])
         self.assertEqual(g.chain.players['you']['count'],3)
         g.command('pause')
         remaining=g.snapshot()['chain']['you']['remaining']
