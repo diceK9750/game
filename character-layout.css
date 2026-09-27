@@ -4,9 +4,58 @@
 .chain-burst::before { display: none; }
 .chain-burst[data-pulse='0'], .chain-burst[data-pulse='1'] { animation: chain-safe-flash 1s ease-out both; }
 .timed-chain[data-tier='3'] .chain-burst { border-width: 1px; box-shadow: inset 0 0 8px #ffd35d; }
+.timed-chains[data-fever-owner='you'] .timed-chain[data-owner='you'],
+.timed-chains[data-fever-owner='cpu'] .timed-chain[data-owner='cpu'] {
+  border-radius: 5px; background: #8b581d44;
+  box-shadow: inset 0 0 0 1px #ffe19b99, 0 0 8px #eeb85b66;
+  animation: rush-fever-breathe 1.6s ease-in-out infinite alternate;
+}
+.timed-chain[data-tier='3'] .chain-meter { box-shadow: 0 0 5px #ffd977; }
+.timed-chain[data-tier='2'] .chain-meter { box-shadow: 0 0 8px #8ce8dc; }
+.timed-chain[data-tier='3'] .chain-meter { box-shadow: 0 0 13px #ffdf70, 0 0 5px #fff7cb; }
+.timed-chain [data-punch='0'], .timed-chain [data-punch='1'] { animation: chain-number-punch 160ms ease-out; }
+@keyframes chain-number-punch { 45% { transform: scale(1.16); text-shadow: 0 0 9px #ffe199; } }
+/* Fixed decorative layer: no HUD/board geometry, hit testing, or focus changes. */
+.chain-fx { position: fixed; inset: 0; z-index: 25; pointer-events: none; overflow: clip; visibility: hidden; }
+.chain-fx[data-phase='entry'], .chain-fx[data-phase='active'], .chain-fx[data-phase='high'] { visibility: visible; }
+.chain-fx-edge { position: absolute; inset: 0; border: clamp(3px, .9vw, 10px) solid #ffce6b; box-shadow: inset 0 0 24px #ffbf4d7a; opacity: 0; }
+.chain-fx[data-phase='entry'] .chain-fx-edge { animation: chain-edge-enter 850ms ease-out both; }
+.chain-fx[data-phase='active'] .chain-fx-edge { opacity: .3; }
+@keyframes chain-edge-enter { 0% { opacity: 0; } 20% { opacity: .9; } 100% { opacity: .3; } }
+.chain-fx-wave { position: absolute; left: 50%; top: 50%; width: min(55vw, 45vh); aspect-ratio: 1; border: 4px solid #fff2ba; border-radius: 50%; box-shadow: 0 0 24px #ffc653, inset 0 0 20px #ffc653; opacity: 0; }
+.chain-fx[data-phase='entry'] .chain-fx-wave { animation: chain-wave 850ms ease-out both; }
+@keyframes chain-wave { 0% { opacity: .95; transform: translate(-50%,-50%) scale(.2); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(2.2); } }
+.chain-fx-banner { position: absolute; left: 50%; top: 45%; transform: translate(-50%,-50%); padding: .18em .65em; border: 3px solid #ffe6a4; border-radius: 14px; background: linear-gradient(120deg,#483012ee,#95591ce8,#483012ee); color: #fff5c9; font-size: clamp(20px, 5vw, 58px); font-weight: 1000; letter-spacing: .045em; white-space: nowrap; text-shadow: 0 2px 1px #5f330c, 0 0 20px #fff4b2; box-shadow: 0 0 30px #ffc85e99; opacity: 0; }
+.chain-fx[data-phase='entry'] .chain-fx-banner { animation: chain-banner-enter 850ms cubic-bezier(.2,.8,.2,1) both; }
+.chain-fx[data-phase='high'] .chain-fx-banner { top: 20%; font-size: clamp(16px,3vw,34px); color: #d6fff6; border-color: #86decf; background: #164d54e8; opacity: .9; }
+@keyframes chain-banner-enter { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.6); } 18%,72% { opacity: 1; transform: translate(-50%,-50%) scale(1.06); } 100% { opacity: 0; transform: translate(-50%,-65%) scale(.9); } }
+.chain-fx-particles { position: absolute; inset: 0; }
+.chain-fx-particles i { position: absolute; top: 48%; left: 50%; width: 7px; aspect-ratio: 1; background: #fff3bb; box-shadow: 0 0 9px #ffe082; transform: rotate(45deg); opacity: 0; }
+.chain-fx[data-phase='entry'] .chain-fx-particles i { animation: chain-spark 800ms ease-out both; }
+@keyframes chain-spark { 15% { opacity: 1; } 100% { opacity: 0; transform: rotate(var(--angle)) translateX(calc(50px + 18vw)); } }
+.chain-fx-particles i { transform: rotate(var(--angle)); }
+.chain-fx-hit { position: absolute; right: max(9px, env(safe-area-inset-right)); top: max(48px, env(safe-area-inset-top)); color: #fff1bb; font-size: clamp(14px,2.5vw,30px); font-weight: 950; text-shadow: 0 0 12px #ffc05e; opacity: 0; }
+.chain-fx[data-hit='true'] .chain-fx-hit { animation: chain-hit 160ms ease-out both; }
+@keyframes chain-hit { 20% { opacity: 1; transform: scale(1.15); } 100% { opacity: 0; transform: scale(1); } }
+#modern-app[data-reduced='true'] .chain-fx *, #modern-app[data-reduced='true'] .timed-chain [data-punch] { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .chain-fx *, .timed-chain [data-punch] { animation: none !important; } }
+#modern-app[data-reduced='true'] .chain-fx[data-phase='entry'] .chain-fx-banner,
+#modern-app[data-reduced='true'] .chain-fx[data-phase='active'] .chain-fx-banner { opacity: 1; top: 20%; font-size: clamp(15px,2.5vw,28px); }
+@media (prefers-reduced-motion: reduce) { .chain-fx[data-phase='entry'] .chain-fx-banner, .chain-fx[data-phase='active'] .chain-fx-banner { opacity: 1; top: 20%; font-size: clamp(15px,2.5vw,28px); } }
+@keyframes rush-fever-breathe { from { filter: brightness(1); } to { filter: brightness(1.2); } }
+@media (orientation: landscape) and (max-height: 360px) {
+  #modern-app .game-hud .timed-chains { flex-direction: column; gap: 1px; }
+  #modern-app .game-hud .timed-chain { min-height: 12px; height: 12px; font-size: 9px; line-height: 1; }
+  #modern-app .game-hud .chain-meter { height: 2px; margin-top: 0; }
+  #modern-app .game-hud .chain-burst { inset: 0; padding: 0; font-size: 9px; line-height: 1; }
+}
+#modern-app[data-reduced='true'] .timed-chains .timed-chain { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .timed-chains .timed-chain { animation: none !important; }
+}
 @keyframes chain-safe-flash { 0%, 100% { opacity: 0; } 15%, 75% { opacity: 1; } }
 /* Opacity-pulse is decorative; under reduced motion keep a static banner that is
-   larger/higher-contrast so the 連鎖／SUPER／FEVER text stays readable without motion. */
+   larger/higher-contrast so the 連鎖／HIGH COMBO／FEVER text stays readable without motion. */
 #modern-app[data-reduced='true'] .chain-burst[data-pulse='0'],
 #modern-app[data-reduced='true'] .chain-burst[data-pulse='1'] {
   animation: none !important; opacity: 1;

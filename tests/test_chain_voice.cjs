@@ -45,3 +45,26 @@ test('all seven local callouts, capped level, CPU, mute and no overlapping queue
     assert.equal(wav.toString('ascii',0,4),'RIFF'); assert.ok(wav.length>10000);
   }
 });
+
+test('FEVER stinger and PERFECT fanfare honor mute and audio faults',async()=>{
+  const handlers={};let notes=0, fail=false;
+  const document={hidden:false,addEventListener:(k,v)=>handlers[k]=v};
+  class AudioContext {
+    state='running';destination={};currentTime=0;
+    resume(){return Promise.resolve();}
+    decodeAudioData(b){return Promise.resolve(b);}
+    createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}
+    createOscillator(){if(fail)throw Error('oscillator denied');return {frequency:{setValueAtTime(){}},connect(){},disconnect(){},start(){notes++;},stop(){}};}
+  }
+  const window={AudioContext};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../chain-voice.js'),'utf8'),{window,document,fetch:async()=>({ok:false})});
+  await handlers.pointerdown();
+  window.chainVoice.stinger();assert.equal(notes,0,'muted by default');
+  window.chainVoice.setEnabled(true);
+  window.chainVoice.stinger();window.chainVoice.fanfare();window.chainVoice.fanfare('cpu');
+  assert.equal(notes,11);
+  window.chainVoice.setEnabled(false);window.chainVoice.fanfare();assert.equal(notes,11);
+  window.chainVoice.setEnabled(true);fail=true;
+  assert.doesNotThrow(()=>window.chainVoice.stinger());
+  document.hidden=true;window.chainVoice.fanfare();assert.equal(notes,11);
+});

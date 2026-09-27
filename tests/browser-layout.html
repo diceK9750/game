@@ -8,10 +8,11 @@
 <label>Size <select id="size"></select></label>
 <label>Game <select id="game"><option>numbers</option><option>shiritori</option></select></label>
 <label>Mode <select id="mode"><option>battle</option><option>solo</option></select></label>
-<label>State <select id="state"><option>setup</option><option>countdown</option><option>play</option><option>updated</option><option>pause</option><option>result</option></select></label>
-<button id="show">Show fixture</button><button id="run">Run all sizes / states</button>
+<label>State <select id="state"><option>setup</option><option>countdown</option><option>play</option><option>updated</option><option>pause</option><option>result</option><option value="high">HIGH COMBO</option><option value="fever-entry">RUSH FEVER entry</option><option value="fever-active">RUSH FEVER active</option><option value="perfect-victory">PERFECT VICTORY</option><option value="perfect-draw">PERFECT CLEAR draw</option><option value="perfect-cpu">PERFECT CLEAR CPU win</option></select></label>
+<label><input id="reduced" type="checkbox"> Reduce motion</label>
+<button id="show">Show fixture</button><button id="run">Run all sizes / states</button><button id="run-fx">Run highlight states</button>
 <p id="status" role="status">Ready</p>
-<iframe id="fixture" title="Regression fixture" src="layout-fixture.html?v=shared-arena-114-2"></iframe>
+<iframe id="fixture" title="Regression fixture" src="layout-fixture.html?v=shared-arena-114-2&amp;fever=3"></iframe>
 <pre id="report"></pre>
-<script src="browser-layout.js?v=shared-arena-114-2"></script>
+<script src="browser-layout.js?v=shared-arena-114-2&amp;fever=7"></script>
 </html>

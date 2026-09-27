@@ -6,6 +6,20 @@ from game_logic import NumberTapRound, BattleRound
 
 
 class TimedChainTests(unittest.TestCase):
+    @staticmethod
+    def twelve_card_round(mode='solo'):
+        now = [0.0]
+        game = ShiritoriRound(total=12, mode=mode, clock=lambda: now[0], rng=random.Random(7))
+        # Six reorderable legal loops provide a certified route and a different
+        # fully legal route without relying on the canonical opening witness.
+        kana = 'いうえおかき'
+        game.cards = [(f'loop-{n}-{side}', '絵', (f'{"あ" if side == 0 else k}{k if side == 0 else "あ"}',))
+                      for n, k in enumerate(kana) for side in (0, 1)]
+        game.stock = []
+        game.required, game.last_word, game.phase = 'あ', 'は', 'playing'
+        game.deadline = 999
+        return game, now
+
     def test_windows_boundary_bonus_and_tiers(self):
         chain = TimedChain()
         for n in range(1, 12):
@@ -78,6 +92,7 @@ class TimedChainTests(unittest.TestCase):
                     now[0]+=.1
                     g.take(*move)
                 self.assertEqual(g.phase,'finished')
+                self.assertTrue(g.snapshot()['perfect'], (total, mode))
                 self.assertEqual(g.chain.players['you']['best'], total)
                 if mode == 'battle':
                     self.assertEqual(g.chain.players['cpu']['best'], 0)
@@ -114,3 +129,70 @@ class TimedChainTests(unittest.TestCase):
         g.command('pause')
         g.command('restart')
         self.assertEqual(g.chain.players['cpu']['best'],0)
+
+    def test_rush_fever_threshold_pause_timeout_miss_and_legal_answer(self):
+        for mode in ('solo', 'battle'):
+            g, now = self.twelve_card_round(mode)
+            for index in range(6):
+                now[0] += .1
+                g.command('card', index)
+            self.assertEqual(g.snapshot()['chain']['you']['tier'], 2)
+            now[0] += .1
+            g.command('card', 6)
+            self.assertEqual(g.snapshot()['chain']['you']['tier'], 3)
+            g.command('pause')
+            remaining = g.snapshot()['chain']['you']['remaining']
+            now[0] += 100
+            self.assertEqual(g.snapshot()['chain']['you']['remaining'], remaining)
+            self.assertEqual(g.snapshot()['chain']['you']['tier'], 3)
+            g.command('resume')
+            now[0] += .1
+            g.command('card', 7)
+            self.assertEqual(len(g.history), 8, 'FEVER does not block a legal next card')
+            self.assertEqual(g.snapshot()['chain']['you']['tier'], 3)
+            g.command('card', 9)  # Requires あ, not か: a real miss.
+            self.assertEqual(g.snapshot()['chain']['you']['tier'], 0)
+            for index in range(8, 12):
+                now[0] += .1
+                g.command('card', index)
+            self.assertEqual(g.phase, 'finished')
+            self.assertTrue(g.snapshot()['perfect'])
+
+            g, now = self.twelve_card_round(mode)
+            for index in range(7):
+                now[0] += .1
+                g.command('card', index)
+            now[0] += 2.0
+            g.update()
+            self.assertEqual(g.snapshot()['chain']['you']['tier'], 0)
+
+        g, now = self.twelve_card_round('solo')
+        for index in range(7):
+            now[0] += .1
+            g.command('card', index)
+        g.phase = 'blocked'  # The blocked rescue path explicitly breaks a chain.
+        g.command('relink')
+        self.assertEqual(g.snapshot()['chain']['you']['tier'], 0)
+
+    def test_perfect_requires_actual_complete_legal_play_not_certificate(self):
+        for mode in ('solo', 'battle'):
+            g, now = self.twelve_card_round(mode)
+            g.perfect_route = tuple(reversed(range(12)))  # Intentionally unrelated.
+            for index in (2, 3, 0, 1, 4, 5, 6, 7, 8, 9, 10):
+                now[0] += .1
+                g.command('card', index)
+            self.assertFalse(g.snapshot()['perfect'])
+            self.assertEqual(g.phase, 'playing')
+            now[0] += .1
+            g.command('card', 11)
+            self.assertTrue(g.snapshot()['perfect'])
+            self.assertEqual(len(g.history), 12)
+            self.assertEqual(g.winner, g.winner_by_captures())
+            g.command('start')
+            self.assertFalse(g.snapshot()['perfect'], 'replay clears the previous finish')
+
+        g, now = self.twelve_card_round('solo')
+        g.command('card', 0)
+        g.command('pause')
+        g.command('end')
+        self.assertFalse(g.snapshot()['perfect'], 'an early result is not a full clear')

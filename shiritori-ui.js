@@ -62,7 +62,7 @@
     const limit = E('p', 'sh-setting-note');
     add(levels, E('h2', 'nr-field-label', 'ライバルの強さ'), add(E('div', 'nr-segment sh-actions sh-levels'), ...levelButtons), limit);
     // Named so update can swap kind-aware help (solo must not invent 相手/CPU/両者; parity numbers #90/#94/#95).
-    const guideMode = E('p', '', '対戦では正解後も連鎖ゲージが残る間は同じ側が続けて回答。ゲージが切れると相手の番です。通常の回答期限切れ、またはつながる札がないと負け。');
+    const guideMode = E('p', '', '対戦では正解後も連鎖ゲージが残る間は同じ側が続けて回答。ゲージが切れると相手の番です。全札完走・読み詰みは取得枚数で勝敗を決定。回答期限切れは敗北です。');
     const guideBoard = E('p', '', '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。');
     const guideChain = E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。CPUも同じ条件で連鎖します。');
     const guide = add(E('details', 'sh-guide'), E('summary', '', '遊び方・読み方のルール'),
@@ -141,6 +141,13 @@
       add(E('div', 'nr-pause-extras'), button('新しい配置でやり直す', () => { restartRequested='sh_restart'; return 'sh_pause'; }), button('モード選択へ', () => { restartRequested='sh_setup'; return 'sh_pause'; })), endSolo);
     if (settingsControls) pause.append(settingsControls());
     const result = E('div', 'sh-intro sh-result nr-surface');
+    const perfectFx = E('div', 'sh-perfect-fx');
+    perfectFx.setAttribute('aria-hidden', 'true');
+    const confetti = E('div', 'sh-perfect-confetti');
+    for (let i = 0; i < 18; i++) {
+      const piece = E('i'); piece.style.cssText = `--piece-left:${8 + i * 4.6}%;--piece-delay:${i * 35}ms`; confetti.append(piece);
+    }
+    perfectFx.append(confetti);
     const resultTitle = E('h1'), reason = E('p');
     // Primary score (shared .nr-result-score) vs quieter secondary stats (#73 hierarchy).
     // Secondary is packed .nr-stat cells (numbers #76 parity) + muted chain wrap.
@@ -162,7 +169,7 @@
     const log = E('ol', 'sh-log');
     const resultRetry = button('もう一度遊ぶ', 'sh_start', undefined, 'nr-primary');
     const resultSetup = button('モード選択', 'sh_setup', undefined, 'nr-secondary');
-    add(result, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultScore, resultKoh.wrap), reason, resultSecondary,
+    add(result, perfectFx, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultScore, resultKoh.wrap), reason, resultSecondary,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
     add(page, statusLive, intro, stage, pause, result);
@@ -199,7 +206,11 @@
     const discovery=E('p','sh-discovery'); discovery.setAttribute('role','status');
     if (dictionary) { setup.append(dictIntro); result.append(dictResult); page.append(dictionary.page); }
     result.append(discovery);
-    function pose(p, value) { p.image.style.backgroundPosition = value; }
+    const poseFrames = {idle:'0% 0%',celebrate:'50% 0%',victory:'100% 0%',hurt:'0% 100%',frustrated:'50% 100%',defeat:'100% 100%'};
+    function pose(p, name) {
+      p.image.style.backgroundPosition = poseFrames[name] || poseFrames.idle;
+      p.image.dataset.pose = name;
+    }
     function pressed(buttons, values, value) { buttons.forEach((b,i) => b.setAttribute('aria-pressed', String(values[i] === value))); }
     // Visible buttons inside an open overlay only (#46 / numbers #45 parity).
     function dialogTabStops(root) {
@@ -382,10 +393,15 @@
       const missGuidance = live && s.miss_card != null
         ? 'ちがう絵！お題を確認して、すぐ押し直そう。'
         : '';
+      const perfect = !!(s.perfect_clear ?? s.perfect);
+      const winnerCopy = s.winner === 'you' ? 'あなたの勝利！' : s.winner === 'cpu' ? 'ルナの勝利！' : '引き分け！';
+      const outcomeTitle = perfect
+        ? solo ? 'PERFECT!' : s.winner === 'you' ? 'PERFECT VICTORY!' : 'PERFECT CLEAR'
+        : solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : winnerCopy;
       const nextAnnouncement = live
         ? `次は「${s.required}」。${s.completed || 0}枚つながった。ミス${s.mistakes || 0}回。${s.combo_active && mine ? 'コンボ中。続けて選べます。' : ''}${missGuidance}`
         : s.phase === 'finished'
-          ? `${resultTitle.textContent}`
+          ? perfect ? `${outcomeTitle} ${solo ? '' : winnerCopy} すべての絵をつないだ！` : outcomeTitle
           : '';
       if (nextAnnouncement !== announcement) {
         announcement = nextAnnouncement;
@@ -398,7 +414,8 @@
       heroRival.wrap.hidden = solo; heroVersus.hidden = solo;
       endSolo.hidden = !solo; koh.wrap.hidden = solo; resultKoh.wrap.hidden = solo;
       const last = s.history[s.history.length - 1];
-      pose(rin, last?.owner === 'you' ? '50% 0%' : '0% 0%'); pose(koh, last?.owner === 'cpu' ? '50% 0%' : '0% 0%');
+      pose(rin, live && s.miss_card != null ? 'hurt' : last?.owner === 'you' ? 'celebrate' : 'idle');
+      pose(koh, last?.owner === 'cpu' ? 'celebrate' : 'idle');
       timedChain?.update(s.chain, !solo, live, s.phase === 'finished');
       board.dataset.count = String(Math.min(s.total || 24, 24));
       boardSpace.dataset.count = board.dataset.count;
@@ -436,10 +453,13 @@
         card.dataset.cpuSelecting = String(i===cpuCursor);
         card.setAttribute('aria-label', `${hinted ? 'ヒント：' : missed ? 'ミス：' : refilled ? 'NEW補充：' : ''}絵札${i + 1} ${data.words[0]}${data.owner ? ' 使用済み' : ' タップで自動回答'}`);
       });
-      resultTitle.textContent = solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : s.winner === 'you' ? 'あなたの勝利！' : s.winner === 'draw' ? 'ふたりでつなぎきった！' : 'ルナの勝利！';
-      reason.textContent = s.message;
+      resultTitle.textContent = outcomeTitle;
+      result.dataset.perfect = String(perfect);
+      result.dataset.victory = String(!solo && perfect && s.winner === 'you');
+      result.dataset.mode = solo ? 'solo' : 'battle';
+      reason.textContent = solo ? s.message : `${winnerCopy} ${s.history.length}/${s.total || 24}枚 · ${s.message}`;
       // Primary: cards cleared. Secondary: packed miss/hint/(relink|chain) + muted wrap (#73/#77).
-      resultScore.textContent = `${s.history.length} / ${s.total || 24}`;
+      resultScore.textContent = solo ? `${s.history.length} / ${s.total || 24}` : `YOU ${s.you_count ?? 0}枚 · LUNA ${s.cpu_count ?? 0}枚`;
       resultMiss.textContent = `${s.mistakes}回`;
       resultHint.textContent = `${3 - s.hints}回`;
       if (solo) {
@@ -458,14 +478,15 @@
         chainSummary.textContent = '';
         chainSummary.hidden = true;
       }
-      pose(resultRin, s.winner === 'cpu' ? '100% 100%' : '100% 0%');
-      pose(resultKoh, s.winner === 'you' ? '100% 100%' : '100% 0%');
+      pose(resultRin, s.winner !== 'cpu' ? 'victory' : 'defeat');
+      pose(resultKoh, s.winner !== 'you' ? 'victory' : 'defeat');
       const key = JSON.stringify(s.history);
       if (key !== historyKey) {
         historyKey = key;
         log.replaceChildren(...s.history.map(row => add(E('li'), E('strong', '', `${row.relinked ? '↪ つなぎ直し · ' : ''}${row.owner === 'you' ? 'リン' : 'ルナ'}：${row.icon} ${row.word}`), E('small', '', `読み方：${(row.readings || [row.word]).join(' ／ ')}`))));
       }
       if (lastPhase !== s.phase) {
+        if (s.phase === 'finished' && perfect) window.chainVoice?.fanfare?.(s.winner);
         // Never yank focus away from help/dictionary overlays (or restart confirm primary).
         if (!dictionaryOpen && !helpOpen && restartPage.hidden) {
           // Result→replay: land on primary もう一度遊ぶ so Enter/Space restarts without Tab hunting.

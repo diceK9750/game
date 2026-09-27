@@ -7,26 +7,32 @@ sizes.forEach(([w,h]) => sizeSelect.add(new Option(`${w}x${h}`, `${w},${h}`)));
 const settle = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 const chainSide = {count:7,best:12,bonus:140,remaining:1.2,window:1.5,ratio:.8,tier:3};
 function snapshot(game, mode, phase) {
-  const updated = phase === 'updated' || phase === 'result';
-  const s = {v:1, screen:({setup:'ready',countdown:'countdown',play:'playing',updated:'playing',pause:'confirm',result:'finished'})[phase],
+  const specialResult = phase.startsWith('perfect-');
+  const updated = ['updated','result','high','fever-entry','fever-active'].includes(phase) || specialResult;
+  const s = {v:1, reduced:document.querySelector('#reduced').checked, screen:({setup:'ready',countdown:'countdown',play:'playing',updated:'playing',high:'playing','fever-entry':'playing','fever-active':'playing',pause:'confirm',result:'finished','perfect-victory':'finished','perfect-draw':'finished','perfect-cpu':'finished'})[phase],
     kind:mode === 'solo'?'practice':'battle',max_number:40,mode:'random',difficulty:'hard',ack:0,bgm:true,sfx:false,
-    target:40,points:updated?23:0,player_points:updated?23:0,completed:updated?39:0,streak:12,goal:24,cpu_points:updated?17:0,elapsed:updated?123.45:0,mistakes:2,
+    target:40,points:phase==='result'?40:updated?23:0,player_points:phase==='result'?40:updated?23:0,completed:phase==='result'?40:updated?39:0,streak:12,goal:24,cpu_points:phase==='result'?0:updated?17:0,elapsed:updated?123.45:0,mistakes:phase==='result'?0:2,
     countdown:3,confirm_action:'pause',cpu_progress:.75,cpu_remaining:1.4,remaining:20,
-    hint_used:false,perfect:true,storage_saved:false,winner:'you',left:'celebrate',right:'frustrated',
-    chain:{you:{...chainSide,event:updated?1:0},cpu:{...chainSide,event:updated?1:0}}, history:[],
+    hint_used:false,perfect:phase==='result',storage_saved:false,winner:'you',left:'celebrate',right:'frustrated',
+    chain:{you:{...chainSide,count:phase==='high'?5:updated?7:6,tier:phase==='high'?2:updated?3:2,event:updated?1:0},cpu:{...chainSide,count:phase==='high'?5:updated?7:6,tier:phase==='high'?2:updated?3:2,event:updated?1:0}}, history:[],
     cells:['play','updated','result'].includes(phase)?Array.from({length:40},(_,i)=>({n:i+1,owner:updated&&i<3?(i%2?'cpu':'you'):null,effect:updated&&i===1?'cpu':updated&&i===2?'correct':''})):[]};
   if(game==='shiritori') {
-    const shPhase=({setup:'intro',play:'playing',updated:'playing',pause:'paused',result:'finished'})[phase];
+    const shPhase=({setup:'intro',play:'playing',updated:'playing',high:'playing','fever-entry':'playing','fever-active':'playing',pause:'paused',result:'finished','perfect-victory':'finished','perfect-draw':'finished','perfect-cpu':'finished'})[phase];
+    const shTotal=mode==='solo'?48:24;
     // Shiritori starts immediately in the real game; it has no countdown phase.
     s.screen='shiritori';s.cells=[];
-    s.shiritori={phase:shPhase,mode,total:mode==='solo'?48:24,difficulty:'hard',turn:'you',
+    s.shiritori={phase:shPhase,mode,total:shTotal,difficulty:'hard',turn:'you',
       required:'り',last_word:updated?'ことばをつなげるしりとり':'しりとり',remaining:18.7,limit:20,hints:3,hint:null,
       combo_active:updated&&mode==='battle'&&shPhase==='playing',combo_owner:updated&&mode==='battle'&&shPhase==='playing'?'you':null,
       combo_remaining:updated&&mode==='battle'&&shPhase==='playing'?1.2:0,
-      selected:null,message:updated?'新しい読み方を発見！次の絵もつないでパーフェクトを目指そう。':'「り」からはじめよう',
-      mistakes:2,history:[],winner:'you',stock:mode==='solo'?23:0,completed:updated?21:0,relinks:2,seen:[],
+      selected:null,message:phase==='result'?'すべての絵をつないだ！':updated?'新しい読み方を発見！次の絵もつないでパーフェクトを目指そう。':'「り」からはじめよう',
+      mistakes:phase==='result'?0:2,
+      history:shPhase==='finished'?Array.from({length:shTotal},(_,i)=>({id:`fixture-${i}`,icon:'🍎',word:`ことば${i+1}`,owner:mode==='solo'?'you':phase==='perfect-victory'?i<Math.ceil(shTotal*.6)?'you':'cpu':phase==='perfect-cpu'?i<Math.floor(shTotal*.4)?'you':'cpu':i%2?'cpu':'you',readings:['ことば']})):[],
+      winner:phase==='perfect-cpu'?'cpu':phase==='perfect-draw'||phase==='result'&&mode==='battle'?'draw':'you',perfect:shPhase==='finished',perfect_clear:shPhase==='finished',stock:shPhase==='finished'?0:mode==='solo'?23:0,completed:shPhase==='finished'?shTotal:updated?21:0,relinks:2,seen:[],
       chain:s.chain,catalog:[{id:'apple',icon:'🍎',words:['りんご','くだもの','たべもの']}],
       cards:Array.from({length:24},(_,i)=>({id:'apple',icon:'🍎',words:['りんご','くだもの'],owner:null}))};
+    s.shiritori.you_count=s.shiritori.history.filter(row=>row.owner==='you').length;
+    s.shiritori.cpu_count=s.shiritori.history.filter(row=>row.owner==='cpu').length;
   }
   return s;
 }
@@ -35,6 +41,11 @@ async function show(w,h,game,mode,phase,variant={}) {
   fixture.style.width=`${w-8}px`;fixture.style.height=`${h-8}px`;
   const doc=fixture.contentDocument;
   const state=snapshot(game,mode,phase);
+  if(game==='shiritori' && (phase==='fever-entry'||phase==='high')) {
+    const before=snapshot(game,mode,phase==='high'?'play':'high');
+    doc.documentElement.setAttribute('data-modern-state',JSON.stringify(before));
+    await settle();
+  }
   if(variant.count&&game==='numbers') {
     state.max_number=variant.count;state.target=variant.count;state.mode=variant.order;
     state.cells=state.cells.map((c,i)=>i<variant.count?c:{n:null,owner:null,effect:''});
@@ -45,11 +56,17 @@ async function show(w,h,game,mode,phase,variant={}) {
   }
   doc.documentElement.setAttribute('data-modern-state',JSON.stringify(state));
   await settle();
+  if(phase==='fever-active') {
+    await new Promise(resolve=>setTimeout(resolve,900));
+    doc.documentElement.setAttribute('data-modern-state',JSON.stringify(state));
+    await settle();
+  }
   // Compare settled boxes, not the temporary 1.04x celebration transform.
   // Burst content remains visible; only finite animations advance to the end.
-  for(const animation of doc.getAnimations()) {
-    if(Number.isFinite(animation.effect.getComputedTiming().endTime)) animation.finish();
-  }
+  if(!['high','fever-entry','fever-active','perfect-victory','perfect-draw','perfect-cpu'].includes(phase))
+    for(const animation of doc.getAnimations()) {
+      if(Number.isFinite(animation.effect.getComputedTiming().endTime)) animation.finish();
+    }
   await settle();
 }
 function measure() {
@@ -72,6 +89,8 @@ function measure() {
   const hud=doc.querySelector('.nr-hud');
   const hudVisible=visible(hud);
   const hudOverflow=hudVisible && hud.scrollWidth>hud.clientWidth+2;
+  const chainTextClipped=[...doc.querySelectorAll('.timed-chain > span')].filter(visible)
+    .filter(e=>rect(e).right>rect(e.parentElement).right+1).map(e=>e.textContent);
   const text= [...doc.querySelectorAll('.nr-hud .nr-overline,.nr-hud strong,.nr-hud .nr-score-card span:not(:has(*)),.nr-play-stats strong,.nr-cpu-clock,.sh-prompt,.sh-clock')].filter(visible);
   const overlaps=[];
   for(let i=0;i<text.length;i++) for(let j=i+1;j<text.length;j++) {
@@ -83,6 +102,9 @@ function measure() {
   const contentOverflow=[...doc.querySelectorAll('.nr-hud,.nr-score-card,.nr-target,.nr-play-stats,.nr-stage-middle,.sh-hud,.sh-task,.nr-result-card,.sh-result,.nr-setup')]
     .filter(visible).filter(e=>e.scrollWidth>e.clientWidth+2||e.scrollHeight>e.clientHeight+2)
     .map(e=>({selector:e.className,client:[e.clientWidth,e.clientHeight],scroll:[e.scrollWidth,e.scrollHeight]}));
+  const textOutside=[...doc.querySelectorAll('.sh-result > h1,.sh-result-cast > .nr-result-score')]
+    .filter(visible).filter(e=>{const a=rect(e),b=rect(e.closest('.sh-result'));return a.left<b.left-1||a.right>b.right+1;})
+    .map(e=>e.textContent);
   const cards=[...doc.querySelectorAll('.nr-cell,.sh-card')].filter(visible);
   const minCard=cards.length?Math.min(...cards.map(e=>rect(e).height)):null;
   const squareErrors=cards.filter(e=>Math.abs(rect(e).width-rect(e).height)>.6)
@@ -117,7 +139,7 @@ function measure() {
     Math.min(rect(hudRegion).bottom,rect(board).bottom)-Math.max(rect(hudRegion).top,rect(board).top)>1);
   return {active:!doc.querySelector('#modern-app').hidden,errors:win.fixtureErrors,
     squareErrors,characterErrors,hudInterference,boardBox,clippedButtons,
-    documentOverflow,contentOverflow,outside,small,overlaps,hudOverflow,hud:hudVisible?{width:hud.clientWidth,scroll:hud.scrollWidth}:null,
+    documentOverflow,contentOverflow,textOutside,outside,small,overlaps,hudOverflow,chainTextClipped,hud:hudVisible?{width:hud.clientWidth,scroll:hud.scrollWidth}:null,
     minTap:nav.length?Math.min(...nav.map(e=>Math.min(rect(e).width,rect(e).height))):null,minCard};
 }
 document.querySelector('#show').onclick=async()=>{
@@ -128,7 +150,7 @@ document.querySelector('#show').onclick=async()=>{
 };
 document.querySelector('#run').onclick=async()=>{
   const results=[];document.querySelector('#run').disabled=true;
-  const passed=r=>r.active&&!r.errors.length&&!r.documentOverflow&&!r.contentOverflow.length&&!r.outside.length&&!r.clippedButtons.length&&!r.small.length&&!r.overlaps.length&&!r.hudOverflow&&!r.squareErrors.length&&!r.characterErrors.length&&!r.hudInterference;
+  const passed=r=>r.active&&!r.errors.length&&!r.documentOverflow&&!r.contentOverflow.length&&!r.textOutside.length&&!r.outside.length&&!r.clippedButtons.length&&!r.small.length&&!r.overlaps.length&&!r.hudOverflow&&!r.chainTextClipped.length&&!r.squareErrors.length&&!r.characterErrors.length&&!r.hudInterference;
   for(const [w,h]of sizes)for(const game of ['numbers','shiritori'])for(const mode of ['battle','solo'])for(const phase of ['setup','countdown','play','updated','pause','result']){
     if(game==='shiritori'&&phase==='countdown')continue;
     await show(w,h,game,mode,phase);
@@ -171,4 +193,23 @@ document.querySelector('#run').onclick=async()=>{
   document.querySelector('#report').textContent=JSON.stringify({total:results.length,failed:failed.length,detectsOldHud,independence,failures:failed,results},null,2);
   document.querySelector('#status').textContent=`DONE: ${results.length-failed.length}/${results.length} passed; detects old HUD: ${detectsOldHud}; stable boards: ${independence.filter(r=>r.stable).length}/${independence.length}`;
   document.querySelector('#run').disabled=false;
+};
+document.querySelector('#run-fx').onclick=async()=>{
+  const results=[];document.querySelector('#run-fx').disabled=true;
+  for(const [w,h] of sizes)for(const phase of ['high','fever-entry','fever-active','perfect-victory','perfect-draw','perfect-cpu']){
+    await show(w,h,'shiritori','battle',phase);
+    const r=measure();
+    const doc=fixture.contentDocument;
+    const title=doc.querySelector('.sh-result:not([hidden]) > h1')?.textContent || '';
+    const fx=[...doc.querySelectorAll('.chain-fx')].find(e=>e.dataset.phase!=='none'&&!e.closest('[hidden]'));
+    const expectedPhase=phase==='high'?'high':phase==='fever-entry'?'entry':phase==='fever-active'?'active':null;
+    const pass=r.active&&!r.errors.length&&!r.documentOverflow&&!r.contentOverflow.length&&!r.textOutside.length&&!r.outside.length&&!r.clippedButtons.length&&!r.small.length&&!r.overlaps.length&&!r.squareErrors.length&&!r.characterErrors.length&&!r.hudInterference&&
+      (expectedPhase?fx?.dataset.phase===expectedPhase:title===(phase==='perfect-victory'?'PERFECT VICTORY!':'PERFECT CLEAR'));
+    results.push({size:`${w}x${h}`,phase,pass,title,fxPhase:fx?.dataset.phase,...r});
+    document.querySelector('#status').textContent=`Highlight ${results.length}`;
+  }
+  const failures=results.filter(r=>!r.pass);
+  document.querySelector('#report').textContent=JSON.stringify({total:results.length,failed:failures.length,failures},null,2);
+  document.querySelector('#status').textContent=`HIGHLIGHT: ${results.length-failures.length}/${results.length} passed`;
+  document.querySelector('#run-fx').disabled=false;
 };

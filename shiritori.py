@@ -18,11 +18,11 @@ CARDS = (
     ("radish", "🥕", ("にんじん", "やさい", "キャロット", "こんさい", "たべもの")),
     ("dog", "🐕", ("いぬ", "こいぬ", "どうぶつ", "ペット")),
     ("teddy", "🧸", ("ぬいぐるみ", "くま", "おもちゃ", "テディベア", "にんぎょう")),
-    ("orange", "🍊", ("みかん", "くだもの", "フルーツ", "たべもの")),
+    ("orange", "🍊", ("みかん", "くだもの", "フルーツ", "たべもの", "オレンジ")),
     ("turtle", "🐢", ("かめ", "りくがめ", "どうぶつ", "はちゅうるい")),
     ("glasses", "👓", ("めがね", "がんきょう", "レンズ", "フレーム")),
     ("cat", "🐈", ("ねこ", "こねこ", "どうぶつ", "ペット")),
-    ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく")),
+    ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく", "もみのき")),
     ("moon", "🌙", ("つき", "よぞら", "みかづき", "てんたい")),
     ("fox", "🦊", ("きつね", "どうぶつ", "けもの", "フォックス")),
     ("mouse", "🐁", ("ねずみ", "どうぶつ", "マウス", "けもの")),
@@ -36,9 +36,9 @@ CARDS = (
     ("squirrel", "🐿️", ("りす", "どうぶつ", "けもの")),
     ("melon", "🍉", ("すいか", "くだもの", "フルーツ", "たべもの")),
     ("umbrella", "☂️", ("かさ", "あまがさ", "ようがさ", "レイングッズ")),
-    ("fish", "🐟", ("さかな", "ぎょるい", "うみのいきもの", "フィッシュ")),
+    ("fish", "🐟", ("さかな", "ぎょるい", "うみのいきもの", "フィッシュ", "おさかな")),
     ("eggplant", "🍆", ("なす", "やさい", "たべもの", "しょくざい")),
-    ("bell", "🔔", ("すず", "かね", "ベル", "がっき")),
+    ("bell", "🔔", ("すず", "かね", "ベル", "がっき", "チャイム")),
     ("trousers", "👖", ("ズボン", "ふく", "ジーンズ", "デニム", "ボトムス")),
     ("ship", "🚢", ("ふね", "のりもの", "きせん", "シップ")),
     ("mushroom", "🍄", ("きのこ", "しょくざい", "マッシュルーム")),
@@ -55,7 +55,7 @@ CARDS = (
     ("ramune", "🍾", ("ラムネ", "のみもの", "たんさんいんりょう")),
     ("tie", "👔", ("ネクタイ", "ふく", "えりもと")),
     ("chair", "🪑", ("いす", "かぐ", "ざせき")),
-    ("zucchini", "🥒", ("ズッキーニ", "やさい", "たべもの")),
+    ("zucchini", "🥒", ("ズッキーニ", "やさい", "たべもの", "きゅうり")),
     ("chicken", "🐔", ("にわとり", "とり", "どうぶつ")),
     ("backpack", "🎒", ("リュック", "かばん", "にもつ")),
     ("scarf", "🧣", ("マフラー", "えりまき", "ぼうかんぐ")),
@@ -70,14 +70,48 @@ CARDS = (
     ("beans", "🫘", ("まめ", "しょくざい", "たね")),
     ("medaka", "🐟", ("めだか", "さかな", "ぎょるい")),
     ("sand", "🏖️", ("すな", "はまべ", "ビーチ")),
-    ("pot", "🍲", ("なべ", "りょうり", "しょっき")),
+    ("pot", "🍲", ("なべ", "りょうり", "しょっき", "おなべ")),
     ("bagel", "🥯", ("ベーグル", "パン", "たべもの")),
     ("loupe", "🔍", ("ルーペ", "むしめがね", "かくだいきょう")),
     ("paint", "🎨", ("ペンキ", "とりょう", "いろ")),
     ("knife", "🔪", ("ナイフ", "ほうちょう", "カトラリー")),
     ("tomato", "🍅", ("トマト", "やさい", "たべもの")),
     ("parsley", "🌿", ("パセリ", "ハーブ", "やさい", "かおりづけ")),
+    # Five distinct pictograms cover six scarce initial sounds without
+    # inventing connector-only names or changing any existing card reading.
+    ("sewing_needle", "🪡", ("ぬいばり", "はり", "さいほうどうぐ")),
+    ("snow_crab", "🦀", ("ズワイガニ", "かに", "シーフード")),
+    ("blocks", "🧱", ("つみき", "ブロック", "おもちゃ")),
+    ("golf", "⛳", ("ゴルフ", "ホール", "スポーツ")),
+    ("gift", "🎁", ("プレゼント", "おくりもの", "ギフト")),
 )
+# Broad categories, remote associations and discovery-style names remain valid
+# dictionary entries, but should not beat a natural picture name on a tap.
+SPECIAL_READINGS = frozenset({
+    'くだもの', 'フルーツ', 'たべもの', 'どうぶつ', 'やさい', 'おもちゃ',
+    'しょくぶつ', 'けもの', 'うみのいきもの', 'むし', 'ぎょるい', 'がっき',
+    'ふく', 'のりもの', 'しょくざい', 'のみもの', 'しょっき', 'はな',
+    'かちく', 'りょうり', 'ペット', 'こんちゅう', 'たね', 'ほうせき',
+    'しんしゅうりんご', 'すりおろしりんご', 'るいじんえん',
+    'きんかんがっき', 'ひとこぶらくだ', 'えんぎもの', 'おきもの',
+    'はちゅうるい', 'じかく', 'ちょうかくきかん', 'なんたいどうぶつ',
+    'げんがっき', 'かいてんたい', 'しんぐ', 'かぐ', 'ぼうかんぐ',
+    'レイングッズ', 'でんせつのいきもの', 'ゆうたいるい',
+    'たんさんいんりょう', 'かくだいきょう', 'かおりづけ',
+    'さいほうどうぐ', 'シーフード', 'ホール', 'スポーツ',
+})
+
+
+def reading_kind(word):
+    return 'special' if word in SPECIAL_READINGS else 'common'
+
+
+def reading_connections(cards=CARDS):
+    """Catalog graph: distinct *other* card identities, never word counts."""
+    heads = {card[0]: {head(word) for word in card[2] if tail(word) != 'ん'} for card in cards}
+    return {(card[0], word): sum(tail(word) in h and identity != card[0]
+                                  for identity, h in heads.items())
+            for card in cards for word in card[2] if tail(word) != 'ん'}
 # Indivisible display-reading block in every initial certified route.
 PERFECT_CANONICAL_SEGMENT = (
     ('tomato', 'トマト'), ('bird', 'とり'), ('apple', 'りんご'),
@@ -307,6 +341,7 @@ class ShiritoriRound:
         self.hints = 3
         self.hint = None
         self.winner = None
+        self.perfect = False
         self.turn = "you"
         self.deadline = 0
         self.saved_remaining = 0
@@ -340,6 +375,7 @@ class ShiritoriRound:
         self.combo_owner = None
         self.cpu_due = 0
         self.winner = None
+        self.perfect = False
         self.cpu_move = None
         self.selected = self.hint = None
         self.mistakes, self.hints = 0, 3
@@ -362,6 +398,55 @@ class ShiritoriRound:
     def moves(self):
         return chain_moves(tuple(None if i in self.used else c for i, c in enumerate(self.cards)),
                            self.required, self.seen)
+
+    def capture_counts(self):
+        """History is the sole source of capture totals (including replaced slots)."""
+        return (sum(step.get('owner') == 'you' for step in self.history),
+                sum(step.get('owner') == 'cpu' for step in self.history))
+
+    def winner_by_captures(self):
+        if self.mode == 'solo':
+            return 'you'
+        you, cpu = self.capture_counts()
+        return 'you' if you > cpu else 'cpu' if cpu > you else 'draw'
+
+    def choose_move_for_card(self, index):
+        """Choose a reading against the actual board/stock/seen after refill.
+
+        A current certified full route wins. Otherwise prefer common connected
+        readings and count distinct next card identities, with catalog order as
+        the final deterministic tie-break. No bounded search runs on every tap.
+        """
+        board = tuple(None if i in self.used else c for i, c in enumerate(self.cards))
+        state = (board, tuple(self.stock), head(self.required),
+                 frozenset(normalize_reading(w) for w in self.seen))
+        candidates = [move for move in chain_moves(board, state[2], state[3]) if move[0] == index]
+        if not candidates:
+            return None
+        proof = self._chain_advice.get(state)
+        if proof is None and self.perfect_route and isinstance(self.perfect_route[0], PerfectStep) and board[index] is not None:
+            remaining_ids = {c[0] for c in board + tuple(self.stock) if c is not None}
+            suffix = [(s.identity, s.reading) for s in self.perfect_route if s.identity in remaining_ids]
+            if suffix and suffix[0][0] == board[index][0] and {i for i, _ in suffix} == remaining_ids:
+                for move in candidates:
+                    route = [(board[index][0], move[1])] + suffix[1:]
+                    witnesses = certify_route(state, route)
+                    if witnesses:
+                        self.remember_perfect(witnesses)
+                        proof = self._chain_advice.get(state)
+                        break
+        if proof and proof[1]['perfect'] and proof[0] in candidates:
+            return proof[0]
+
+        def score(move):
+            next_board, _, required, seen = chain_step(state[0], state[1], state[3], move)
+            next_cards = {next_board[i][0] for i, _ in chain_moves(next_board, required, seen)}
+            connected = bool(next_cards) or not any(next_board) and not state[1]
+            common = reading_kind(move[1]) == 'common'
+            return (2 if common and connected else 1 if connected else 0,
+                    len(next_cards), common, -candidates.index(move))
+
+        return max(candidates, key=score)
 
     def finish(self, winner, reason):
         self.phase, self.winner, self.message = "finished", winner, reason
@@ -435,7 +520,7 @@ class ShiritoriRound:
     def prepare_cpu(self):
         moves = self.moves()
         if not moves:
-            self.finish("you", "ルナがつなげなくなった！")
+            self.finish(self.winner_by_captures(), "つながる絵がなくなった！取得枚数で勝敗を判定。")
             return
         self.cpu_move, self.cpu_plan = self.chain_advice()
 
@@ -517,12 +602,14 @@ class ShiritoriRound:
             self.refilled = index
             self.message += " · 同じ場所に新しい絵！"
         if not self.stock and len(self.used) == len(self.cards):
-            self.finish("you" if self.mode == "solo" else "draw", "すべての絵をつないだ！" if self.mode == "solo" else "すべての絵をつないだ！仲良く引き分け。")
+            # A completed legal play, regardless of the certified opening route.
+            self.perfect = len(self.history) == self.total
+            self.finish(self.winner_by_captures(), "すべての絵をつないだ！取得枚数で勝敗を判定。")
         elif not self.moves():
             if self.mode == "solo":
                 self.check_solo_blocked()
             else:
-                self.finish(owner, f"{'ルナ' if owner == 'you' else 'リン'}がつなげる絵がなくなった！")
+                self.finish(self.winner_by_captures(), "つながる絵がなくなった！取得枚数で勝敗を判定。")
         else:
             if self.mode == 'battle' and owner == 'cpu':
                 if self.cpu_should_continue_combo():
@@ -589,7 +676,7 @@ class ShiritoriRound:
             self.finish("draw", "ここまでの結果。自分のペースでまた遊ぼう！")
         elif self.phase == "playing" and self.turn == "you":
             if action == "card" and type(value) is int and 0 <= value < len(self.cards) and value not in self.used:
-                move = next((m for m in self.moves() if m[0] == value), None)
+                move = self.choose_move_for_card(value)
                 if move is not None:
                     self.take(*move)
                 else:
@@ -628,6 +715,7 @@ class ShiritoriRound:
         visible = self.phase in ("playing", "blocked", "finished")
         self.chain.sync(self.clock(), (self.turn,) if self.phase == 'playing' else ())
         combo_active = self.combo_owner is not None and self.phase in ('playing', 'paused') and self.combo_remaining() > 0
+        you_count, cpu_count = self.capture_counts()
         return {"phase": self.phase, "turn": self.turn, "required": self.required,
                 "chain": self.chain.snapshot(self.clock(), (self.turn,) if self.phase == "playing" else ()),
                 "combo_active": combo_active, "combo_owner": self.combo_owner if combo_active else None,
@@ -637,6 +725,9 @@ class ShiritoriRound:
                 "cpu_progress": max(0, min(1, 1-max(0, self.cpu_due-self.clock())/self.CPU_ANSWER_DELAY)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
                 "last_word": self.last_word, "remaining": round(self.remaining(), 1) if self.phase in ("playing", "paused") else 0,
                 "limit": self.limit, "difficulty": self.difficulty, "message": self.message, "winner": self.winner,
+                "perfect": self.perfect and self.phase == "finished",
+                "perfect_clear": self.perfect and self.phase == "finished",
+                "you_count": you_count, "cpu_count": cpu_count,
                 "mistakes": self.mistakes, "miss_card": self.active_miss_card(),
                 "hints": self.hints, "hint": self.hint,
                 "selected": self.selected, "revision": self.revision,

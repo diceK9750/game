@@ -47,10 +47,33 @@
   document.addEventListener('keydown', unlock);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(true); });
 
+  function flourish(notes, level = 0.085) {
+    if (!enabled || document.hidden || !context || context.state !== 'running') return;
+    try {
+      const now = context.currentTime;
+      notes.forEach(([offset, frequency, duration], index) => {
+        const oscillator = context.createOscillator(), envelope = context.createGain();
+        oscillator.type = index % 2 ? 'sine' : 'triangle';
+        oscillator.frequency.setValueAtTime(frequency, now + offset);
+        envelope.gain.setValueAtTime(0, now + offset);
+        envelope.gain.linearRampToValueAtTime(level, now + offset + .014);
+        envelope.gain.exponentialRampToValueAtTime(.001, now + offset + duration);
+        oscillator.connect(envelope); envelope.connect(context.destination);
+        oscillator.start(now + offset); oscillator.stop(now + offset + duration + .01);
+        oscillator.onended = () => { try { oscillator.disconnect(); envelope.disconnect(); } catch (_) {} };
+      });
+    } catch (_) { /* Audio failure must never block card interaction. */ }
+  }
+
   window.chainVoice = {
     setEnabled(value) {
       enabled = !!value;
       if (!enabled) stop(true);
+    },
+    stinger() { flourish([[0, 392, .12], [.07, 523.25, .15], [.15, 659.25, .22], [.23, 783.99, .31]]); },
+    fanfare(winner = 'you') {
+      if (winner === 'you') flourish([[0, 523.25, .18], [.14, 659.25, .18], [.28, 783.99, .2], [.42, 1046.5, .55]], .11);
+      else flourish([[0, 392, .18], [.16, winner === 'cpu' ? 349.23 : 440, .22], [.32, 523.25, .38]], .07);
     },
     play(owner, count) {
       if (!enabled || document.hidden || !context || context.state !== 'running' || count < 1) return;

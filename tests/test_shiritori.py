@@ -41,7 +41,7 @@ class ShiritoriTests(unittest.TestCase):
 
     def test_dictionary_catalog_and_cpu_do_not_award_discoveries(self):
         game=ShiritoriRound()
-        self.assertEqual(sum(len(c['words']) for c in game.snapshot()['catalog']),248)
+        self.assertEqual(sum(len(c['words']) for c in game.snapshot()['catalog']),sum(len(c[2]) for c in CARDS))
         game.start()
         game.turn='cpu'
         game.take(*game.moves()[0])
@@ -191,7 +191,7 @@ class ShiritoriTests(unittest.TestCase):
                         game.take(*move)
                     self.assertEqual(len(game.history),total)
                     self.assertEqual(game.phase,'finished')
-                    self.assertEqual(game.winner,'you' if mode=='solo' else 'draw')
+                    self.assertEqual(game.winner,game.winner_by_captures())
                     self.assertEqual(game.stock,[])
                     self.assertEqual(len(game.used),len(game.cards))
 
@@ -248,6 +248,8 @@ class ShiritoriTests(unittest.TestCase):
         for turn in ('you', 'cpu'):
             self.game.start()
             self.game.turn = turn
+            if turn == 'cpu':
+                self.game.cpu_due = self.now + self.game.CPU_ANSWER_DELAY
             self.game.command('pause')
             remaining = self.game.remaining()
             self.now += 100
@@ -369,7 +371,7 @@ class ShiritoriTests(unittest.TestCase):
         self.game.required = 'り'
         self.game.seen = set()
         self.game.command('card', 0)
-        self.assertEqual(self.game.winner, 'draw')
+        self.assertEqual(self.game.winner, 'you')
 
     def test_hints_bounded_and_restart_clears_state(self):
         for _ in range(8):

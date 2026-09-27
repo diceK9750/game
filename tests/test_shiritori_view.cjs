@@ -134,6 +134,56 @@ test('one tap submits a card with no reading dialog and keeps stable 24 slots', 
   assert.equal(cards[0].disabled, false);
 });
 
+test('picture result marks actual perfect finish and keeps replay, history and cast', () => {
+  const {view,state,doc}=harness();
+  const history=Array.from({length:12},(_,i)=>({id:`card-${i}`,icon:'🍎',word:`ことば${i}`,owner:'you',readings:['ことば']}));
+  view.update({...state,phase:'finished',mode:'solo',total:12,completed:12,winner:'you',perfect:true,history});
+  const result=view.page.querySelector('.sh-result');
+  assert.equal(result.dataset.perfect,'true');
+  assert.equal(result.querySelector('h1').textContent,'PERFECT!');
+  assert.equal(result.querySelector('.sh-log').children.length,12);
+  assert.equal(result.querySelector('.sh-result-cast').children[0].children[0].dataset.pose,'victory');
+  assert.equal(doc.activeElement.textContent,'もう一度遊ぶ');
+  view.update({...state,phase:'finished',mode:'solo',total:12,completed:11,winner:'draw',perfect:false,history:history.slice(0,11)});
+  assert.equal(result.dataset.perfect,'false');
+  assert.notEqual(result.querySelector('h1').textContent,'PERFECT!');
+});
+
+test('battle PERFECT CLEAR and VICTORY keep capture winner independent', () => {
+  const {view,state}=harness();
+  const history=Array.from({length:12},(_,i)=>({id:`card-${i}`,icon:'🍎',word:`ことば${i}`,owner:i<7?'you':'cpu',readings:['ことば']}));
+  const result=view.page.querySelector('.sh-result');
+  for(const [winner,you,cpu,title] of [['you',7,5,'PERFECT VICTORY!'],['cpu',5,7,'PERFECT CLEAR'],['draw',6,6,'PERFECT CLEAR']]) {
+    view.update({...state,phase:'finished',mode:'battle',total:12,completed:12,winner,perfect:true,
+      perfect_clear:true,you_count:you,cpu_count:cpu,history});
+    assert.equal(result.querySelector('h1').textContent,title);
+    assert.match(result.querySelector('.nr-result-score').textContent,new RegExp(`YOU ${you}枚.*LUNA ${cpu}枚`));
+    assert.equal(result.dataset.victory,String(winner==='you'));
+    assert.match(result.querySelector('p').textContent, winner==='cpu' ? /ルナの勝利/ : winner==='draw' ? /引き分け/ : /あなたの勝利/);
+  }
+  assert.equal(result.querySelector('.sh-perfect-fx').children[0].children.length,18);
+});
+
+test('picture characters react to own chains, opponent high combo and miss', () => {
+  const {view,state}=harness();
+  const stage=view.page.querySelector('.sh-stage');
+  const arena=stage.querySelector('.sh-arena');
+  const [rin,koh]=[arena.children[0].children[0],arena.children[2].children[0]];
+  const side=count=>({count,best:count,event:count,tier:count>=7?3:count>=4?2:count>=2?1:0,remaining:1.2,window:1.8});
+  view.update({...state,chain:{you:side(2),cpu:side(0)}});
+  assert.equal(rin.dataset.pose,'celebrate');
+  view.update({...state,chain:{you:side(4),cpu:side(0)}});
+  assert.equal(rin.dataset.pose,'celebrate');
+  assert.equal(koh.dataset.pose,'frustrated');
+  view.update({...state,chain:{you:side(7),cpu:side(0)}});
+  assert.equal(rin.dataset.pose,'victory');
+  view.update({...state,turn:'cpu',chain:{you:side(0),cpu:side(4)}});
+  assert.equal(koh.dataset.pose,'celebrate');
+  assert.equal(rin.dataset.pose,'frustrated');
+  view.update({...state,miss_card:0,chain:{you:side(0),cpu:side(0)}});
+  assert.equal(rin.dataset.pose,'hurt');
+});
+
 test('rival difficulty note stays concise without perfect-route exposition', () => {
   const {view,state}=harness();
   view.update({...state,phase:'intro'});
