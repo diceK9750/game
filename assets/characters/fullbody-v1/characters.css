@@ -1,0 +1,18 @@
+/* Only the existing RIN artwork box is replaced after successful decode. */
+#modern-app .nr-character-art[data-rin-pilot='ready'] {
+  background-image: none !important;
+  animation: none !important;
+  contain: paint;
+}
+.pilot-rin-art {
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%;
+  background-size: 900% 100%; background-repeat: no-repeat;
+  pointer-events: none; user-select: none;
+}
+.pilot-rin-art[hidden] { display: none; }
+
+/* Only LUNA's existing artwork box; the dark fairy remains an untouched sibling. */
+#modern-app .nr-character-art[data-luna-pilot='ready'] { background-image:none !important; contain:paint; }
+.pilot-luna-art { position:absolute;inset:0;display:block;width:100%;height:100%;
+ background-size:600% 100%;background-repeat:no-repeat;pointer-events:none;user-select:none; }
+.pilot-luna-art[hidden] { display:none; }

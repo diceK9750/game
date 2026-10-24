@@ -164,9 +164,15 @@
 #modern-app .game-hud .timed-chain { min-width: 0; line-height: 1.2; }
 #modern-app .game-information { display: flex; flex-direction: column; gap: 2px; overflow: auto; overscroll-behavior: contain; }
 #modern-app .game-hud .sh-hud { grid-area: auto; padding: 0; min-height: 0; flex-shrink: 0; }
-#modern-app .game-hud .sh-task { min-width: 0; padding: 2px 4px; }
+#modern-app .game-hud .sh-task { min-width: 0; padding: 2px 4px; container-type: inline-size; }
 #modern-app .game-hud .sh-task span { display: block; font-size: 11px; }
-#modern-app .game-hud .sh-prompt { font-size: clamp(15px, 2.5vw, 22px); overflow-wrap: anywhere; }
+#modern-app .game-hud .sh-prompt {
+  display: block; inline-size: 100%; min-inline-size: 0; max-inline-size: 100%;
+  padding-inline: .5em;
+  /* Use the actual task slot, not the full viewport, as the text budget. */
+  font-size: clamp(15px, 6cqw, 22px); line-height: 1.25;
+  white-space: normal; overflow-wrap: anywhere;
+}
 #modern-app .game-hud .sh-clock { min-width: 0; font-size: 12px; flex-shrink: 0; }
 #modern-app .game-hud .sh-progress { grid-area: auto; font-size: 12px; margin: 0; }
 #modern-app .game-hud .sh-status { grid-area: auto; display: block; white-space: normal; overflow: visible; text-overflow: clip; font-size: 12px; line-height: 1.35; min-height: 0; margin: 0; }
