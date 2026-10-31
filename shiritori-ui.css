@@ -6,13 +6,35 @@
 .sh-ready-settings .sh-start-actions { position: static; background: transparent; }
 .sh-ready-settings .sh-dict-open { width: 100%; }
 .sh-ready-settings .sh-actions { flex-wrap: nowrap; }
+.sh-style-settings { display: grid; align-content: start; gap: 5px; }
+.sh-styles button[aria-pressed='true'] { border-color: var(--nr-gold); background: #395d62; }
+.sh-rival-badge {
+  position: absolute; inset-inline: 0; bottom: 2px; z-index: 1;
+  display: block; width: 100%; padding: 2px 1px; border-radius: 7px;
+  color: #fff0fd; background: #422451dc; border: 1px solid #dba9e3aa;
+  font-size: clamp(8px, 1.4vw, 11px); font-weight: 800; line-height: 1.15;
+  overflow-wrap: anywhere; pointer-events: none;
+}
+.nr-koh[data-counter='ready'] .sh-rival-badge { color: #fff1ba; border-color: #f5cf80; background: #63412aee; }
+.nr-koh[data-counter='active'] .sh-rival-badge { color: #fff; border-color: #ffd581; background: #843d69ee; box-shadow: 0 0 10px #f4b5d788; animation: sh-counter-flash .5s ease-out 1; }
+.nr-koh[data-rival-style='speed'][data-speed-accent='0'] .nr-character-art { animation: sh-speed-a .38s ease-out 1; }
+.nr-koh[data-rival-style='speed'][data-speed-accent='1'] .nr-character-art { animation: sh-speed-b .38s ease-out 1; }
+@keyframes sh-counter-flash { from { filter: brightness(1.8); transform: scale(1.08); } to { filter: none; transform: none; } }
+@keyframes sh-speed-a { 35% { filter: drop-shadow(0 0 9px #c6b4ff); transform: translateY(-3px); } }
+@keyframes sh-speed-b { 35% { filter: drop-shadow(0 0 9px #c6b4ff); transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) {
+  .nr-koh[data-counter='active'] .sh-rival-badge,
+  .nr-koh[data-rival-style='speed'] .nr-character-art { animation: none !important; }
+}
+#modern-app[data-reduced='true'] .nr-koh[data-counter='active'] .sh-rival-badge,
+#modern-app[data-reduced='true'] .nr-koh[data-rival-style='speed'] .nr-character-art { animation: none !important; }
 .sh-ready .sh-ready-settings .nr-segment button[aria-pressed='true'] { border-color: transparent; background: #395660; color: #e4fff6; }
 .sh-page > .nr-dialog { max-width: 520px; }
 @media (max-height: 500px) {
   .sh-ready { align-items: start; gap: 18px; }
   .sh-ready .nr-intro { position: sticky; top: 6px; }
   .sh-ready-settings { gap: 5px; }
-  .sh-ready-settings .sh-config, .sh-ready-settings .sh-level-settings { gap: 4px; }
+  .sh-ready-settings .sh-config, .sh-ready-settings .sh-level-settings, .sh-ready-settings .sh-style-settings { gap: 4px; }
   .sh-ready-settings { max-height: calc(100dvh - 72px); overflow-y: auto; scrollbar-width: thin; }
   .sh-ready-settings .sh-start-actions { position: sticky; bottom: -12px; background: #16303cf5; margin: 0 -2px; padding: 8px 2px; z-index: 2; }
 }

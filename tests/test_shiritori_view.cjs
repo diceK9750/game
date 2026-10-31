@@ -51,7 +51,7 @@ test('setup shares number-game hero and controls without story exposition', () =
   assert.ok(intro.className.includes('nr-ready'));
   assert.equal(intro.querySelector('.nr-hero-cast').children.length,3);
   assert.ok(intro.querySelector('.nr-setup'));
-  assert.equal(intro.querySelectorAll('.nr-segment').length,3);
+  assert.equal(intro.querySelectorAll('.nr-segment').length,4);
   assert.ok(intro.querySelector('.nr-intro-copy').textContent.includes('読み方は自動'));
   assert.ok(!intro.querySelectorAll('*').some(e=>/そそのか|コウ/.test(e.textContent)));
   view.update({...state,phase:'playing'});
@@ -132,6 +132,47 @@ test('one tap submits a card with no reading dialog and keeps stable 24 slots', 
   view.update({...state, remaining:17, mistakes:1, message:'ちがうよ −3秒'});
   assert.equal(view.page.querySelectorAll('.sh-card')[0], cards[0]);
   assert.equal(cards[0].disabled, false);
+});
+
+test('rival tactics are separate selectable setup controls and absent in solo', () => {
+  const {view,state,queue}=harness();
+  view.update({...state,phase:'intro',rival_style:'chain',rival_style_label:'連鎖型'});
+  const styles=view.page.querySelector('.sh-style-settings');
+  const buttons=styles.querySelectorAll('button');
+  assert.deepEqual(buttons.map(b=>b.textContent),['連鎖型','速攻型','反撃型']);
+  assert.deepEqual(buttons.map(b=>b['aria-pressed']),['true','false','false']);
+  buttons[1].click();
+  assert.deepEqual(queue.at(-1),{action:'sh_rival_style',value:'speed'});
+  view.update({...state,phase:'intro',rival_style:'speed',rival_style_label:'速攻型'});
+  assert.deepEqual(buttons.map(b=>b['aria-pressed']),['false','true','false']);
+  view.update({...state,phase:'intro',mode:'solo',rival_style:'counter'});
+  assert.equal(styles.hidden,true);
+  view.update({...state,phase:'intro',rival_style:'counter'});
+  assert.ok(view.page.querySelector('.sh-mode-settings'));
+  assert.ok(view.page.querySelector('.sh-rival-settings'));
+  assert.match(view.page.querySelector('.sh-style-settings').children.at(-1).textContent,/4連鎖後の次のCPUターン/);
+});
+
+test('counter readiness and activation update rival without recurring live announcements', () => {
+  const {view,state}=harness();
+  const cue=view.page.querySelectorAll('.nr-sr-only')[1];
+  const rival=view.page.querySelector('.sh-arena').children[2];
+  const base={...state,rival_style:'counter',rival_style_label:'反撃型'};
+  view.update({...base,counter_ready:true,counter_active:false,counter_event:0,
+    chain:{you:{count:4,best:4,tier:2,remaining:1},cpu:{count:0,best:0,tier:0,remaining:0}}});
+  assert.equal(rival.dataset.counter,'ready');
+  assert.equal(rival.children.at(-1).textContent,'COUNTER READY');
+  assert.equal(cue.textContent,'');
+  view.update({...base,turn:'cpu',counter_ready:false,counter_active:true,counter_event:1});
+  assert.equal(rival.dataset.counter,'active');
+  assert.match(cue.textContent,/COUNTER!/);
+  const announcement=cue.textContent;
+  view.update({...base,turn:'cpu',counter_active:true,counter_event:1});
+  assert.equal(cue.textContent,announcement);
+  view.update({...base,phase:'paused',turn:'cpu',counter_active:true,counter_event:1});
+  assert.equal(cue.textContent,'');
+  view.update({...base,turn:'cpu',counter_active:true,counter_event:1});
+  assert.equal(cue.textContent,'');
 });
 
 test('picture result marks actual perfect finish and keeps replay, history and cast', () => {
@@ -1494,6 +1535,9 @@ test('shiritori solo help/pause omits phantom rival/CPU; battle keeps them (#111
   assert.match(battleGuide, /ゲージが切れると相手の番/, 'battle help explains handoff');
   assert.match(battleGuide, /両者共通/, 'battle help keeps shared-stock clause');
   assert.match(battleGuide, /CPUも同じ条件で連鎖/, 'battle help keeps CPU chain clause');
+  assert.match(battleGuide, /4連鎖後、次のCPUターンだけ強化/);
+  assert.match(battleGuide, /取得枚数で勝敗を判定/);
+  assert.ok(!battleGuide.includes('つながる札がないと負け'));
 
   view.update({...state, phase: 'intro', mode: 'solo', cards: []});
   view.headerAction('help');

@@ -8,8 +8,8 @@ const settle = () => new Promise(resolve => requestAnimationFrame(() => requestA
 const chainSide = {count:7,best:12,bonus:140,remaining:1.2,window:1.5,ratio:.8,tier:3};
 function snapshot(game, mode, phase) {
   const specialResult = phase.startsWith('perfect-');
-  const updated = ['updated','result','high','fever-entry','fever-active'].includes(phase) || specialResult;
-  const s = {v:1, reduced:document.querySelector('#reduced').checked, screen:({setup:'ready',countdown:'countdown',play:'playing',updated:'playing',high:'playing','fever-entry':'playing','fever-active':'playing',pause:'confirm',result:'finished','perfect-victory':'finished','perfect-draw':'finished','perfect-cpu':'finished'})[phase],
+  const updated = ['updated','result','high','fever-entry','fever-active','counter-ready','counter-active','cpu-fever'].includes(phase) || specialResult;
+  const s = {v:1, reduced:document.querySelector('#reduced').checked, screen:({setup:'ready',countdown:'countdown',play:'playing',updated:'playing',high:'playing','fever-entry':'playing','fever-active':'playing',pause:'confirm',result:'finished','perfect-victory':'finished','perfect-draw':'finished','perfect-cpu':'finished','rival-chain':'ready','rival-speed':'ready','counter-ready':'playing','counter-active':'playing','cpu-fever':'playing'})[phase],
     kind:mode === 'solo'?'practice':'battle',max_number:40,mode:'random',difficulty:'hard',ack:0,bgm:true,sfx:false,
     target:40,points:phase==='result'?40:updated?23:0,player_points:phase==='result'?40:updated?23:0,completed:phase==='result'?40:updated?39:0,streak:12,goal:24,cpu_points:phase==='result'?0:updated?17:0,elapsed:updated?123.45:0,mistakes:phase==='result'?0:2,
     countdown:3,confirm_action:'pause',cpu_progress:.75,cpu_remaining:1.4,remaining:20,
@@ -17,11 +17,14 @@ function snapshot(game, mode, phase) {
     chain:{you:{...chainSide,count:phase==='high'?5:updated?7:6,tier:phase==='high'?2:updated?3:2,event:updated?1:0},cpu:{...chainSide,count:phase==='high'?5:updated?7:6,tier:phase==='high'?2:updated?3:2,event:updated?1:0}}, history:[],
     cells:['play','updated','result'].includes(phase)?Array.from({length:40},(_,i)=>({n:i+1,owner:updated&&i<3?(i%2?'cpu':'you'):null,effect:updated&&i===1?'cpu':updated&&i===2?'correct':''})):[]};
   if(game==='shiritori') {
-    const shPhase=({setup:'intro',play:'playing',updated:'playing',high:'playing','fever-entry':'playing','fever-active':'playing',pause:'paused',result:'finished','perfect-victory':'finished','perfect-draw':'finished','perfect-cpu':'finished'})[phase];
+    const shPhase=({setup:'intro',play:'playing',updated:'playing',high:'playing','fever-entry':'playing','fever-active':'playing',pause:'paused',result:'finished','perfect-victory':'finished','perfect-draw':'finished','perfect-cpu':'finished','rival-chain':'intro','rival-speed':'intro','counter-ready':'playing','counter-active':'playing','cpu-fever':'playing'})[phase];
     const shTotal=mode==='solo'?48:24;
     // Shiritori starts immediately in the real game; it has no countdown phase.
     s.screen='shiritori';s.cells=[];
-    s.shiritori={phase:shPhase,mode,total:shTotal,difficulty:'hard',turn:'you',
+    const rivalStyle=phase==='rival-speed'?'speed':['counter-ready','counter-active','cpu-fever'].includes(phase)?'counter':'chain';
+    s.shiritori={phase:shPhase,mode,total:shTotal,difficulty:'hard',turn:['counter-active','cpu-fever'].includes(phase)?'cpu':'you',
+      rival_style:rivalStyle,rival_style_label:{chain:'連鎖型',speed:'速攻型',counter:'反撃型'}[rivalStyle],
+      counter_ready:phase==='counter-ready',counter_active:['counter-active','cpu-fever'].includes(phase),counter_event:['counter-active','cpu-fever'].includes(phase)?1:0,effective_cpu_delay:2.2,
       required:'り',last_word:updated?'ことばをつなげるしりとり':'しりとり',remaining:18.7,limit:20,hints:3,hint:null,
       combo_active:updated&&mode==='battle'&&shPhase==='playing',combo_owner:updated&&mode==='battle'&&shPhase==='playing'?'you':null,
       combo_remaining:updated&&mode==='battle'&&shPhase==='playing'?1.2:0,
@@ -31,6 +34,9 @@ function snapshot(game, mode, phase) {
       winner:phase==='perfect-cpu'?'cpu':phase==='perfect-draw'||phase==='result'&&mode==='battle'?'draw':'you',perfect:shPhase==='finished',perfect_clear:shPhase==='finished',stock:shPhase==='finished'?0:mode==='solo'?23:0,completed:shPhase==='finished'?shTotal:updated?21:0,relinks:2,seen:[],
       chain:s.chain,catalog:[{id:'apple',icon:'🍎',words:['りんご','くだもの','たべもの']}],
       cards:Array.from({length:24},(_,i)=>({id:'apple',icon:'🍎',words:['りんご','くだもの'],owner:null}))};
+    if(phase==='counter-ready') { s.chain.you={...chainSide,count:4,tier:2,event:1};s.chain.cpu={...chainSide,count:0,tier:0,event:0,remaining:0}; }
+    if(phase==='counter-active') { s.chain.you={...chainSide,count:0,tier:0,event:1,remaining:0};s.chain.cpu={...chainSide,count:0,tier:0,event:0,remaining:0};s.shiritori.combo_active=false;s.shiritori.combo_owner=null; }
+    if(phase==='cpu-fever') { s.chain.you={...chainSide,count:0,tier:0,event:1,remaining:0};s.chain.cpu={...chainSide,count:7,tier:3,event:7};s.shiritori.combo_active=true;s.shiritori.combo_owner='cpu';s.shiritori.combo_remaining=1.2; }
     s.shiritori.you_count=s.shiritori.history.filter(row=>row.owner==='you').length;
     s.shiritori.cpu_count=s.shiritori.history.filter(row=>row.owner==='cpu').length;
   }
@@ -41,8 +47,8 @@ async function show(w,h,game,mode,phase,variant={}) {
   fixture.style.width=`${w-8}px`;fixture.style.height=`${h-8}px`;
   const doc=fixture.contentDocument;
   const state=snapshot(game,mode,phase);
-  if(game==='shiritori' && (phase==='fever-entry'||phase==='high')) {
-    const before=snapshot(game,mode,phase==='high'?'play':'high');
+  if(game==='shiritori' && (phase==='fever-entry'||phase==='high'||phase==='cpu-fever')) {
+    const before=snapshot(game,mode,phase==='high'?'play':phase==='cpu-fever'?'counter-active':'high');
     doc.documentElement.setAttribute('data-modern-state',JSON.stringify(before));
     await settle();
   }
@@ -63,7 +69,7 @@ async function show(w,h,game,mode,phase,variant={}) {
   }
   // Compare settled boxes, not the temporary 1.04x celebration transform.
   // Burst content remains visible; only finite animations advance to the end.
-  if(!['high','fever-entry','fever-active','perfect-victory','perfect-draw','perfect-cpu'].includes(phase))
+  if(!['high','fever-entry','fever-active','perfect-victory','perfect-draw','perfect-cpu','cpu-fever'].includes(phase))
     for(const animation of doc.getAnimations()) {
       if(Number.isFinite(animation.effect.getComputedTiming().endTime)) animation.finish();
     }
@@ -196,15 +202,19 @@ document.querySelector('#run').onclick=async()=>{
 };
 document.querySelector('#run-fx').onclick=async()=>{
   const results=[];document.querySelector('#run-fx').disabled=true;
-  for(const [w,h] of sizes)for(const phase of ['high','fever-entry','fever-active','perfect-victory','perfect-draw','perfect-cpu']){
+  for(const [w,h] of sizes)for(const phase of ['high','fever-entry','fever-active','perfect-victory','perfect-draw','perfect-cpu','rival-chain','rival-speed','counter-ready','counter-active','cpu-fever']){
     await show(w,h,'shiritori','battle',phase);
     const r=measure();
     const doc=fixture.contentDocument;
     const title=doc.querySelector('.sh-result:not([hidden]) > h1')?.textContent || '';
     const fx=[...doc.querySelectorAll('.chain-fx')].find(e=>e.dataset.phase!=='none'&&!e.closest('[hidden]'));
-    const expectedPhase=phase==='high'?'high':phase==='fever-entry'?'entry':phase==='fever-active'?'active':null;
+    const expectedPhase=phase==='high'?'high':phase==='fever-entry'||phase==='cpu-fever'?'entry':phase==='fever-active'?'active':null;
+    const styleButtons=[...doc.querySelectorAll('.sh-style-settings button')];
+    const selectedStyle=styleButtons.find(e=>e.getAttribute('aria-pressed')==='true')?.textContent;
+    const badge=doc.querySelector('.sh-arena .nr-koh .sh-rival-badge');
+    const tacticOK=phase==='rival-chain'?selectedStyle==='連鎖型':phase==='rival-speed'?selectedStyle==='速攻型':phase==='counter-ready'?badge?.textContent==='COUNTER READY':phase==='counter-active'?badge?.textContent==='COUNTER!':phase==='cpu-fever'?fx?.dataset.owner==='cpu'&&badge?.textContent==='COUNTER!':true;
     const pass=r.active&&!r.errors.length&&!r.documentOverflow&&!r.contentOverflow.length&&!r.textOutside.length&&!r.outside.length&&!r.clippedButtons.length&&!r.small.length&&!r.overlaps.length&&!r.squareErrors.length&&!r.characterErrors.length&&!r.hudInterference&&
-      (expectedPhase?fx?.dataset.phase===expectedPhase:title===(phase==='perfect-victory'?'PERFECT VICTORY!':'PERFECT CLEAR'));
+      tacticOK&&(expectedPhase?fx?.dataset.phase===expectedPhase:['rival-chain','rival-speed','counter-ready','counter-active'].includes(phase)?true:title===(phase==='perfect-victory'?'PERFECT VICTORY!':'PERFECT CLEAR'));
     results.push({size:`${w}x${h}`,phase,pass,title,fxPhase:fx?.dataset.phase,...r});
     document.querySelector('#status').textContent=`Highlight ${results.length}`;
   }

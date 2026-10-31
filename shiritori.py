@@ -36,7 +36,7 @@ CARDS = (
     ("squirrel", "🐿️", ("りす", "どうぶつ", "けもの")),
     ("melon", "🍉", ("すいか", "くだもの", "フルーツ", "たべもの")),
     ("umbrella", "☂️", ("かさ", "あまがさ", "ようがさ", "レイングッズ")),
-    ("fish", "🐟", ("さかな", "ぎょるい", "うみのいきもの", "フィッシュ", "おさかな")),
+    ("fish", "🐠", ("さかな", "ぎょるい", "うみのいきもの", "フィッシュ", "おさかな")),
     ("eggplant", "🍆", ("なす", "やさい", "たべもの", "しょくざい")),
     ("bell", "🔔", ("すず", "かね", "ベル", "がっき", "チャイム")),
     ("trousers", "👖", ("ズボン", "ふく", "ジーンズ", "デニム", "ボトムス")),
@@ -312,11 +312,23 @@ class ShiritoriRound:
     CPU_CONTINUE_CHANCE = {'easy': .10, 'normal': .65, 'hard': .90}
     CPU_MAX_STREAK = {'easy': 2, 'normal': 3, 'hard': 5}
     CPU_ANSWER_DELAY = 2.2
+    CPU_UPDATE_SLACK = .25  # Leave time for a delayed browser frame before combo expiry.
+    CPU_FEVER_HOLD = 1.2  # Below the seventh-hit 1.8-second combo window.
+    RIVAL_STYLE_LABELS = {'chain': '連鎖型', 'speed': '速攻型', 'counter': '反撃型'}
+    # (continuation chance, maximum streak, answer delay).
+    RIVAL_PROFILES = {
+        'chain': {'easy': (.10, 2, 2.2), 'normal': (.65, 3, 2.2), 'hard': (.90, 5, 2.2)},
+        'speed': {'easy': (.05, 2, 2.0), 'normal': (.40, 2, 1.6), 'hard': (.70, 4, 1.3)},
+        'counter': {'easy': (.05, 2, 2.2), 'normal': (.50, 3, 2.2), 'hard': (.75, 5, 2.2)},
+    }
+    COUNTER_PROFILES = {'easy': (.15, 2, 2.2), 'normal': (.80, 5, 2.2), 'hard': (.95, 7, 2.2)}
 
-    def __init__(self, difficulty="normal", rng=None, clock=None, mode="battle", total=24):
+    def __init__(self, difficulty="normal", rng=None, clock=None, mode="battle", total=24,
+                 rival_style="chain"):
         self.rng = rng or random.Random()
         self.clock = clock or time.monotonic
         self.difficulty = difficulty if difficulty in ("easy", "normal", "hard") else "normal"
+        self.rival_style = rival_style if rival_style in self.RIVAL_STYLE_LABELS else 'chain'
         self.limit = {"easy": 30, "normal": 20, "hard": 12}[self.difficulty]
         self.phase = "intro"
         self.mode = mode if mode in ("battle", "solo") else "battle"
@@ -350,6 +362,10 @@ class ShiritoriRound:
         self.saved_cpu_remaining = 0
         self.revision = 0
         self.cpu_move = None
+        self.counter_ready = False
+        self.counter_active = False
+        self.counter_event = 0
+        self.cpu_fever_hold = False
         self._chain_advice = {}
         self.perfect_route = ()  # Identity-based certificate, never sent to UI.
         self.initial_perfect_route = ()
@@ -357,6 +373,9 @@ class ShiritoriRound:
 
     def start(self):
         self.chain = TimedChain(self.clock())
+        self.counter_ready = self.counter_active = False
+        self.counter_event = 0
+        self.cpu_fever_hold = False
         self._chain_advice.clear()
         by_id = {card[0]: card for card in CARDS}
         seed = self.rng.choice(CARDS)[2][0]
@@ -455,6 +474,8 @@ class ShiritoriRound:
         self.miss_until = 0
         self.chain.sync(self.clock(), ())
         self.combo_owner = None
+        self.counter_ready = self.counter_active = False
+        self.cpu_fever_hold = False
         self.revision += 1
 
     def remaining(self):
@@ -465,28 +486,53 @@ class ShiritoriRound:
             return 0.0
         return self.chain.players[self.combo_owner]['remaining']
 
+    def cpu_profile(self):
+        if self.rival_style == 'counter' and self.counter_active and self.mode == 'battle':
+            return self.COUNTER_PROFILES[self.difficulty]
+        return self.RIVAL_PROFILES[self.rival_style][self.difficulty]
+
+    def cpu_delay(self):
+        delay = self.cpu_profile()[2]
+        # Only the powered hard counter can reach seven. Keep published styles
+        # unchanged and schedule its late answers inside the shared time window.
+        if self.rival_style == 'counter' and self.counter_active and self.difficulty == 'hard':
+            if self.cpu_fever_hold:
+                return self.CPU_FEVER_HOLD
+            count = self.chain.players['cpu']['count']
+            if self.combo_owner == 'cpu' and count > 0:
+                delay = min(delay, TimedChain.window(count) - self.CPU_UPDATE_SLACK)
+        return delay
+
     def cpu_should_continue_combo(self):
         """Decide once after a CPU hit; answer quality stays with chain_advice()."""
         if self.mode != 'battle' or self.turn != 'cpu' or self.combo_owner != 'cpu':
             return False
         count = self.chain.players['cpu']['count']
-        if count >= self.CPU_MAX_STREAK[self.difficulty]:
+        chance, maximum, delay = self.cpu_profile()
+        if count >= maximum:
             return False
-        if self.combo_remaining() <= self.CPU_ANSWER_DELAY:
+        if self.combo_remaining() <= delay:
             return False
-        return self.rng.random() < self.CPU_CONTINUE_CHANCE[self.difficulty]
+        return self.rng.random() < chance
 
     def handoff(self):
         """Pass a completed combo without treating it as a miss or timeout."""
         owner = self.turn
         self.chain.miss(owner)
         self.combo_owner = None
+        self.cpu_fever_hold = False
         self.turn = 'cpu' if owner == 'you' else 'you'
+        if owner == 'cpu':
+            self.counter_active = False
+        elif self.rival_style == 'counter' and self.counter_ready and self.mode == 'battle':
+            self.counter_ready = False
+            self.counter_active = True
+            self.counter_event += 1
         now = self.clock()
-        self.deadline = now + (self.CPU_ANSWER_DELAY if self.turn == 'cpu' else self.limit)
+        self.deadline = now + (self.cpu_delay() if self.turn == 'cpu' else self.limit)
         self.cpu_due = self.deadline if self.turn == 'cpu' else 0
         self.cpu_move = None
-        self.message = 'ルナの番。つながる絵を探しています…' if self.turn == 'cpu' else 'あなたの番。つながる絵を探そう！'
+        self.message = ('COUNTER! ルナが反撃します！' if self.counter_active else 'ルナの番。つながる絵を探しています…') if self.turn == 'cpu' else 'あなたの番。つながる絵を探そう！'
         self.revision += 1
         if self.turn == 'cpu':
             self.prepare_cpu()
@@ -504,6 +550,9 @@ class ShiritoriRound:
                 self.handoff()
                 return
             if self.turn == 'cpu' and now >= self.cpu_due:
+                if self.cpu_fever_hold:
+                    self.handoff()
+                    return
                 if self.cpu_move is None:
                     self.prepare_cpu()
                 if self.cpu_move is not None:
@@ -570,6 +619,8 @@ class ShiritoriRound:
     def take(self, index, word):
         owner = self.turn
         self.chain.hit(owner, self.clock())
+        if owner == 'you' and self.mode == 'battle' and self.rival_style == 'counter' and self.chain.players['you']['count'] >= 4:
+            self.counter_ready = True
         if self.mode == 'battle':
             self.combo_owner = owner
         self.cpu_move = None
@@ -612,8 +663,14 @@ class ShiritoriRound:
                 self.finish(self.winner_by_captures(), "つながる絵がなくなった！取得枚数で勝敗を判定。")
         else:
             if self.mode == 'battle' and owner == 'cpu':
-                if self.cpu_should_continue_combo():
-                    self.cpu_due = self.clock() + self.CPU_ANSWER_DELAY
+                if self.counter_active and self.difficulty == 'hard' and self.chain.players['cpu']['count'] == 7:
+                    # Give the existing CPU-owned FEVER animation one visible
+                    # beat before the seventh answer ends this CPU turn.
+                    self.cpu_fever_hold = True
+                    self.cpu_due = self.clock() + self.CPU_FEVER_HOLD
+                    self.message = 'ルナがRUSH FEVER!'
+                elif self.cpu_should_continue_combo():
+                    self.cpu_due = self.clock() + self.cpu_delay()
                     self.prepare_cpu()
                 else:
                     self.handoff()
@@ -633,13 +690,19 @@ class ShiritoriRound:
         if action == "setup" and self.phase in ("paused", "finished"):
             self.phase = "intro"
             self.selected = None
+            self.counter_ready = self.counter_active = False
+            self.cpu_fever_hold = False
         elif action == "mode" and self.phase == "intro" and isinstance(value, str) and value in ("battle", "solo"):
             self.mode = value
+            self.counter_ready = self.counter_active = False
         elif action == "total" and self.phase == "intro" and type(value) is int and value in (12, 24, 36, 48):
             self.total = value
         elif action == "difficulty" and self.phase == "intro" and isinstance(value, str) and value in ("easy", "normal", "hard"):
             self.difficulty = value
             self.limit = {"easy": 30, "normal": 20, "hard": 12}[value]
+        elif action == 'rival_style' and self.phase == 'intro' and isinstance(value, str) and value in self.RIVAL_STYLE_LABELS:
+            self.rival_style = value
+            self.counter_ready = self.counter_active = False
         elif action == "start" and self.phase in ("intro", "finished"):
             self.start()
         elif action == "pause" and self.phase in ("playing", "blocked"):
@@ -722,9 +785,15 @@ class ShiritoriRound:
                 "combo_remaining": round(self.combo_remaining(), 1) if combo_active else 0,
                 "turn_remaining": round(self.remaining(), 1) if self.phase in ('playing', 'paused') else 0,
                 "cpu_target": self.cpu_move[0] if self.cpu_move is not None and self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else None,
-                "cpu_progress": max(0, min(1, 1-max(0, self.cpu_due-self.clock())/self.CPU_ANSWER_DELAY)) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
+                "cpu_progress": max(0, min(1, 1-max(0, self.cpu_due-self.clock())/self.cpu_delay())) if self.phase == "playing" and self.turn == "cpu" and self.mode == "battle" else 0,
                 "last_word": self.last_word, "remaining": round(self.remaining(), 1) if self.phase in ("playing", "paused") else 0,
-                "limit": self.limit, "difficulty": self.difficulty, "message": self.message, "winner": self.winner,
+                "limit": self.limit, "difficulty": self.difficulty,
+                "rival_style": self.rival_style, "rival_style_label": self.RIVAL_STYLE_LABELS[self.rival_style],
+                "counter_ready": self.counter_ready if self.mode == 'battle' else False,
+                "counter_active": self.counter_active if self.mode == 'battle' else False,
+                "counter_event": self.counter_event if self.mode == 'battle' else 0,
+                "effective_cpu_delay": self.cpu_delay() if self.mode == 'battle' else 0,
+                "message": self.message, "winner": self.winner,
                 "perfect": self.perfect and self.phase == "finished",
                 "perfect_clear": self.perfect and self.phase == "finished",
                 "you_count": you_count, "cpu_count": cpu_count,

@@ -61,10 +61,15 @@
     const levelButtons = [['easy','ゆったり'],['normal','ふつう'],['hard','てごわい']].map(([v,label]) => button(label, 'sh_difficulty', v));
     const limit = E('p', 'sh-setting-note');
     add(levels, E('h2', 'nr-field-label', 'ライバルの強さ'), add(E('div', 'nr-segment sh-actions sh-levels'), ...levelButtons), limit);
+    const styles = E('div', 'sh-style-settings');
+    const styleValues = ['chain', 'speed', 'counter'];
+    const styleButtons = [['chain','連鎖型'],['speed','速攻型'],['counter','反撃型']].map(([v,label]) => button(label, 'sh_rival_style', v));
+    const styleHint = E('p', 'sh-setting-note');
+    add(styles, E('h2', 'nr-field-label', 'ライバル戦術'), add(E('div', 'nr-segment sh-actions sh-styles'), ...styleButtons), styleHint);
     // Named so update can swap kind-aware help (solo must not invent 相手/CPU/両者; parity numbers #90/#94/#95).
     const guideMode = E('p', '', '対戦では正解後も連鎖ゲージが残る間は同じ側が続けて回答。ゲージが切れると相手の番です。全札完走・読み詰みは取得枚数で勝敗を決定。回答期限切れは敗北です。');
     const guideBoard = E('p', '', '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。');
-    const guideChain = E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。CPUも同じ条件で連鎖します。');
+    const guideChain = E('p', '', '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。CPUも同じ条件で連鎖します。連鎖型は連続回答、速攻型は速さを重視。反撃型はあなたの4連鎖後、次のCPUターンだけ強化されます。');
     const guide = add(E('details', 'sh-guide'), E('summary', '', '遊び方・読み方のルール'),
       E('p', '', '絵を1回タップするだけ！必要な頭文字につながる未使用の読み方を自動確定。「ん」終わりは自動で除外します。各絵に頭文字の異なる3種類以上の読み方があります。'),
       guideMode, guideBoard,
@@ -73,9 +78,9 @@
     const start = button('はじめる', 'sh_start', undefined, 'nr-primary');
     const startGroup = add(E('div', 'sh-actions sh-start-actions'), start);
     add(setup, E('div', 'nr-setup-heading', '絵しりとりのチャレンジ'),
-      add(E('div', 'sh-config'), E('h2', 'nr-field-label', '遊び方'), modeGroup, modeHint,
+      add(E('div', 'sh-config sh-mode-settings'), E('h2', 'nr-field-label', '遊び方'), modeGroup, modeHint,
         E('h2', 'nr-field-label', '絵の総枚数'), countGroup, countHint),
-      add(E('div', 'sh-config'), levels),
+      add(E('div', 'sh-config sh-rival-settings'), levels, styles),
       startGroup);
     add(intro, hero, setup);
     if (settingsControls) setup.append(settingsControls());
@@ -108,6 +113,10 @@
     statusLive.setAttribute('role', 'status');
     statusLive.setAttribute('aria-live', 'polite');
     statusLive.setAttribute('aria-atomic', 'true');
+    const counterLive = E('div', 'nr-sr-only');
+    counterLive.setAttribute('role', 'status');
+    counterLive.setAttribute('aria-live', 'polite');
+    counterLive.setAttribute('aria-atomic', 'true');
     const stock = E('span', 'sh-stock'), completed = E('span');
     const board = E('div', 'sh-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', 'しりとりの絵札');
     const boardSpace = add(E('div', 'sh-board-space'), board);
@@ -126,6 +135,9 @@
     const relink = button('つなぎ直す', 'sh_relink', undefined, 'nr-primary');
     const toolbar = add(E('div', 'sh-actions sh-play-actions'), hint, relink);
     const arena = add(E('div', 'sh-arena'), rin.wrap, boardSpace, koh.wrap);
+    const rivalBadge = E('span', 'sh-rival-badge');
+    rivalBadge.setAttribute('aria-hidden', 'true');
+    koh.wrap.append(rivalBadge);
     arena.dataset.arena = 'true';
     const information = add(E('div', 'game-information'), hud, add(E('div', 'sh-progress'), completed, stock), status);
     const auxiliary = add(E('div', 'game-auxiliary'), toolbar);
@@ -172,9 +184,9 @@
     add(result, perfectFx, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultScore, resultKoh.wrap), reason, resultSecondary,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
-    add(page, statusLive, intro, stage, pause, result);
+    add(page, statusLive, counterLive, intro, stage, pause, result);
     let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false, keyboardCard = 0, boardCols = 4;
-    let announcement = '';
+    let announcement = '', announcedCounterEvent = 0;
     const helpPage=E('div','sh-intro nr-help-card nr-surface');
     const closeHelp=E('button','nr-button nr-primary','戻る'); closeHelp.type='button';
     closeHelp.addEventListener('click',()=>{helpOpen=false; helpPage.hidden=true; intro.hidden=false; onNavigationChange(); intro.querySelector('h1').focus();});
@@ -339,13 +351,13 @@
       // Solo has no rival — help/pause must not invent 相手/CPU/両者/ライバル (parity numbers #90/#94/#95).
       guideMode.textContent = solo
         ? '一人用は時間無制限。詰まったら2回つなぎ直せます。ヒントを使って、自分のペースで最後までつなごう。'
-        : '対戦では正解後も連鎖ゲージが残る間は同じ側が続けて回答。ゲージが切れると相手の番です。通常の回答期限切れ、またはつながる札がないと負け。';
+        : '対戦では正解後も連鎖ゲージが残る間は同じ側が続けて回答。ゲージが切れると相手の番です。通常の回答期限切れは敗北。全札完走・つながる札がない場合は取得枚数で勝敗を判定。';
       guideBoard.textContent = solo
         ? '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。'
         : '画面は最大24枚。36・48枚では使った場所に新しい札が登場。開始時には必ず全札をつなぐルートがあります。途中の選び方によっては行き詰まるため、ヒントも活用しよう。山札の補充条件は両者共通です。';
       guideChain.textContent = solo
         ? '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。'
-        : '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。CPUも同じ条件で連鎖します。';
+        : '正解後、連鎖ゲージがなくなる前に次も正解すると自動で連鎖！猶予は4.5秒から徐々に短くなり、最短1.2秒。ミスで終了します。CPUも同じ条件で連鎖します。連鎖型は連続回答、速攻型は速さを重視。反撃型はあなたの4連鎖後、次のCPUターンだけ強化されます。';
       pauseCopy.textContent = solo
         ? '札を隠して休憩中。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。'
         : '札を隠して休憩中。ライバルも止まっています。設定変更・ゲーム選択へ戻ると現在のプレイは終了します。';
@@ -366,10 +378,13 @@
       if (!restartPage.hidden) pause.hidden=true;
       if (dictionaryOpen || helpOpen) intro.hidden=result.hidden=true;
       pressed(modeButtons, ['battle','solo'], s.mode); pressed(countButtons, counts, s.total); pressed(levelButtons, ['easy','normal','hard'], s.difficulty);
+      pressed(styleButtons, styleValues, s.rival_style || 'chain');
       modeHint.textContent = solo ? '時間無制限。自分のペースで最後までつなごう。' : '正解後は連鎖ゲージが切れるまで同じ側が続けて回答！';
       countHint.textContent = s.total > 24 ? `画面24枚＋山札${s.total - 24}枚。使った場所に補充。` : `${s.total}枚を並べてスタート。補充なし。`;
       levels.hidden = solo;
+      styles.hidden = solo;
       limit.textContent = `通常の回答期限${s.limit}秒。誤答は−3秒。`;
+      styleHint.textContent = {chain:'連続回答を狙うバランス型', speed:'回答が速い。連鎖はやや控えめ', counter:'4連鎖後の次のCPUターンで反撃'}[s.rival_style] || '連続回答を狙うバランス型';
       start.textContent = solo ? '一人でスタート' : '対戦スタート';
       const mine = s.turn === 'you';
       turn.textContent = solo ? '一人でじっくり' : s.combo_active ? mine ? 'あなたの連鎖中！' : 'ルナの連鎖中…' : mine ? 'あなたの番' : 'ルナが考えています…';
@@ -407,6 +422,14 @@
         announcement = nextAnnouncement;
         statusLive.textContent = announcement;
       }
+      const counterEvent = Number(s.counter_event) || 0;
+      if (!solo && live && s.counter_active && counterEvent !== announcedCounterEvent) {
+        counterLive.textContent = 'COUNTER! ルナが反撃します。';
+        window.chainVoice?.counterCue?.();
+      } else if (!live || !s.counter_active) {
+        counterLive.textContent = '';
+      }
+      announcedCounterEvent = counterEvent;
       stock.textContent = `山札 ${s.stock || 0}枚`; completed.textContent = `${s.completed || 0} / ${s.total || 24}枚 つながった`;
       hint.textContent = `ヒント ${s.hints}回`; hint.disabled = !mine || !s.hints || s.phase !== 'playing';
       relink.hidden = s.phase !== 'blocked'; relink.textContent = `つなぎ直す あと${s.relinks}回`;
@@ -415,7 +438,11 @@
       endSolo.hidden = !solo; koh.wrap.hidden = solo; resultKoh.wrap.hidden = solo;
       const last = s.history[s.history.length - 1];
       pose(rin, live && s.miss_card != null ? 'hurt' : last?.owner === 'you' ? 'celebrate' : 'idle');
-      pose(koh, last?.owner === 'cpu' ? 'celebrate' : 'idle');
+      pose(koh, s.counter_active ? 'victory' : s.counter_ready ? 'frustrated' : last?.owner === 'cpu' ? 'celebrate' : 'idle');
+      koh.wrap.dataset.rivalStyle = s.rival_style || 'chain';
+      koh.wrap.dataset.counter = s.counter_active ? 'active' : s.counter_ready ? 'ready' : 'none';
+      koh.wrap.dataset.speedAccent = s.rival_style === 'speed' && last?.owner === 'cpu' && live ? String(s.history.length % 2) : 'off';
+      rivalBadge.textContent = s.counter_active ? 'COUNTER!' : s.counter_ready ? 'COUNTER READY' : `ルナ・${s.rival_style_label || '連鎖型'}`;
       timedChain?.update(s.chain, !solo, live, s.phase === 'finished');
       board.dataset.count = String(Math.min(s.total || 24, 24));
       boardSpace.dataset.count = board.dataset.count;
@@ -472,7 +499,7 @@
       if (s.chain) {
         chainSummary.textContent = solo
           ? `最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス`
-          : `最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス ／ CPU最大${s.chain.cpu.best}連鎖 · ${s.chain.cpu.bonus}ボーナス`;
+          : `ルナ・${s.rival_style_label || '連鎖型'} ／ 最大${s.chain.you.best}連鎖 · ${s.chain.you.bonus}ボーナス ／ CPU最大${s.chain.cpu.best}連鎖 · ${s.chain.cpu.bonus}ボーナス`;
         chainSummary.hidden = false;
       } else {
         chainSummary.textContent = '';

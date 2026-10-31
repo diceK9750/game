@@ -1,3 +1,4 @@
+import unicodedata
 import random
 import unittest
 from unittest.mock import patch
@@ -142,6 +143,11 @@ class ShiritoriTests(unittest.TestCase):
         game.command('end')
         self.assertEqual((game.phase, game.winner), ('finished','draw'))
 
+    def test_catalog_has_distinct_visible_panel_icons(self):
+        # Daruma has its own custom picture; its catalog icon is also unique.
+        icons = [unicodedata.normalize('NFKC', card[1]).replace('\ufe0f', '') for card in CARDS]
+        self.assertEqual(len(icons), len(set(icons)))
+
     def test_all_modes_and_deck_sizes_conserve_cards_through_complete_games(self):
         for mode in ('solo','battle'):
             for total in (12,24,36,48):
@@ -154,6 +160,9 @@ class ShiritoriTests(unittest.TestCase):
                             identities = [r['id'] for r in game.history] + [c[0] for c in active + game.stock]
                             self.assertEqual(len(identities), total)
                             self.assertEqual(len(set(identities)), total)
+                            icons = [r['icon'] for r in game.history] + [c[1] for c in active + game.stock]
+                            self.assertEqual(len(icons), total)
+                            self.assertEqual(len(set(icons)), total)
                             self.assertEqual(len(game.cards), min(game.total, 24))
                             if game.phase == 'finished':
                                 break
@@ -181,6 +190,7 @@ class ShiritoriTests(unittest.TestCase):
                     path = tuple((s.identity, s.reading) for s in game.initial_perfect_route)
                     self.assertTrue(any(path[i:i+6] == PERFECT_CANONICAL_SEGMENT for i in range(total-5)))
                     self.assertEqual(len({c[0] for c in game.cards+game.stock}),total)
+                    self.assertEqual(len({c[1] for c in game.cards+game.stock}),total)
                     for _ in range(total):
                         self.assertEqual(game.phase,'playing')
                         move,plan=game.chain_advice()
@@ -190,6 +200,7 @@ class ShiritoriTests(unittest.TestCase):
                             self.assertEqual(game.cpu_move,move)
                         game.take(*move)
                     self.assertEqual(len(game.history),total)
+                    self.assertEqual(len({r['icon'] for r in game.history}),total)
                     self.assertEqual(game.phase,'finished')
                     self.assertEqual(game.winner,game.winner_by_captures())
                     self.assertEqual(game.stock,[])

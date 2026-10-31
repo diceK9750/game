@@ -57,6 +57,8 @@ def decode(raw):
             if type(value) is type(allowed[0]) and value in allowed:
                 clean[key] = value
         if clean:
+            style = settings.get('rival_style')
+            clean['rival_style'] = style if type(style) is str and style in ('chain', 'speed', 'counter') else 'chain'
             result['shiritori_settings'] = clean
     return result
 
@@ -77,6 +79,7 @@ def encode(app):
             data[field] = getattr(app, field)
     if hasattr(app, 'shiritori'):
         data['shiritori_settings'] = {key: getattr(app.shiritori, key) for key in ('mode', 'total', 'difficulty')}
+        data['shiritori_settings']['rival_style'] = getattr(app.shiritori, 'rival_style', 'chain')
     elif hasattr(app, 'shiritori_settings'):
         data['shiritori_settings'] = app.shiritori_settings
     return json.dumps(data, allow_nan=False)

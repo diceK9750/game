@@ -69,7 +69,7 @@ class ModernUI:
             sh = getattr(app, 'shiritori', None)
             return (getattr(app, 'play_kind', None), getattr(app, 'selected_max_number', None),
                     getattr(app, 'difficulty', None),
-                    tuple(getattr(sh, key, None) for key in ('mode', 'total', 'difficulty')))
+                    tuple(getattr(sh, key, None) for key in ('mode', 'total', 'difficulty', 'rival_style')))
         before = settings()
         ModernUI._dispatch(app, command)
         if settings() != before:
@@ -108,7 +108,8 @@ class ModernUI:
                 if not hasattr(app, "shiritori"):
                     saved = getattr(app, 'shiritori_settings', {})
                     app.shiritori = ShiritoriRound(saved.get('difficulty', app.difficulty),
-                                                   mode=saved.get('mode', 'solo'), total=saved.get('total', 24))
+                                                   mode=saved.get('mode', 'solo'), total=saved.get('total', 24),
+                                                   rival_style=saved.get('rival_style', 'chain'))
                 else:
                     app.shiritori.phase = "intro"
                 app.screen = "shiritori"

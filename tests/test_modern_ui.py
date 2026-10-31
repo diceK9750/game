@@ -55,6 +55,7 @@ class ModernUITests(unittest.TestCase):
         self.queue({'action':'shiritori'})
         self.bridge.consume(self.app)
         self.assertEqual((self.app.shiritori.mode,self.app.shiritori.total,self.app.shiritori.difficulty),('battle',36,'hard'))
+        self.assertEqual(self.app.shiritori.rival_style, 'chain')
         game.progress.save.reset_mock()
         self.queue({'action':'sh_total','value':12})
         self.bridge.consume(self.app)
@@ -64,6 +65,11 @@ class ModernUITests(unittest.TestCase):
         self.queue({'action':'sh_total','value':13})
         self.bridge.consume(self.app)
         game.progress.save.assert_not_called()
+        game.progress.save.reset_mock()
+        self.queue({'action':'sh_rival_style','value':'speed'})
+        self.bridge.consume(self.app)
+        self.assertEqual(self.app.shiritori.rival_style, 'speed')
+        game.progress.save.assert_called_once_with(self.app)
 
     def test_completed_draw_uses_success_music_and_storage_status_is_exposed(self):
         self.queue({'action':'shiritori'})
