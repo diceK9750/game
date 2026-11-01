@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+ <defs>
+  <path id="leaf" d="M0 12-3 7-7 9-7 4-12 3-9 0-13-4-8-5-9-10-4-8-2-14 1-9 5-14 6-8 12-10 10-5 14-3 10 0 13 4 8 4 8 9 4 7Z"/>
+ </defs>
+ <ellipse cx="50" cy="91" rx="25" ry="3" fill="#33535a" opacity=".14"/>
+ <g fill="none" stroke="#51834b" stroke-width="2.5" stroke-linecap="round">
+  <path d="M50 87Q48 62 49 35M50 87Q44 62 25 46M50 87Q55 62 73 43M50 80Q43 66 33 60M50 80Q57 67 66 58"/>
+ </g>
+ <g stroke="#377b50" stroke-width="1.6" stroke-linejoin="round">
+  <use href="#leaf" x="49" y="25" fill="#67b96d"/>
+  <use href="#leaf" x="31" y="32" transform="rotate(-25 31 32)" fill="#55a963"/>
+  <use href="#leaf" x="68" y="31" transform="rotate(23 68 31)" fill="#72bd70"/>
+  <use href="#leaf" x="19" y="46" transform="rotate(-45 19 46)" fill="#70b971"/>
+  <use href="#leaf" x="80" y="45" transform="rotate(45 80 45)" fill="#4b9f5c"/>
+  <use href="#leaf" x="36" y="51" transform="rotate(-18 36 51)" fill="#82c478"/>
+  <use href="#leaf" x="63" y="50" transform="rotate(18 63 50)" fill="#5daf65"/>
+  <use href="#leaf" x="25" y="60" transform="rotate(-40 25 60)" fill="#4b9e5d"/>
+  <use href="#leaf" x="75" y="59" transform="rotate(40 75 59)" fill="#6abb69"/>
+ </g>
+ <g fill="none" stroke="#c3e9a4" stroke-width="1.3" stroke-linecap="round">
+  <path d="M49 21v10M30 29l3 8M68 28l-3 8M20 43l6 6M79 42l-6 6M36 48l3 8M63 47l-3 8"/>
+ </g>
+ <path d="M46 82h8" stroke="#d7b36a" stroke-width="4" stroke-linecap="round"/>
+</svg>

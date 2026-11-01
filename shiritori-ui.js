@@ -134,6 +134,30 @@
     const timedChain = window.createTimedChainView?.({E, add, portraits:[rin,koh]});
     const relink = button('つなぎ直す', 'sh_relink', undefined, 'nr-primary');
     const toolbar = add(E('div', 'sh-actions sh-play-actions'), hint, relink);
+    // Debug is an optional local preference, not an access control mechanism.
+    let debugSupport = null, debugEnabled = false;
+    function setDebugEnabled(enabled, save = true) {
+      debugEnabled = !!enabled;
+      if (save) {
+        try {
+          if (debugEnabled) window.localStorage?.setItem('number-rush.debug', '1');
+          else window.localStorage?.removeItem('number-rush.debug');
+        } catch { /* Keep this session usable even if storage is unavailable. */ }
+      }
+      if (debugEnabled && !debugSupport) {
+        debugSupport = button('DEBUG 完走サポート', () => {
+          command('sh_debug_mode', true);
+          return 'sh_debug_hint';
+        });
+        toolbar.append(debugSupport);
+      }
+      if (debugSupport) debugSupport.hidden = !debugEnabled;
+      if (save && !debugEnabled) command('sh_debug_mode', false);
+      return debugEnabled;
+    }
+    try { debugEnabled = window.localStorage?.getItem('number-rush.debug') === '1'; }
+    catch { /* Storage may be unavailable; normal play is unaffected. */ }
+    if (debugEnabled) setDebugEnabled(true, false);
     const arena = add(E('div', 'sh-arena'), rin.wrap, boardSpace, koh.wrap);
     const rivalBadge = E('span', 'sh-rival-badge');
     rivalBadge.setAttribute('aria-hidden', 'true');
@@ -327,6 +351,7 @@
       }
     });
     return {page, isOverlayOpen:()=>dictionaryOpen || helpOpen, trapOverlayTab,
+      toggleDebug() { return setDebugEnabled(!debugEnabled); },
       headerAction(action) {
         if (action==='help' && latest?.phase==='intro' && !dictionaryOpen) { helpOpen=true; intro.hidden=true; helpPage.hidden=false; closeHelp.focus(); }
         if (action==='retry' && ['playing','blocked'].includes(latest?.phase)) { restartRequested='sh_restart'; command('sh_pause'); }
@@ -431,7 +456,8 @@
       }
       announcedCounterEvent = counterEvent;
       stock.textContent = `山札 ${s.stock || 0}枚`; completed.textContent = `${s.completed || 0} / ${s.total || 24}枚 つながった`;
-      hint.textContent = `ヒント ${s.hints}回`; hint.disabled = !mine || !s.hints || s.phase !== 'playing';
+      hint.textContent = `ヒント ${s.hints}回`; hint.disabled = !mine || (!s.hints && !s.hint_repeatable) || s.phase !== 'playing';
+      if (debugSupport) debugSupport.disabled = !mine || s.phase !== 'playing';
       relink.hidden = s.phase !== 'blocked'; relink.textContent = `つなぎ直す あと${s.relinks}回`;
       // Solo has no rival — hide LUNA on ready hero-cast + play arena + result cast (parity #80/#86).
       heroRival.wrap.hidden = solo; heroVersus.hidden = solo;
@@ -462,7 +488,7 @@
           const replaced = item.identity != null;
           item.identity = data.id;
           item.dealFlip = !item.dealFlip;
-          const custom = ['daruma', 'top', 'ramune', 'zucchini'].includes(data.id);
+          const custom = ['daruma', 'top', 'ramune', 'zucchini', 'medaka', 'snow_crab', 'blocks', 'parsley', 'mushroom', 'paint'].includes(data.id);
           icon.textContent = custom ? '' : data.icon;
           icon.className = `sh-icon${data.id === 'daruma' ? ' sh-daruma' : ''}${custom ? ` sh-art-${data.id}` : ''}`;
           card.dataset.dealt = replaced ? String(Number(item.dealFlip)) : '';
@@ -512,7 +538,7 @@
       if (key !== historyKey) {
         historyKey = key;
         log.replaceChildren(...s.history.map(row => {
-          const custom = ['daruma', 'top', 'ramune', 'zucchini'].includes(row.id);
+          const custom = ['daruma', 'top', 'ramune', 'zucchini', 'medaka', 'snow_crab', 'blocks', 'parsley', 'mushroom', 'paint'].includes(row.id);
           const picture = E('span', `sh-history-icon${row.id === 'daruma' ? ' sh-daruma' : ''}${custom ? ` sh-art-${row.id}` : ''}`, custom ? '' : row.icon);
           picture.setAttribute('aria-hidden', 'true');
           const title = add(E('strong', '', `${row.relinked ? '↪ つなぎ直し · ' : ''}${row.owner === 'you' ? 'リン' : 'ルナ'}：`), picture, E('span', '', ` ${row.word}`));

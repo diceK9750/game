@@ -9,7 +9,7 @@
   const head = word => normalize(word)[0]?.replace(/[ゃゅょぁぃぅぇぉっゎ]/g, c => 'やゆよあいうえおつわ'['ゃゅょぁぃぅぇぉっゎ'.indexOf(c)]);
   const keyOf = (id, word) => `${id}:${normalize(word)}`;
   window.createShiritoriCollection = function (storage) {
-    let catalog = [], valid = new Set(), found = new Set(), warning = '', revision = 0, dirty = false;
+    let catalog = [], valid = new Set(), legacy = new Map(), found = new Set(), warning = '', revision = 0, dirty = false;
     let primaryRaw = null, protectedRaw = null, primaryEnvelope = {}, protectedEnvelope = {};
     // Preserve discoveries not present in this catalog and protect them from
     // older versions that only know the original storage key.
@@ -43,7 +43,14 @@
         if (key !== null && valid.has(key)) {
           if (!found.has(key)) { found.add(key); changed = true; }
         } else {
+          // Keep the original discovery for rollback or an older open tab.
           retained.set(JSON.stringify(savedKey), savedKey);
+          // Only explicitly retired readings may credit a valid reading on
+          // the same picture. Unknown future keys remain opaque and intact.
+          const replacement = key !== null ? legacy.get(key) : null;
+          if (replacement && !found.has(replacement)) {
+            found.add(replacement); changed = true;
+          }
         }
       }
       if (changed) revision++;
@@ -103,11 +110,21 @@
         if (!cards?.length) return;
         catalog = cards;
         valid = new Set(cards.flatMap(c => c.words.map(w => keyOf(c.id, w))));
+        legacy = new Map();
+        for (const card of cards) {
+          if (!card.legacy || typeof card.legacy !== 'object' || Array.isArray(card.legacy)) continue;
+          for (const [oldWord, newWord] of Object.entries(card.legacy)) {
+            if (typeof newWord !== 'string') continue;
+            const oldKey = keyOf(card.id, oldWord), newKey = keyOf(card.id, newWord);
+            if (!valid.has(oldKey) && valid.has(newKey)) legacy.set(oldKey, newKey);
+          }
+        }
         for (const key of found) if (!valid.has(key)) retained.set(JSON.stringify(key), key);
         found = new Set([...found].filter(k => valid.has(k)));
         for (const [signature, value] of retained) {
           const key = canonicalSavedKey(value);
           if (key !== null && valid.has(key)) { found.add(key); retained.delete(signature); }
+          else if (key !== null && legacy.has(key)) found.add(legacy.get(key));
         }
         if (mergeSaved()) protectExisting(); revision++;
       },
@@ -173,7 +190,7 @@
     add(page, add(E('div','sh-dict-header'),title,back), progress, notice, warning, retry,
       E('p','','自分でつないだ読み方が絵ごとに登録されます。CPUの回答・一覧を見るだけでは登録されません。未発見の読みは「？？？」です。'),
       add(E('div','sh-actions'),challenge,filter),quiz,list);
-    function picture(c) { const custom=['daruma','top','ramune','zucchini'].includes(c.id); const icon=E('span',`sh-dict-icon${c.id==='daruma'?' sh-daruma':''}${custom?` sh-art-${c.id}`:''}`,custom?'':c.icon); icon.setAttribute('aria-hidden','true'); return icon; }
+    function picture(c) { const custom=['daruma','top','ramune','zucchini','medaka','snow_crab','blocks','parsley','mushroom','paint'].includes(c.id); const icon=E('span',`sh-dict-icon${c.id==='daruma'?' sh-daruma':''}${custom?` sh-art-${c.id}`:''}`,custom?'':c.icon); icon.setAttribute('aria-hidden','true'); return icon; }
     function newChallenge() {
       pending=collection.challenge(); solved=false; quiz.hidden=false; next.hidden=true; answer.textContent='';
       if (!pending) { question.textContent='全読み方コンプリート！'; choices.replaceChildren(); return; }

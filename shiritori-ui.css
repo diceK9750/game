@@ -134,15 +134,24 @@
 .sh-daruma { width: 1em; height: 1.2em; background: url('assets/shiritori/daruma.svg') center / contain no-repeat; }
 /* Shared local pictures keep the board, dictionary and review recognizable
    across emoji fonts; catalog IDs and saved reading keys stay unchanged. */
-.sh-art-top, .sh-art-ramune, .sh-art-zucchini {
+.sh-art-top, .sh-art-ramune, .sh-art-zucchini,
+.sh-art-medaka, .sh-art-snow_crab, .sh-art-blocks, .sh-art-parsley, .sh-art-mushroom, .sh-art-paint {
   display: inline-block; width: 1em; height: 1em;
   background-position: center; background-size: contain; background-repeat: no-repeat;
 }
 .sh-art-top { background-image: url('assets/shiritori/top.svg'); }
 .sh-art-ramune { background-image: url('assets/shiritori/ramune.svg'); }
 .sh-art-zucchini { background-image: url('assets/shiritori/zucchini.svg'); }
+.sh-art-medaka { background-image: url('assets/shiritori/medaka.svg'); }
+.sh-art-snow_crab { background-image: url('assets/shiritori/snow_crab.svg'); }
+.sh-art-blocks { background-image: url('assets/shiritori/blocks.svg'); }
+.sh-art-parsley { background-image: url('assets/shiritori/parsley.svg'); }
+.sh-art-mushroom { background-image: url('assets/shiritori/mushroom.svg'); }
+.sh-art-paint { background-image: url('assets/shiritori/paint.svg'); }
 .sh-history-icon.sh-daruma, .sh-history-icon.sh-art-top,
-.sh-history-icon.sh-art-ramune, .sh-history-icon.sh-art-zucchini {
+.sh-history-icon.sh-art-ramune, .sh-history-icon.sh-art-zucchini,
+.sh-history-icon.sh-art-medaka, .sh-history-icon.sh-art-snow_crab,
+.sh-history-icon.sh-art-blocks, .sh-history-icon.sh-art-parsley, .sh-history-icon.sh-art-mushroom, .sh-history-icon.sh-art-paint {
   display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -.25em;
 }
 .sh-levels button[aria-pressed='true'] { background: #395d62; border-color: var(--nr-gold); }

@@ -387,16 +387,50 @@ class ShiritoriTests(unittest.TestCase):
         self.game.command('card', 0)
         self.assertEqual(self.game.winner, 'you')
 
-    def test_hints_bounded_and_restart_clears_state(self):
-        for _ in range(8):
-            self.game.command('hint')
-        self.assertEqual(self.game.hints, 0)
-        self.assertIn(self.game.hint, [index for index, _ in self.game.moves()])
+    def test_repeated_hint_is_free_on_same_board_and_restart_clears_state(self):
+        self.game.command('hint')
+        first = self.game.hint
+        self.assertEqual(self.game.hints, 2)
+        with patch.object(self.game, 'chain_advice', side_effect=AssertionError('repeated hint searched')):
+            for _ in range(8):
+                self.game.command('hint')
+        self.assertEqual((self.game.hints, self.game.hint), (2, first))
+        self.assertTrue(self.game.snapshot()['hint_repeatable'])
+        self.game.command('pause')
+        self.game.command('resume')
+        self.game.command('hint')
+        self.assertEqual((self.game.hints, self.game.hint), (2, first))
+        self.game.command('card', first)
+        self.assertFalse(self.game.snapshot()['hint_repeatable'])
+        self.game.command('hint')
+        self.assertEqual(self.game.hints, 1)
         self.game.command('pause')
         self.game.command('restart')
         self.assertEqual(self.game.hints, 3)
         self.assertIsNone(self.game.hint)
+        self.assertFalse(self.game.snapshot()['hint_repeatable'])
         self.assertFalse(self.game.history)
+
+    def test_repeated_hint_stays_available_after_miss_and_last_charge(self):
+        game = ShiritoriRound(mode='solo', total=48, rng=random.Random(3), clock=lambda: self.now)
+        game.start()
+        game.hints = 1
+        game.command('hint')
+        hint = game.hint
+        self.assertEqual(game.hints, 0)
+        legal = {index for index, _ in game.moves()}
+        wrong = next(index for index in range(len(game.cards)) if index not in legal)
+        game.command('card', wrong)
+        self.assertEqual(game.mistakes, 1)
+        self.assertTrue(game.snapshot()['hint_repeatable'])
+        game.command('hint')
+        self.assertEqual((game.hints, game.hint), (0, hint))
+        self.assertIn('光る絵', game.message)
+        game.command('card', hint)
+        self.assertFalse(game.snapshot()['hint_repeatable'])
+        game.command('hint')
+        self.assertEqual(game.hints, 0)
+        self.assertIsNone(game.hint)
 
     def test_simulated_games_terminate_with_valid_nonrepeating_words(self):
         for difficulty in ('easy', 'normal', 'hard'):

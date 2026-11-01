@@ -178,6 +178,32 @@
   });
   app.append(header, live, settingsToast);
 
+  // Only the picture-game setup screen accepts the developer gesture.
+  let debugTapCount = 0, debugTapStart = 0;
+  brand.style.touchAction = 'manipulation';
+  brand.style.userSelect = 'none';
+  function debugGesture() {
+    if (state?.screen !== 'shiritori' || state.shiritori?.phase !== 'intro' || shiritori?.isOverlayOpen()) {
+      debugTapCount = 0;
+      return;
+    }
+    const now = Date.now();
+    if (!debugTapCount || now - debugTapStart > 5000) { debugTapCount = 0; debugTapStart = now; }
+    debugTapCount++;
+    if (debugTapCount === 7) {
+      debugTapCount = 0;
+      const enabled = shiritori.toggleDebug();
+      showSettingsToast(`デバッグモード ${enabled ? 'ON' : 'OFF'}`);
+    }
+  }
+  brand.addEventListener('click', debugGesture);
+  brand.addEventListener('keydown', event => {
+    if ((event.key === 'Enter' || event.key === ' ') && !event.repeat && brand.tabIndex === 0) {
+      event.preventDefault();
+      debugGesture();
+    }
+  });
+
   const home = section('home', 'nr-home');
   const homeChoices = E('div', 'nr-game-choices');
   const pictureGame = button('', 'shiritori', undefined, 'nr-game-card nr-picture-game');
@@ -387,6 +413,11 @@
     if (state.screen === 'home') headerContext.textContent = 'ゲームを選ぶ';
     window.chainVoice?.setEnabled(state.sfx && (playing || state.screen === 'finished' || (state.screen === 'shiritori' && ['playing','finished'].includes(state.shiritori?.phase))));
     if (state.screen === 'shiritori') { headerContext.textContent = '絵しりとり'; shiritori.update(state.shiritori); }
+    const debugGestureAvailable = state.screen === 'shiritori' && state.shiritori?.phase === 'intro' && !shiritori?.isOverlayOpen();
+    brand.tabIndex = debugGestureAvailable ? 0 : -1;
+    brand.style.minHeight = debugGestureAvailable ? '44px' : '';
+    if (debugGestureAvailable) brand.setAttribute('role', 'button');
+    else { brand.removeAttribute('role'); debugTapCount = 0; }
     sound.textContent = state.bgm ? '♪ ON' : '♪ OFF'; sound.setAttribute('aria-pressed', String(!!state.bgm));
     const audioUnavailable = state.audio_available === false;
     for (const control of [sound, sfx, pauseSfx, ...shSettings.map(([effects]) => effects)]) {

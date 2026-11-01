@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
-function harness() {
+function harness(debug = false) {
   const doc = {activeElement: null};
   class Element {
     constructor(tag, cls = '', text = '') {
@@ -31,7 +31,7 @@ function harness() {
   const window = {};
   vm.runInNewContext(fs.readFileSync(require.resolve('../chain-ui.js'), 'utf8'), {window});
   window.rivalCursor=require('../rival-cursor.js').rivalCursor;
-  const saved = new Map(); window.localStorage={getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v)};
+  const saved = new Map(debug ? [['number-rush.debug', '1']] : []); window.localStorage={getItem:k=>saved.get(k)||null,setItem:(k,v)=>saved.set(k,v),removeItem:k=>saved.delete(k)};
   vm.runInNewContext(fs.readFileSync(require.resolve('../shiritori-dictionary.js'), 'utf8'), {window});
   vm.runInNewContext(fs.readFileSync(require.resolve('../shiritori-ui.js'), 'utf8'), {window, document: doc});
   const view = window.createShiritoriView({section: (n, c) => E('section', c), E, add, button, portrait, command});
@@ -1559,14 +1559,20 @@ test('shiritori solo help/pause omits phantom rival/CPU; battle keeps them (#111
 test('distinct local picture art is shared by board, dictionary and result history', () => {
   const {view, state} = harness();
   const entries = [
-    {id:'top', icon:'🌀', words:['こま','うずまき','おもちゃ'], owner:null},
+    {id:'top', icon:'🌀', words:['こま','スピニングトップ','おもちゃ'], owner:null},
     {id:'ramune', icon:'🍾', words:['ラムネ','のみもの','たんさん'], owner:null},
-    {id:'zucchini', icon:'🥒', words:['ズッキーニ','きゅうり','やさい'], owner:null},
-    {id:'daruma', icon:'🔴', words:['だるま','えんぎもの','にんぎょう'], owner:null}
+    {id:'zucchini', icon:'🥒', words:['ズッキーニ','たべもの','やさい'], owner:null},
+    {id:'daruma', icon:'🔴', words:['だるま','えんぎもの','にんぎょう'], owner:null},
+    {id:'medaka', icon:'🐟', words:['めだか','さかな','こざかな'], owner:null},
+    {id:'snow_crab', icon:'🦀', words:['ズワイガニ','かに','シーフード'], owner:null},
+    {id:'blocks', icon:'🧱', words:['つみき','ブロック','おもちゃ'], owner:null},
+    {id:'parsley', icon:'🌿', words:['パセリ','ハーブ','やさい'], owner:null},
+    {id:'mushroom', icon:'🍄', words:['きのこ','マッシュルーム','しょくざい'], owner:null},
+    {id:'paint', icon:'🎨', words:['ペンキ','とりょう','パレット'], owner:null}
   ];
-  const cards = [...entries, ...state.cards.slice(4)];
+  const cards = [...entries, ...state.cards.slice(entries.length)];
   view.update({...state, cards, catalog:entries});
-  let icons=view.page.querySelectorAll('.sh-card').slice(0,4).map(c=>c.querySelector('.sh-icon'));
+  let icons=view.page.querySelectorAll('.sh-card').slice(0,entries.length).map(c=>c.querySelector('.sh-icon'));
   for (let i=0;i<entries.length;i++) {
     assert.ok(icons[i].className.includes(`sh-art-${entries[i].id}`));
     assert.equal(icons[i].textContent, '');
@@ -1575,7 +1581,7 @@ test('distinct local picture art is shared by board, dictionary and result histo
   // A reused slot must not keep its old art after stock replenishment.
   cards[0]={id:'apple',icon:'🍎',words:['りんご'],owner:null};
   view.update({...state,cards});
-  icons=view.page.querySelectorAll('.sh-card').slice(0,4).map(c=>c.querySelector('.sh-icon'));
+  icons=view.page.querySelectorAll('.sh-card').slice(0,entries.length).map(c=>c.querySelector('.sh-icon'));
   assert.equal(icons[0].textContent,'🍎');
   assert.ok(!icons[0].className.includes('sh-art-top'));
   view.update({...state,phase:'intro',cards:[],catalog:entries});
@@ -1592,9 +1598,60 @@ test('local picture files are available to Pages without external dependencies',
   const css=fs.readFileSync(require.resolve('../shiritori-ui.css'),'utf8');
   const workflow=fs.readFileSync(require.resolve('../.github/workflows/pages.yml'),'utf8');
   assert.match(workflow,/cp -r assets _site/);
-  for(const name of ['top','ramune','zucchini']) {
+  for(const name of ['top','ramune','zucchini','medaka','snow_crab','blocks','parsley','mushroom','paint']) {
     assert.ok(css.includes(`assets/shiritori/${name}.svg`));
     const svg=fs.readFileSync(path.join(__dirname,'..','assets','shiritori',`${name}.svg`),'utf8');
     assert.match(svg,/<svg\s/); assert.doesNotMatch(svg,/(?:https?:)?\/\/(?!www\.w3\.org)/i);
   }
+});
+
+
+test('debug support is absent by default and enabled only by local developer opt-in', () => {
+  const regular = harness(); regular.view.update(regular.state);
+  assert.equal(regular.view.page.querySelectorAll('button').some(b => b.textContent === 'DEBUG 完走サポート'), false);
+  const debug = harness(true); debug.view.update(debug.state);
+  const support = debug.view.page.querySelectorAll('button').find(b => b.textContent === 'DEBUG 完走サポート');
+  assert.ok(support); support.click();
+  assert.deepEqual(debug.queue.slice(-2), [{action:'sh_debug_mode', value:true}, {action:'sh_debug_hint', value:undefined}]);
+  debug.view.update({...debug.state, turn:'cpu'}); assert.equal(support.disabled, true);
+  debug.view.update({...debug.state, phase:'paused'}); assert.equal(support.disabled, true);
+});
+
+test('hint remains available at zero when the same state has a repeatable hint', () => {
+  const {view,state}=harness();
+  view.update({...state,hints:0,hint_repeatable:true});
+  const hint=view.page.querySelectorAll('button').find(b=>b.textContent==='ヒント 0回');
+  assert.equal(hint.disabled,false);
+  view.update({...state,hints:0,hint_repeatable:false});
+  assert.equal(hint.disabled,true);
+});
+
+
+test('debug mode switches in the live view and is reversible', () => {
+  const {view,state,queue,window}=harness();
+  view.update({...state,phase:'intro'});
+  assert.equal(view.page.querySelectorAll('button').some(b=>b.textContent==='DEBUG 完走サポート'),false);
+  assert.equal(view.toggleDebug(),true);
+  assert.equal(window.localStorage.getItem('number-rush.debug'),'1');
+  const support=view.page.querySelectorAll('button').find(b=>b.textContent==='DEBUG 完走サポート');
+  assert.ok(support && !support.hidden);
+  view.update(state); support.click();
+  assert.deepEqual(queue.slice(-2),[{action:'sh_debug_mode',value:true},{action:'sh_debug_hint',value:undefined}]);
+  view.update({...state,phase:'intro'});
+  assert.equal(view.toggleDebug(),false);
+  assert.equal(window.localStorage.getItem('number-rush.debug'),null);
+  view.update(state);
+  assert.equal(support.hidden,true);
+  assert.deepEqual(queue.at(-1),{action:'sh_debug_mode',value:false});
+});
+
+test('debug toggle works for this session if browser storage is blocked', () => {
+  const {view,state,window}=harness();
+  window.localStorage.setItem=()=>{throw new Error('blocked')};
+  window.localStorage.removeItem=()=>{throw new Error('blocked')};
+  view.update({...state,phase:'intro'});
+  assert.equal(view.toggleDebug(),true);
+  assert.equal(view.page.querySelectorAll('button').find(b=>b.textContent==='DEBUG 完走サポート').hidden,false);
+  assert.equal(view.toggleDebug(),false);
+  assert.equal(view.page.querySelectorAll('button').find(b=>b.textContent==='DEBUG 完走サポート').hidden,true);
 });

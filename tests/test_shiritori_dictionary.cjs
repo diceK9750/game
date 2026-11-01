@@ -338,3 +338,324 @@ test('an open dictionary refreshes after another tab saves without writing back'
   assert.equal(dict.collection.has('cat','ねこ'),true);
   assert.equal(JSON.stringify([...data]),before,'refresh does not cause a cross-tab write loop');
 });
+
+
+
+function actualSnapshotCatalog() {
+  const {execFileSync}=require('node:child_process');
+  const path=require('node:path');
+  const root=path.resolve(__dirname,'..');
+  const json=execFileSync('python',['-B','-c',
+    "import json,shiritori;print(json.dumps(shiritori.ShiritoriRound().snapshot()['catalog'],ensure_ascii=False))"],
+    {cwd:root,encoding:'utf8',env:{...process.env,PYTHONIOENCODING:'utf-8'}});
+  return JSON.parse(json);
+}
+function oldSnapshot(filename) {
+  const path=require('node:path');
+  return JSON.parse(fs.readFileSync(path.join(__dirname,'fixtures',filename),'utf8'));
+}
+function normalizedKey(id, word) {
+  const normalized=word.normalize('NFC').replace(/[ァ-ヶ]/g,
+    c=>String.fromCharCode(c.charCodeAt(0)-0x60));
+  return id+':'+normalized;
+}
+
+
+const SEMANTIC_RETIRED = {
+  apple:['すりおろしりんご'],
+  ramune:['シャンパン','シャンペン','スパークリングワイン','コルク','ワイン','ワインボトル'],
+  zucchini:['きゅうり','キューカンバー','ピクルス','つけもの'],
+  top:['うずまき','スパイラル','うず','らせん','うずまきもよう',
+       'サイクロン','ハリケーン','たいふう','たつまき','トルネード'],
+  blocks:['れんが','ブリック','レンガづみ','レンガブロック','かべ'],
+  parsley:['バジル','ミント']
+};
+const semanticRetiredKeys = new Set(Object.entries(SEMANTIC_RETIRED)
+  .flatMap(([id,words])=>words.map(word=>normalizedKey(id,word))));
+const unrelatedLegacyKeys = new Set([...semanticRetiredKeys, normalizedKey('blocks','レンガのかべ')]);
+
+test('real 817, 829 and 759-reading saves preserve old keys without crediting unrelated readings',()=>{
+  const current=actualSnapshotCatalog();
+  assert.equal(current.length,81);
+  assert.equal(current.reduce((n,card)=>n+card.words.length,0),731);
+  assert.equal(current.reduce((n,card)=>n+Object.keys(card.legacy).length,0),73);
+  assert.equal(semanticRetiredKeys.size,28);
+  const byId=new Map(current.map(card=>[card.id,card]));
+  assert.equal(byId.get('blocks').legacy['レンガのかべ'],null);
+  assert.equal(byId.get('lavender').legacy['ヒヤシンスのはな'],'ヒヤシンス');
+  assert.equal(byId.get('paint').legacy['えのぐのパレット'],'パレット');
+  assert.equal(byId.get('plate').legacy['フォークとナイフ'],'フォーク');
+  for(const [filename, expectedCount] of [
+    ['shiritori-catalog-ad2c423.json',817],
+    ['shiritori-catalog-pre-particle.json',829],
+    ['shiritori-catalog-pre-semantic.json',759],
+  ]) {
+    const baseline=oldSnapshot(filename);
+    const oldKeys=baseline.flatMap(card=>card.words.map(word=>normalizedKey(card.id,word)));
+    assert.equal(oldKeys.length,expectedCount);
+    assert.equal(new Set(oldKeys).size,expectedCount);
+    const {window,storage,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+    data.set(key,JSON.stringify({version:1,found:oldKeys,extra:'preserved'}));
+    const collection=window.createShiritoriCollection(storage);
+    collection.configure(current);
+    assert.equal(collection.total,731);
+    const expectedFound=new Set();
+    for(const card of baseline) {
+      const now=byId.get(card.id);
+      assert.ok(now);
+      for(const word of card.words) {
+        const oldKey=normalizedKey(card.id,word);
+        if(now.words.some(w=>normalizedKey(card.id,w)===oldKey)) {
+          expectedFound.add(oldKey);
+          assert.equal(collection.has(card.id,word),true);
+        } else {
+          assert.equal(collection.has(card.id,word),false,'retired reading remains hidden');
+          const replacement=now.legacy[word];
+          if(typeof replacement==='string') {
+            const target=normalizedKey(card.id,replacement);
+            expectedFound.add(target);
+            assert.equal(collection.has(card.id,replacement),true,'valid grammatical equivalent is credited');
+          } else {
+            assert.ok(unrelatedLegacyKeys.has(oldKey),card.id+':'+word+' is an unexpected uncredited retirement');
+          }
+        }
+      }
+    }
+    assert.equal(collection.count,expectedFound.size);
+    const protectedInitial=JSON.parse(data.get(key+'.protected'));
+    const protectedKeys=new Set(protectedInitial.found);
+    for(const oldKey of oldKeys) assert.ok(protectedKeys.has(oldKey),filename+': '+oldKey);
+    assert.equal(protectedInitial.extra,'preserved');
+    const newlyAdded=[['curry','ごはんりょうり'],['riceball','ごはんりょうり'],
+                 ['lavender','むらさき']];
+    for(const [id,word] of newlyAdded) {
+      assert.ok(byId.get(id).words.includes(word));
+      assert.equal(collection.has(id,word),oldKeys.includes(normalizedKey(id,word)),
+        id+':'+word+' reflects whether the old version had recorded it');
+    }
+    let newFinds=0;
+    while(collection.count<collection.total) {
+      const quiz=collection.challenge(()=>0);
+      assert.ok(quiz);
+      assert.ok(byId.get(quiz.card.id).words.includes(quiz.word));
+      assert.equal(collection.discover(quiz.card.id,quiz.word),true);
+      assert.ok(++newFinds<=731,'challenge must progress');
+    }
+    if(expectedCount===829) assert.equal(newFinds,3,'three new readings follow the 829-key migration');
+    if(expectedCount===759) assert.equal(newFinds,0,'all still-valid 759 keys were already found');
+    assert.equal(collection.challenge(),null);
+    const reloaded=window.createShiritoriCollection(storage);
+    reloaded.configure(current);
+    assert.equal(reloaded.count,731);
+    for(const card of current) for(const word of card.words)
+      assert.equal(reloaded.has(card.id,word),true);
+    const protectedFinal=new Set(JSON.parse(data.get(key+'.protected')).found);
+    for(const oldKey of oldKeys) assert.ok(protectedFinal.has(oldKey),'after reload: '+oldKey);
+  }
+});
+
+test('each semantically unrelated old discovery stays preserved without inventing a new discovery',()=>{
+  const current=actualSnapshotCatalog(), byId=new Map(current.map(card=>[card.id,card]));
+  assert.equal(semanticRetiredKeys.size,28);
+  for(const [id,words] of Object.entries(SEMANTIC_RETIRED)) {
+    for(const word of words) {
+      const oldKey=normalizedKey(id,word), card=byId.get(id);
+      assert.ok(card);
+      assert.equal(card.words.some(w=>normalizedKey(id,w)===oldKey),false,oldKey+' is not offered');
+      assert.notEqual(typeof card.legacy[word],'string',oldKey+' has no unrelated alias');
+      const {window,storage,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+      data.set(key,JSON.stringify({version:1,found:[oldKey]}));
+      const c=window.createShiritoriCollection(storage);c.configure(current);
+      assert.equal(c.total,731);
+      assert.equal(c.count,0,oldKey+' must not count another meaning');
+      assert.equal(c.has(id,word),false,oldKey+' is not discoverable');
+      assert.ok(JSON.parse(data.get(key+'.protected')).found.includes(oldKey),oldKey+' was retained');
+      const reloaded=window.createShiritoriCollection(storage);reloaded.configure(current);
+      assert.equal(reloaded.count,0,oldKey+' remains uncredited on reload');
+      assert.ok(JSON.parse(data.get(key+'.protected')).found.includes(oldKey),oldKey+' survived reload');
+    }
+  }
+});
+
+test('every grammatical legacy retains its key and credits only a semantically valid replacement',()=>{
+  const current=actualSnapshotCatalog();
+  let migrated=0, unrelated=0;
+  for(const card of current) for(const [oldWord,replacement] of Object.entries(card.legacy)) {
+    const {window,storage,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+    const oldKey=normalizedKey(card.id,oldWord);
+    data.set(key,JSON.stringify({version:1,found:[oldKey]}));
+    const c=window.createShiritoriCollection(storage);c.configure(current);
+    if(typeof replacement==='string') {
+      assert.equal(c.count,1,oldKey);
+      assert.equal(c.has(card.id,replacement),true,oldKey);
+      migrated++;
+    } else {
+      assert.equal(card.id,'blocks');
+      assert.equal(oldWord,'レンガのかべ');
+      assert.equal(c.count,0,oldKey+' is unrelated to toy blocks');
+      unrelated++;
+    }
+    assert.equal(c.has(card.id,oldWord),false,oldKey);
+    assert.ok(JSON.parse(data.get(key+'.protected')).found.includes(oldKey),oldKey);
+    const loaded=window.createShiritoriCollection(storage);loaded.configure(current);
+    assert.equal(loaded.count,typeof replacement==='string'?1:0,oldKey);
+  }
+  assert.equal(migrated,72);
+  assert.equal(unrelated,1);
+});
+
+test('retired readings credit only their same-picture replacement and retain the original',()=>{
+  const {window,storage,data}=harness(), key='number-rush.shiritori.dictionary.v1';
+  const original='radish:にんじんのは';
+  data.set(key,JSON.stringify({version:1,found:[original,'other:にんじんのは','future:よみ']}));
+  const cards=[{id:'radish',words:['にんじん','やさい'],legacy:{'にんじんのは':'にんじん'}},
+               {id:'other',words:['にんじん']}];
+  const c=window.createShiritoriCollection(storage);c.configure(cards);
+  assert.equal(c.has('radish','にんじん'),true);
+  assert.equal(c.has('radish','にんじんのは'),false);
+  assert.equal(c.has('other','にんじん'),false,'unknown same word on a different picture is not mapped');
+  assert.equal(c.count,1);
+  const shadow=JSON.parse(data.get(key+'.protected'));
+  assert.ok(shadow.found.includes(original),'the historical key remains recoverable');
+  assert.ok(shadow.found.includes('radish:にんじん'));
+  assert.ok(shadow.found.includes('other:にんじんのは'));
+  assert.equal(c.discover('radish','やさい'),true);
+  const saved=JSON.parse(data.get(key));
+  assert.ok(saved.found.includes(original),'later writes keep the retired reading');
+  assert.ok(saved.found.includes('future:よみ'));
+  const reloaded=window.createShiritoriCollection(storage);reloaded.configure(cards);
+  assert.equal(reloaded.count,2);
+  assert.equal(reloaded.has('radish','にんじん'),true);
+  assert.equal(reloaded.has('radish','やさい'),true);
+  assert.ok(!reloaded.cards.some(card=>card.words.includes('にんじんのは')));
+});
+
+test('retired discoveries collapsing into one replacement count only once',()=>{
+  const {window,storage,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+  data.set(key,JSON.stringify({version:1,found:['radish:にんじんのは','radish:にんじんのね','radish:にんじん']}));
+  const cards=[{id:'radish',words:['にんじん'],legacy:{
+    'にんじんのは':'にんじん','にんじんのね':'にんじん'}}];
+  const c=window.createShiritoriCollection(storage);c.configure(cards);
+  assert.equal(c.count,1);assert.equal(c.total,1);
+  assert.equal(c.challenge(),null);
+  const shadow=JSON.parse(data.get(key+'.protected'));
+  assert.ok(shadow.found.includes('radish:にんじんのは'));
+  assert.ok(shadow.found.includes('radish:にんじんのね'));
+  assert.ok(shadow.found.includes('radish:にんじん'));
+});
+
+test('invalid migration metadata cannot credit an invented or different-picture reading',()=>{
+  const {window,storage,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+  data.set(key,JSON.stringify({version:1,found:['radish:きゅうよみ','other:きゅうよみ','radish:にんじん']}));
+  const cards=[{id:'radish',words:['にんじん'],legacy:{
+    'きゅうよみ':'ねこ','にんじん':'でたらめ','ふせい':null}},
+    {id:'other',words:['ねこ']}];
+  const c=window.createShiritoriCollection(storage);c.configure(cards);
+  assert.equal(c.count,1);assert.equal(c.has('radish','にんじん'),true);
+  assert.equal(c.has('other','ねこ'),false);
+  assert.ok(JSON.parse(data.get(key+'.protected')).found.includes('radish:きゅうよみ'));
+});
+
+test('a corrupt primary prevents migration writes while the protected copy stays visible',()=>{
+  const {window,storage,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+  const backup=JSON.stringify({version:1,found:['radish:にんじんのは']});
+  data.set(key,'{broken');data.set(key+'.protected',backup);
+  const cards=[{id:'radish',words:['にんじん','やさい'],legacy:{'にんじんのは':'にんじん'}}];
+  const c=window.createShiritoriCollection(storage);c.configure(cards);
+  assert.equal(c.has('radish','にんじん'),true);assert.ok(c.warning);
+  assert.equal(c.discover('radish','やさい'),true);
+  assert.equal(data.get(key),'{broken');assert.equal(data.get(key+'.protected'),backup);
+  data.set(key,JSON.stringify({version:1,found:[]}));
+  assert.equal(c.sync(),true);
+  const reloaded=window.createShiritoriCollection(storage);reloaded.configure(cards);
+  assert.equal(reloaded.has('radish','にんじん'),true);
+  assert.equal(reloaded.has('radish','やさい'),true);
+  assert.ok(JSON.parse(data.get(key)).found.includes('radish:にんじんのは'));
+});
+
+test('an old open tab discovery refreshes a new dictionary without losing the retired key',()=>{
+  const {window,storage,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+  const oldCards=[{id:'radish',words:['にんじん','にんじんのは']}];
+  const newCards=[{id:'radish',words:['にんじん'],legacy:{'にんじんのは':'にんじん'}}];
+  const old=window.createShiritoriCollection(storage);old.configure(oldCards);
+  const listeners={};window.localStorage=storage;window.addEventListener=(name,fn)=>{listeners[name]=fn;};
+  const elements=[];
+  const E=(tag,cls='',text='')=>{const n={tagName:tag.toUpperCase(),className:cls,textContent:text,hidden:false,children:[],dataset:{},
+    setAttribute(){},addEventListener(type,fn){(this.events||(this.events={}))[type]=fn;},focus(){},
+    replaceChildren(...children){this.children=children;}};elements.push(n);return n;};
+  const add=(parent,...children)=>{parent.children.push(...children);return parent;};
+  const dict=window.createShiritoriDictionary({E,add,onClose(){}});
+  dict.collection.configure(newCards);dict.open();
+  assert.equal(dict.collection.count,0);
+  assert.equal(old.discover('radish','にんじんのは'),true);
+  const before=JSON.stringify([...data]);
+  listeners.storage({key,storageArea:storage});
+  assert.equal(dict.collection.has('radish','にんじん'),true);
+  assert.equal(dict.collection.has('radish','にんじんのは'),false);
+  assert.equal(dict.collection.count,1);
+  assert.ok(elements.find(e=>e.className==='sh-dict-progress').textContent.startsWith('1 / 1'));
+  assert.equal(JSON.stringify([...data]),before,'storage refresh only reads, avoiding event loops');
+  assert.ok(JSON.parse(data.get(key)).found.includes('radish:にんじんのは'));
+  dict.collection.sync();
+  const reloaded=window.createShiritoriCollection(storage);reloaded.configure(newCards);
+  assert.equal(reloaded.has('radish','にんじん'),true);
+  assert.ok(JSON.parse(data.get(key+'.protected')).found.includes('radish:にんじんのは'));
+});
+
+test('an unsaved retired discovery survives in-memory reconfiguration and retry',()=>{
+  const {window,data}=harness(),key='number-rush.shiritori.dictionary.v1';
+  let offline=true;
+  const storage={getItem(k){if(offline)throw Error('offline');return data.has(k)?data.get(k):null;},
+    setItem(k,v){if(offline)throw Error('offline');data.set(k,v);}};
+  const c=window.createShiritoriCollection(storage);
+  c.configure([{id:'radish',words:['にんじんのは']}]);
+  assert.equal(c.discover('radish','にんじんのは'),true);assert.ok(c.warning);
+  const cards=[{id:'radish',words:['にんじん'],legacy:{'にんじんのは':'にんじん'}}];
+  c.configure(cards);
+  assert.equal(c.has('radish','にんじん'),true);assert.equal(c.count,1);
+  offline=false;assert.equal(c.sync(),true);
+  const loaded=window.createShiritoriCollection(storage);loaded.configure(cards);
+  assert.equal(loaded.has('radish','にんじん'),true);
+  assert.ok(JSON.parse(data.get(key)).found.includes('radish:にんじんのは'));
+});
+
+
+test('old tab discovery of a semantically retired reading is retained but never credited as a different object',()=>{
+  const {window,storage,data}=harness(), key='number-rush.shiritori.dictionary.v1';
+  const oldCards=[{id:'ramune',words:['ラムネ','ワイン']}];
+  const newCards=[{id:'ramune',words:['ラムネ'],legacy:{}}];
+  const old=window.createShiritoriCollection(storage);
+  const current=window.createShiritoriCollection(storage);
+  old.configure(oldCards);current.configure(newCards);
+  assert.equal(old.discover('ramune','ワイン'),true);
+  assert.equal(current.refresh(),true);
+  assert.equal(current.count,0,'wine must not credit ramune');
+  assert.equal(current.has('ramune','ラムネ'),false);
+  assert.equal(current.sync(),true);
+  assert.ok(JSON.parse(data.get(key+'.protected')).found.includes('ramune:わいん'));
+  assert.equal(current.discover('ramune','ラムネ'),true);
+  const loaded=window.createShiritoriCollection(storage);loaded.configure(newCards);
+  assert.equal(loaded.count,1);
+  assert.equal(loaded.has('ramune','ラムネ'),true);
+  assert.ok(JSON.parse(data.get(key+'.protected')).found.includes('ramune:わいん'));
+});
+
+
+test('fork-and-knife legacy credits the named fork and never the unrelated plate',()=>{
+  const current=actualSnapshotCatalog(), {window,storage,data}=harness();
+  const key='number-rush.shiritori.dictionary.v1';
+  const oldKey=normalizedKey('plate','フォークとナイフ');
+  const card=current.find(c=>c.id==='plate');
+  assert.equal(card.legacy['フォークとナイフ'],'フォーク');
+  data.set(key,JSON.stringify({version:1,found:[oldKey]}));
+  const collection=window.createShiritoriCollection(storage);
+  collection.configure(current);
+  assert.equal(collection.count,1);
+  assert.equal(collection.has('plate','フォーク'),true);
+  assert.equal(collection.has('plate','おさら'),false,'a plate was not discovered');
+  assert.ok(JSON.parse(data.get(key+'.protected')).found.includes(oldKey));
+  const reloaded=window.createShiritoriCollection(storage);reloaded.configure(current);
+  assert.equal(reloaded.has('plate','フォーク'),true);
+  assert.equal(reloaded.has('plate','おさら'),false);
+  assert.ok(JSON.parse(data.get(key+'.protected')).found.includes(oldKey));
+});

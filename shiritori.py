@@ -23,7 +23,7 @@ CARDS = (
     ("turtle", "🐢", ("かめ", "りくがめ", "どうぶつ", "はちゅうるい")),
     ("glasses", "👓", ("めがね", "がんきょう", "レンズ", "フレーム")),
     ("cat", "🐈", ("ねこ", "こねこ", "どうぶつ", "ペット", "にゃんこ")),
-    ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく", "もみのき", "ツリー")),
+    ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく", "ツリー")),
     ("moon", "🌙", ("つき", "よぞら", "みかづき", "てんたい", "おつきさま")),
     ("fox", "🦊", ("きつね", "どうぶつ", "けもの", "フォックス")),
     ("mouse", "🐁", ("ねずみ", "どうぶつ", "マウス", "けもの")),
@@ -32,12 +32,12 @@ CARDS = (
     ("butterfly", "🦋", ("ちょう", "むし", "こんちゅう", "バタフライ")),
     ("rabbit", "🐇", ("うさぎ", "どうぶつ", "ラビット", "けもの")),
     ("guitar", "🎸", ("ギター", "がっき", "エレキギター", "げんがっき")),
-    ("octopus", "🐙", ("たこ", "うみのいきもの", "なんたいどうぶつ", "オクトパス")),
+    ("octopus", "🐙", ("たこ", "なんたいどうぶつ", "オクトパス")),
     ("bird", "🐦", ("とり", "ことり", "どうぶつ", "バード")),
     ("squirrel", "🐿️", ("りす", "どうぶつ", "けもの")),
     ("melon", "🍉", ("すいか", "くだもの", "フルーツ", "たべもの")),
     ("umbrella", "☂️", ("かさ", "あまがさ", "ようがさ", "レイングッズ")),
-    ("fish", "🐠", ("さかな", "ぎょるい", "うみのいきもの", "フィッシュ", "おさかな")),
+    ("fish", "🐠", ("さかな", "ぎょるい", "フィッシュ", "おさかな")),
     ("eggplant", "🍆", ("なす", "やさい", "たべもの", "しょくざい")),
     ("bell", "🔔", ("すず", "かね", "ベル", "がっき", "チャイム")),
     ("trousers", "👖", ("ズボン", "ふく", "ジーンズ", "デニム", "ボトムス")),
@@ -51,7 +51,7 @@ CARDS = (
     ("lion", "🦁", ("ライオン", "どうぶつ", "しし", "けもの")),
     ("top", "🌀", ("こま", "おもちゃ", "かいてんたい", "うずまき")),
     ("pillow", "🛏️", ("まくら", "しんぐ", "ねどこ", "ベッド")),
-    ("otter", "🦦", ("らっこ", "どうぶつ", "うみのいきもの")),
+    ("otter", "🦦", ("らっこ", "どうぶつ")),
     ("koala", "🐨", ("コアラ", "どうぶつ", "ゆうたいるい")),
     ("ramune", "🍾", ("ラムネ", "のみもの", "たんさんいんりょう")),
     ("tie", "👔", ("ネクタイ", "ふく", "えりもと")),
@@ -62,7 +62,7 @@ CARDS = (
     ("scarf", "🧣", ("マフラー", "えりまき", "ぼうかんぐ")),
     ("radio", "📻", ("ラジオ", "じゅしんき", "おんきょうきき")),
     ("riceball", "🍙", ("おにぎり", "ごはん", "たべもの")),
-    ("dragon", "🐉", ("りゅう", "ドラゴン", "でんせつのいきもの", "たつ")),
+    ("dragon", "🐉", ("りゅう", "ドラゴン", "たつ")),
     ("cow", "🐄", ("うし", "どうぶつ", "かちく")),
     ("salt", "🧂", ("しお", "ちょうみりょう", "ソルト")),
     ("plate", "🍽️", ("おさら", "しょっき", "プレート")),
@@ -103,93 +103,320 @@ CARDS += CONNECTION_CARDS
 # Additional everyday names and English loanwords for existing pictures.
 # Keep the original spellings and order, including persisted dictionary keys.
 ADDITIONAL_READINGS = {
-    'golf': ('はた', 'フラッグ', 'フラグ', 'ゴルフじょう', 'ゴルフコース', 'グリーン', 'ピン', 'はたざお', 'ゴルフのはた', 'ピンフラッグ', 'フラッグスティック', 'あな', 'カップ', 'ゴルフのホール'),
+    'golf': ('はた', 'フラッグ', 'フラグ', 'ゴルフじょう', 'ゴルフコース', 'グリーン', 'ピン', 'はたざお', 'ピンフラッグ', 'フラッグスティック', 'あな', 'カップ'),
     'medaka': ('フィッシュ', 'おさかな', 'うお', 'こざかな'),
-    'ramune': ('ボトル', 'びん', 'ガラスびん', 'ガラスボトル', 'シャンパン', 'シャンペン', 'スパークリングワイン', 'コルク', 'ワイン', 'ワインボトル'),
-    'teddy': ('ベア', 'くまのぬいぐるみ', 'くまちゃん', 'くまさん', 'テディ', 'くまのにんぎょう', 'くまのおもちゃ', 'ベアー'),
-    'glasses': ('グラッシーズ', 'アイウェア', 'スペクタクルズ', 'グラス', 'めがねのレンズ'),
+    'ramune': ('ボトル', 'びん', 'ガラスびん', 'ガラスボトル', 'シャンパン', 'シャンペン', 'スパークリングワイン', 'コルク', 'ワイン', 'ワインボトル', 'ラムネびん', 'ラムネボトル', 'ビーだま'),
+    'teddy': ('ベア', 'くまちゃん', 'くまさん', 'テディ', 'ベアー'),
+    'glasses': ('グラッシーズ', 'アイウェア', 'スペクタクルズ', 'グラス'),
     'trumpet': ('かんがっき', 'ホーン', 'きんぞくがっき', 'ブラスがっき', 'ブラス'),
-    'apple': ('アップル', 'あかいりんご', 'りんごのみ', 'かじつ'),
-    'camel': ('キャメル', 'さばくのふね', 'らくださん', 'ほにゅうるい', 'こぶ', 'らくだのこぶ'),
+    'apple': ('アップル', 'あかいりんご', 'かじつ'),
+    'camel': ('キャメル', 'らくださん', 'ほにゅうるい', 'こぶ'),
     'dog': ('ドッグ', 'わんちゃん', 'わんわん', 'かいいぬ', 'いぬころ', 'ほにゅうるい', 'いぬか', 'いぬさん', 'わん'),
     'orange': ('かんきつ', 'おみかん', 'かんきつるい', 'タンジェリン', 'マンダリン', 'シトラス', 'マンダリンオレンジ', 'かじつ'),
-    'turtle': ('タートル', 'かめさん', 'こうら', 'かめのこうら', 'トータス', 'ウミガメ'),
+    'turtle': ('タートル', 'かめさん', 'こうら', 'トータス', 'ウミガメ'),
     'cat': ('キャット', 'ねこちゃん', 'にゃんにゃん', 'かいねこ', 'ほにゅうるい', 'ねこか', 'ねこさん', 'にゃん', 'いえねこ', 'にゃー'),
-    'moon': ('ムーン', 'クレセント', 'クレセントムーン', 'よるのつき', 'おつきさん', 'ゆうづき', 'ルナ'),
-    'ear': ('イヤー', 'おみみ', 'みみたぶ', 'みみのあな'),
-    'bee': ('ビー', 'ハニービー', 'はちさん', 'みつばちさん', 'はね', 'はちのはね'),
-    'squirrel': ('スクイレル', 'しまりす', 'チップマンク', 'りすさん', 'げっしるい', 'ほにゅうるい', 'しっぽ', 'りすのしっぽ', 'リスか'),
-    'melon': ('ウォーターメロン', 'カットすいか', 'すいかのひときれ', 'すいかのスライス', 'カットフルーツ', 'かじつ'),
-    'umbrella': ('アンブレラ', 'こうもりがさ', 'かさのえ', 'ひがさ'),
+    'moon': ('ムーン', 'クレセント', 'クレセントムーン', 'おつきさん', 'ゆうづき', 'ルナ'),
+    'ear': ('イヤー', 'おみみ', 'みみたぶ'),
+    'bee': ('ビー', 'ハニービー', 'はちさん', 'みつばちさん', 'はね'),
+    'squirrel': ('スクイレル', 'しまりす', 'チップマンク', 'りすさん', 'げっしるい', 'ほにゅうるい', 'しっぽ', 'リスか'),
+    'melon': ('ウォーターメロン', 'カットすいか', 'カットフルーツ', 'かじつ'),
+    'umbrella': ('アンブレラ', 'こうもりがさ', 'ひがさ', 'あまぐ'),
     'fish': ('ねったいぎょ', 'トロピカルフィッシュ', 'うお'),
-    'eggplant': ('エッグプラント', 'なすび', 'おなす', 'なすのじつ', 'オーバージーン', 'オーベルジーヌ', 'ベジタブル', 'おやさい'),
+    'eggplant': ('エッグプラント', 'なすび', 'おなす', 'オーバージーン', 'オーベルジーヌ', 'ベジタブル', 'おやさい'),
     'trousers': ('パンツ', 'トラウザーズ', 'ながズボン', 'ジーパン', 'デニムパンツ', 'ボトム', 'ロングパンツ', 'ようふく', 'いふく', 'ブルージーンズ', 'デニムズボン'),
-    'ice': ('アイス', 'こおりのかけら', 'こおりのかたまり', 'アイスブロック', 'こおりのキューブ', 'キューブアイス'),
-    'car': ('カー', 'じょうようしゃ', 'おくるま', 'じょうようじどうしゃ', 'オートモービル', 'モーターカー'),
-    'top': ('スパイラル', 'うず', 'らせん', 'うずまきもよう', 'サイクロン', 'ハリケーン', 'たいふう', 'たつまき', 'ぐるぐる', 'トルネード'),
+    'ice': ('アイス', 'アイスブロック', 'キューブアイス'),
+    'car': ('カー', 'じょうようしゃ', 'おくるま', 'じょうようじどうしゃ', 'オートモービル', 'モーターカー', 'タイヤ', 'ホイール'),
+    'top': ('スパイラル', 'うず', 'らせん', 'うずまきもよう', 'サイクロン', 'ハリケーン', 'たいふう', 'たつまき', 'ぐるぐる', 'トルネード', 'スピニングトップ'),
     'otter': ('オッター', 'カワウソ', 'イタチか', 'すいせいどうぶつ', 'カワウソさん', 'ほにゅうるい', 'らっこさん', 'シーオッター'),
-    'tie': ('タイ', 'ワイシャツ', 'シャツ', 'えり', 'ドレスシャツ', 'ネクタイつきシャツ', 'えりつきシャツ', 'ビジネスシャツ', 'ようふく', 'いふく', 'シャツとネクタイ'),
+    'tie': ('タイ', 'ワイシャツ', 'シャツ', 'えり', 'ドレスシャツ', 'ネクタイつきシャツ', 'えりつきシャツ', 'ビジネスシャツ', 'ようふく', 'いふく'),
     'chair': ('こしかけ', 'シート', 'チェアー'),
-    'zucchini': ('キューカンバー', 'うり', 'ウリのなかま', 'ピクルス', 'つけもの', 'ベジタブル', 'おやさい', 'しょくざい'),
-    'chicken': ('チキン', 'にわとりさん', 'にわとりのかお', 'とさか', 'くちばし'),
+    'zucchini': ('キューカンバー', 'うり', 'ピクルス', 'つけもの', 'ベジタブル', 'おやさい', 'しょくざい'),
+    'chicken': ('チキン', 'にわとりさん', 'とさか', 'くちばし'),
     'backpack': ('バックパック', 'リュックサック', 'ザック', 'ランドセル', 'スクールバッグ', 'せおいかばん', 'デイパック', 'バッグ', 'ナップザック', 'ナップサック'),
     'scarf': ('スカーフ', 'くびまき', 'ぼうかんようひん', 'ストール'),
     'radio': ('レディオ', 'かでん', 'ラジオじゅしんき', 'ポータブルラジオ'),
-    'riceball': ('おむすび', 'ライスボール', 'にぎりめし', 'むすび', 'ライス', 'おこめ', 'さんかくおにぎり', 'のり', 'おにぎりののり', 'こめ', 'しろごはん'),
+    'riceball': ('おむすび', 'ライスボール', 'にぎりめし', 'むすび', 'ライス', 'おこめ', 'さんかくおにぎり', 'のり', 'こめ', 'しろごはん', 'のりおにぎり', 'ごはんりょうり'),
     'cow': ('カウ', 'ぎゅう', 'うしさん', 'ほにゅうるい', 'めうし', 'にゅうぎゅう', 'モーモー'),
     'diamond': ('ダイヤモンド', 'ジュエリー', 'ジュエル', 'ジェムストーン', 'ジェム'),
     'beans': ('ビーンズ', 'おまめ', 'まめるい', 'ビーン', 'おまめさん'),
     'sand': ('サンド', 'うみべ', 'すなはま', 'はま', 'かいがん', 'パラソル', 'ビーチパラソル', 'ひがさ', 'ビーチアンブレラ', 'うみ', 'なぎさ', 'かさ'),
     'pot': ('ポット', 'なべもの', 'スープ', 'なべりょうり', 'ホットポット', 'おなべりょうり', 'シチュー', 'にもの', 'にこみ'),
     'loupe': ('レンズ', 'かくだいレンズ', 'マグニファインググラス', 'マグニファイア'),
-    'paint': ('ペイント', 'えのぐ', 'がざい', 'カラーパレット', 'えのぐのパレット', 'おえかき', 'げいじゅつ', 'え', 'アート', 'えのぐパレット'),
+    'paint': ('ペイント', 'えのぐ', 'がざい', 'カラーパレット', 'おえかき', 'げいじゅつ', 'え', 'アート', 'えのぐパレット'),
     'knife': ('はもの', 'キッチンナイフ', 'ちょうりきぐ', 'やいば', 'クッキングナイフ', 'ブレード'),
-    'parsley': ('くさ', 'はっぱ', 'リーフ', 'パセリのは', 'みどりのはっぱ', 'バジル', 'ミント', 'は', 'やくそう', 'しょくぶつ', 'くき', 'ベジタブル', 'おやさい', 'しょくざい', 'ハーブのは', 'こうそう'),
-    'sewing_needle': ('ニードル', 'ソーイングニードル', 'いと', 'さいほうばり', 'はりといと', 'ぬいもの', 'さいほう'),
-    'snow_crab': ('クラブ', 'こうかくるい', 'かにさん', 'かいせん', 'かにのはさみ', 'はさみ', 'かにのつめ'),
-    'blocks': ('れんが', 'ブリック', 'レンガのかべ', 'レンガづみ', 'かべ', 'レンガブロック'),
+    'parsley': ('くさ', 'はっぱ', 'リーフ', 'バジル', 'ミント', 'は', 'やくそう', 'しょくぶつ', 'くき', 'ベジタブル', 'おやさい', 'しょくざい', 'こうそう'),
+    'sewing_needle': ('ニードル', 'ソーイングニードル', 'いと', 'さいほうばり', 'ぬいもの', 'さいほう'),
+    'snow_crab': ('クラブ', 'こうかくるい', 'かにさん', 'かいせん', 'はさみ'),
+    'blocks': ('れんが', 'ブリック', 'レンガづみ', 'かべ', 'レンガブロック'),
     'gift': ('はこ', 'リボン', 'プレゼントボックス', 'ギフトボックス', 'ラッピング', 'ほうそう', 'つつみ', 'ギフトラッピング', 'ほうそうがみ', 'ぞうとうひん', 'おいわい', 'つつみもの', 'ラッピングボックス'),
-    'butterfly': ('ちょうちょ', 'ちょうちょう', 'はね', 'ちょうのはね', 'ウィング'),
-    'plate': ('さら', 'ディッシュ', 'フォーク', 'ナイフ', 'カトラリー', 'テーブルウェア', 'フォークとナイフ'),
+    'butterfly': ('ちょうちょ', 'ちょうちょう', 'はね', 'ウィング'),
+    'plate': ('さら', 'ディッシュ', 'フォーク', 'ナイフ', 'カトラリー', 'テーブルウェア'),
     'rabbit': ('バニー', 'うさちゃん', 'うさぎさん', 'ほにゅうるい', 'ペット'),
     'ship': ('せんぱく', 'おふね', 'きゃくせん', 'りょかくせん', 'クルーズシップ', 'クルーズせん',),
-    'mountain': ('おやま', 'さんがく', 'やまのてっぺん', 'さんちょう', 'ちょうじょう'),
-    'lavender': ('フラワー', 'ヒヤシンス', 'おはな', 'はなのくき', 'むらさきのはな', 'ヒヤシンスのはな', 'ルピナス'),
+    'mountain': ('おやま', 'さんがく', 'さんちょう', 'ちょうじょう'),
+    'lavender': ('フラワー', 'ヒヤシンス', 'おはな', 'ルピナス', 'むらさき'),
     'gorilla': ('エイプ', 'おおざる', 'ほにゅうるい', 'れいちょうるい'),
-    'panda': ('パンダさん', 'くまさん', 'ほにゅうるい', 'パンダのかお', 'パンダベア'),
+    'panda': ('パンダさん', 'くまさん', 'ほにゅうるい', 'パンダベア'),
     'daruma': ('だるまさん', 'おきあがりこぼし'),
-    'radish': ('おにんじん', 'ねやさい', 'ベジタブル', 'おやさい', 'しょくざい', 'にんじんのは'),
-    'tree': ('しんようじゅ', 'じょうりょくじゅ', 'まつのき', 'もみ', 'はっぱ', 'えだ', 'みき', 'きのえだ', 'コニファー'),
-    'fox': ('おきつね', 'きつねさん', 'ほにゅうるい', 'いぬか', 'きつねのかお'),
+    'radish': ('おにんじん', 'ねやさい', 'ベジタブル', 'おやさい', 'しょくざい'),
+    'tree': ('しんようじゅ', 'じょうりょくじゅ', 'もみ', 'はっぱ', 'えだ', 'みき', 'コニファー'),
+    'fox': ('おきつね', 'きつねさん', 'ほにゅうるい', 'いぬか'),
     'mouse': ('ねずみさん', 'げっしるい', 'ほにゅうるい', 'ハツカネズミ', 'チューチュー'),
     'guitar': ('エレキ', 'エレクトリックギター', 'でんきギター'),
-    'octopus': ('たこのあし', 'うみのどうぶつ'),
+    'octopus': (),
     'bird': ('とりさん', 'ちょうるい', 'つばさ', 'はね', 'ウィング', 'くちばし'),
     'bell': ('ハンドベル',),
-    'mushroom': ('きのこるい', 'きのこのかさ', 'ファンガス', 'きのこのじく'),
-    'peach': ('もものみ', 'かじつ'),
-    'lion': ('ひゃくじゅうのおう', 'たてがみ', 'ねこか', 'ほにゅうるい', 'ライオンのかお'),
+    'mushroom': ('きのこるい', 'ファンガス'),
+    'peach': ('かじつ',),
+    'lion': ('たてがみ', 'ねこか', 'ほにゅうるい'),
     'pillow': ('しんだい', 'マットレス', 'ふとん', 'シーツ'),
-    'koala': ('コアラちゃん', 'ほにゅうるい', 'コアラのかお', 'こもりぐま', 'きのぼりふくろぐま', 'ふくろぐま', 'コアラベア'),
-    'salt': ('しおいれ', 'しおびん', 'ソルトシェイカー', 'ソルトシェーカー', 'しおのいれもの'),
+    'koala': ('コアラちゃん', 'ほにゅうるい', 'こもりぐま', 'きのぼりふくろぐま', 'ふくろぐま', 'コアラベア'),
+    'salt': ('しおいれ', 'しおびん', 'ソルトシェイカー', 'ソルトシェーカー'),
     'bagel': ('ベーグルパン', 'リングパン', 'まるいパン'),
-    'tomato': ('トメイト', 'トメート', 'あかいトマト', 'トマトのみ', 'くだもの', 'フルーツ', 'かじつ', 'ベジタブル', 'おやさい', 'しょくざい'),
+    'tomato': ('トメイト', 'トメート', 'あかいトマト', 'くだもの', 'フルーツ', 'かじつ', 'ベジタブル', 'おやさい', 'しょくざい'),
     'lipstick': ('リップカラー', 'べに', 'ぼうべに', 'コスメ',),
-    'gloves': ('てぶくろのペア', 'てぶくろのセット'),
-    'snowman': ('ゆきのだるま', 'ゆきにんぎょう'),
-    'grapes': ('ぶどうのふさ', 'ぶどうのみ', 'かじつ', 'ぶどうのつぶ'),
-    'curry': ('カレーソース', 'カレーとごはん', 'ライスカレー', 'カリー', 'カレールー', 'カレールウ'),
+    'gloves': (),
+    'snowman': ('ゆきにんぎょう',),
+    'grapes': ('かじつ',),
+    'curry': ('カレーソース', 'ライスカレー', 'カリー', 'カレールー', 'カレールウ', 'ごはんりょうり'),
     'pudding': ('カスタードプリン', 'カラメルプリン', 'おかし', 'ようがし', 'フラン'),
-    'thread': ('ソーイングスレッド', 'ミシンいと', 'ボビン', 'スプール', 'いとのボビン'),
-    'candle': ('キャンドルライト', 'ろうそくのひ', 'キャンドルのひ'),
+    'thread': ('ソーイングスレッド', 'ミシンいと', 'ボビン', 'スプール'),
+    'candle': ('キャンドルライト',),
     'bread': ('ローフ', 'スライスパン', 'スライスブレッド'),
 }
-CARDS = tuple((identity, icon, words + ADDITIONAL_READINGS.get(identity, ()))
+# Readings retired because they do not match the actual picture. Their old
+# saved keys stay opaque in the collection; no different word is credited.
+RETIRED_SEMANTIC_READINGS = frozenset({
+    ('apple', 'すりおろしりんご'),
+    ('blocks', 'かべ'),
+    ('blocks', 'れんが'),
+    ('blocks', 'ブリック'),
+    ('blocks', 'レンガづみ'),
+    ('blocks', 'レンガブロック'),
+    ('parsley', 'バジル'),
+    ('parsley', 'ミント'),
+    ('ramune', 'コルク'),
+    ('ramune', 'シャンパン'),
+    ('ramune', 'シャンペン'),
+    ('ramune', 'スパークリングワイン'),
+    ('ramune', 'ワイン'),
+    ('ramune', 'ワインボトル'),
+    ('top', 'うず'),
+    ('top', 'うずまき'),
+    ('top', 'うずまきもよう'),
+    ('top', 'たいふう'),
+    ('top', 'たつまき'),
+    ('top', 'らせん'),
+    ('top', 'サイクロン'),
+    ('top', 'スパイラル'),
+    ('top', 'トルネード'),
+    ('top', 'ハリケーン'),
+    ('zucchini', 'きゅうり'),
+    ('zucchini', 'つけもの'),
+    ('zucchini', 'キューカンバー'),
+    ('zucchini', 'ピクルス'),
+})
+
+# Former compound phrases, retained solely for migrating dictionary records.
+# A target is a same-picture standalone reading, or None when no equivalent exists.
+LEGACY_READINGS = {
+    "apple": {
+        "りんごのみ": "りんご"
+    },
+    "panda": {
+        "パンダのかお": "パンダ"
+    },
+    "camel": {
+        "さばくのふね": "らくだ",
+        "らくだのこぶ": "らくだ"
+    },
+    "radish": {
+        "にんじんのは": "にんじん"
+    },
+    "teddy": {
+        "くまのぬいぐるみ": "ぬいぐるみ",
+        "くまのにんぎょう": "ぬいぐるみ",
+        "くまのおもちゃ": "ぬいぐるみ"
+    },
+    "turtle": {
+        "かめのこうら": "かめ"
+    },
+    "glasses": {
+        "めがねのレンズ": "めがね",
+        "めがねのフレーム": "めがね"
+    },
+    "tree": {
+        "もみのき": "もみ",
+        "まつのき": "まつ",
+        "きのえだ": "まつ"
+    },
+    "moon": {
+        "よるのつき": "つき"
+    },
+    "fox": {
+        "きつねのかお": "きつね"
+    },
+    "ear": {
+        "みみのあな": "みみ"
+    },
+    "bee": {
+        "はちのはね": "みつばち"
+    },
+    "butterfly": {
+        "ちょうのはね": "ちょう"
+    },
+    "guitar": {
+        "ギターのげん": "ギター"
+    },
+    "octopus": {
+        "うみのいきもの": "たこ",
+        "たこのあし": "たこ",
+        "うみのどうぶつ": "たこ"
+    },
+    "squirrel": {
+        "りすのしっぽ": "りす"
+    },
+    "melon": {
+        "すいかのひときれ": "すいか",
+        "すいかのスライス": "すいか"
+    },
+    "umbrella": {
+        "かさのえ": "かさ"
+    },
+    "fish": {
+        "うみのいきもの": "さかな"
+    },
+    "eggplant": {
+        "なすのじつ": "なす"
+    },
+    "mushroom": {
+        "きのこのかさ": "きのこ",
+        "きのこのじく": "きのこ"
+    },
+    "ice": {
+        "こおりのかけら": "こおり",
+        "こおりのかたまり": "こおり",
+        "こおりのキューブ": "こおり"
+    },
+    "car": {
+        "くるまのタイヤ": "くるま"
+    },
+    "mountain": {
+        "やまのてっぺん": "やま"
+    },
+    "peach": {
+        "もものみ": "もも"
+    },
+    "lion": {
+        "ひゃくじゅうのおう": "ライオン",
+        "ライオンのかお": "ライオン"
+    },
+    "otter": {
+        "うみのいきもの": "らっこ"
+    },
+    "koala": {
+        "コアラのかお": "コアラ"
+    },
+    "tie": {
+        "シャツとネクタイ": "ネクタイ"
+    },
+    "zucchini": {
+        "ウリのなかま": "ズッキーニ"
+    },
+    "chicken": {
+        "にわとりのかお": "にわとり"
+    },
+    "riceball": {
+        "おにぎりののり": "おにぎり"
+    },
+    "dragon": {
+        "でんせつのいきもの": "りゅう"
+    },
+    "salt": {
+        "しおのいれもの": "しお"
+    },
+    "plate": {
+        "フォークとナイフ": "フォーク"
+    },
+    "lavender": {
+        "はなのくき": "ラベンダー",
+        "むらさきのはな": "ラベンダー",
+        "ヒヤシンスのはな": "ヒヤシンス"
+    },
+    "paint": {
+        "えのぐのパレット": "パレット"
+    },
+    "tomato": {
+        "トマトのみ": "トマト"
+    },
+    "parsley": {
+        "パセリのは": "パセリ",
+        "みどりのはっぱ": "パセリ",
+        "ハーブのは": "パセリ"
+    },
+    "sewing_needle": {
+        "はりといと": "ぬいばり"
+    },
+    "snow_crab": {
+        "かにのはさみ": "ズワイガニ",
+        "かにのつめ": "ズワイガニ"
+    },
+    "blocks": {
+        "レンガのかべ": None
+    },
+    "golf": {
+        "ゴルフのはた": "ゴルフ",
+        "ゴルフのホール": "ゴルフ"
+    },
+    "gloves": {
+        "てぶくろのペア": "てぶくろ",
+        "てぶくろのセット": "てぶくろ"
+    },
+    "snowman": {
+        "ゆきのだるま": "ゆきだるま"
+    },
+    "grapes": {
+        "ぶどうのふさ": "ぶどう",
+        "ぶどうのみ": "ぶどう",
+        "ぶどうのつぶ": "ぶどう"
+    },
+    "curry": {
+        "カレーとごはん": "カレーライス"
+    },
+    "thread": {
+        "いとのボビン": "ぬいいと",
+        "いとのまき": "ぬいいと"
+    },
+    "candle": {
+        "ろうそくのひ": "ろうそく",
+        "キャンドルのひ": "ろうそく"
+    }
+}
+
+# Keep retired names out of gameplay, snapshots, and discovery challenges.
+ADDITIONAL_READINGS = {
+    identity: tuple(word for word in words
+                    if (identity, word) not in RETIRED_SEMANTIC_READINGS)
+    for identity, words in ADDITIONAL_READINGS.items()
+}
+CARDS = tuple((identity, icon,
+               tuple(word for word in words
+                     if (identity, word) not in RETIRED_SEMANTIC_READINGS)
+               + ADDITIONAL_READINGS.get(identity, ()))
               for identity, icon, words in CARDS)
+
+# Fail closed if a future catalog edit invalidates a legacy migration.
+_cards_by_id = {identity: set(words) for identity, _, words in CARDS}
+for _identity, _aliases in LEGACY_READINGS.items():
+    if _identity not in _cards_by_id or any(
+            old in _cards_by_id[_identity] or (target is not None and target not in _cards_by_id[_identity])
+            for old, target in _aliases.items()):
+        raise ValueError(f'Invalid legacy readings for {_identity}')
 
 # Broad categories, remote associations and discovery-style names remain valid
 # dictionary entries, but should not beat a natural picture name on a tap.
 SPECIAL_READINGS = frozenset({
+    'むらさき', 'ごはんりょうり',
     'くだもの', 'フルーツ', 'たべもの', 'どうぶつ', 'やさい', 'おもちゃ',
     'しょくぶつ', 'けもの', 'うみのいきもの', 'むし', 'ぎょるい', 'がっき',
     'ふく', 'のりもの', 'しょくざい', 'のみもの', 'しょっき', 'はな',
@@ -222,6 +449,8 @@ SPECIAL_READINGS = frozenset({
     'ルナ', 'チューチュー', 'モーモー', 'フラン',
     'カレールー', 'カレールウ', 'ゆきにんぎょう', 'めがねのレンズ', 'にんじんのは', 'はちのはね', 'くまのおもちゃ', 'ゴルフのホール', 'キャンドルのひ',
     'トルネード', 'ブレード', 'シャツとネクタイ',
+    'あまぐ', 'ビーだま', 'いとのまき', 'めがねのフレーム',
+    'ギターのげん', 'タイヤ', 'くるまのタイヤ', 'ホイール',
 })
 
 
@@ -262,14 +491,14 @@ FALLBACK_48_ROUTES = (
         ('zucchini', 'ズッキーニ'), ('daruma', 'にんぎょう'), ('rabbit', 'うさぎ'),
         ('gift', 'ギフト'), ('fish', 'トロピカルフィッシュ'), ('snowman', 'ゆき'),
         ('candle', 'キャンドルライト'), ('turtle', 'トータス'), ('thread', 'スレッド'),
-        ('tie', 'ドレスシャツ'), ('blocks', 'つみき'), ('radish', 'キャロット'),
-        ('paint', 'とりょう'), ('top', 'うずまきもよう'), ('cow', 'うし'),
-        ('pillow', 'しんだい'), ('dog', 'いぬ'), ('sewing_needle', 'ぬいばり'),
-        ('backpack', 'リュック'), ('moon', 'クレセント'), ('trousers', 'トラウザーズ'),
-        ('snow_crab', 'ズワイガニ'), ('cat', 'にゃんこ'), ('koala', 'コアラのかお'),
-        ('riceball', 'おにぎり'), ('squirrel', 'りす'), ('melon', 'すいか'),
-        ('plate', 'カトラリー'), ('dragon', 'りゅう'), ('medaka', 'うお'),
-        ('eggplant', 'おなす'), ('scarf', 'ストール'), ('loupe', 'ルーペ'),
+        ('tie', 'ドレスシャツ'), ('blocks', 'つみき'), ('camel', 'キャメル'),
+        ('loupe', 'ルーペ'), ('paint', 'ペンキ'), ('knife', 'キッチンナイフ'),
+        ('plate', 'フォーク'), ('scarf', 'くびまき'), ('tree', 'き'),
+        ('cat', 'キャット'), ('trousers', 'トラウザーズ'), ('snow_crab', 'ズワイガニ'),
+        ('backpack', 'にもつ'), ('moon', 'つき'), ('ice', 'キューブアイス'),
+        ('melon', 'すいか'), ('bell', 'かね'), ('pillow', 'ねどこ'),
+        ('top', 'こま'), ('beans', 'まめ'), ('medaka', 'めだか'),
+        ('car', 'カー'), ('umbrella', 'かさ'), ('riceball', 'さんかくおにぎり'),
     ),
     PERFECT_CANONICAL_SEGMENT + (
         ('lipstick', 'リップ'), ('pudding', 'プディング'), ('grapes', 'グレープ'),
@@ -278,16 +507,17 @@ FALLBACK_48_ROUTES = (
         ('trousers', 'ブルージーンズ'), ('zucchini', 'ズッキーニ'), ('riceball', 'にぎりめし'),
         ('pillow', 'しんだい'), ('sewing_needle', 'いと'), ('fish', 'トロピカルフィッシュ'),
         ('snowman', 'ゆき'), ('candle', 'キャンドル'), ('curry', 'ルウ'),
-        ('sand', 'うみ'), ('bee', 'みつばち'), ('chair', 'チェア'),
-        ('umbrella', 'あまがさ'), ('mountain', 'さんちょう'), ('medaka', 'うお'),
-        ('moon', 'おつきさま'), ('tree', 'まつのき'), ('mushroom', 'きのこ'),
-        ('koala', 'コアラベア'), ('glasses', 'アイウェア'), ('ice', 'アイスブロック'),
-        ('scarf', 'くびまき'), ('diamond', 'きせき'), ('fox', 'きつね'),
-        ('cat', 'ねこ'), ('ramune', 'コルク'), ('panda', 'くま'),
-        ('loupe', 'マグニファインググラス'), ('melon', 'すいかのひときれ'), ('radio', 'レディオ'),
-        ('octopus', 'オクトパス'), ('pot', 'スープ'), ('plate', 'プレート'),
+        ('butterfly', 'ウィング'), ('glasses', 'グラス'), ('top', 'スピニングトップ'),
+        ('plate', 'プレート'), ('turtle', 'トータス'), ('sand', 'すな'),
+        ('backpack', 'ナップサック'), ('teddy', 'くま'), ('loupe', 'マグニファイア'),
+        ('ice', 'アイス'), ('bread', 'スライスブレッド'), ('tie', 'ドレスシャツ'),
+        ('moon', 'つき'), ('diamond', 'きせき'), ('fox', 'きつね'),
+        ('mouse', 'ねずみ'), ('ear', 'みみ'), ('bee', 'みつばち'),
+        ('chair', 'チェアー'), ('umbrella', 'アンブレラ'), ('radio', 'ラジオじゅしんき'),
+        ('tree', 'き'), ('knife', 'キッチンナイフ'), ('medaka', 'フィッシュ'),
     ),
 )
+
 SMALL = str.maketrans("ゃゅょぁぃぅぇぉっゎ", "やゆよあいうえおつわ")
 
 # Durable miss outline (~1.2s): parity with numbers WRONG_EFFECT_FRAMES (~72 @ 60fps).
@@ -333,7 +563,7 @@ def chain_moves(cards, required, seen):
 
 
 # Keep initial certified deals stable; these aliases remain playable and discoverable.
-INITIAL_ROUTE_EXTRA_READINGS = frozenset((('dog', 'わんこ'), ('cat', 'にゃんこ'), ('chair', 'チェア'), ('tree', 'ツリー'), ('moon', 'おつきさま'), ('paint', 'パレット'), ('pillow', 'ベッド'), ('dragon', 'たつ'), ('top', 'うずまき'))) | frozenset(
+INITIAL_ROUTE_EXTRA_READINGS = frozenset((('dog', 'わんこ'), ('cat', 'にゃんこ'), ('chair', 'チェア'), ('tree', 'ツリー'), ('moon', 'おつきさま'), ('paint', 'パレット'), ('pillow', 'ベッド'), ('dragon', 'たつ'))) | frozenset(
     (identity, word) for identity, words in ADDITIONAL_READINGS.items() for word in words
 )
 
@@ -345,7 +575,7 @@ def starting_route(required, total, seen, rng, node_budget=256, allow_lipstick=F
         if card[0] in reserved:
             continue
         for word in card[2]:
-            if ((card[0], word) not in INITIAL_ROUTE_EXTRA_READINGS or (allow_lipstick and (card[0], word) == ('lipstick', 'リップカラー') or allow_extra and (card[0], word) in (('curry', 'カリー'), ('thread', 'スプール'), ('grapes', 'ぶどうのみ')))) and tail(word) != 'ん':
+            if ((card[0], word) not in INITIAL_ROUTE_EXTRA_READINGS or (allow_lipstick and (card[0], word) == ('lipstick', 'リップカラー') or allow_extra and (card[0], word) in (('curry', 'カリー'), ('thread', 'スプール')))) and tail(word) != 'ん':
                 by_head.setdefault(head(word), []).append(((card[0], word),))
     by_head.setdefault('と', []).append(PERFECT_CANONICAL_SEGMENT)
     connector_ids = {card[0] for card in CONNECTION_CARDS} if total == 48 else frozenset()
@@ -379,6 +609,45 @@ def starting_route(required, total, seen, rng, node_budget=256, allow_lipstick=F
         return None
 
     return search(head(required), [], set(), {normalize_reading(w) for w in seen})
+
+
+
+def improve_48_new_cards(route, seed, snapshot):
+    """Try bounded alternatives without losing any newer picture.
+
+    Only cloned RNGs are consumed. Preserve every newer picture both on the
+    initial board and in the full deal; the route itself remains a certified
+    sequential witness when dealt in route order.
+    """
+    if route is None or snapshot is None:
+        return route
+    newer = {card[0] for card in CONNECTION_CARDS}
+
+    def pictures(candidate):
+        return ({identity for identity, _ in candidate} & newer,
+                {identity for identity, _ in candidate[:24]} & newer)
+
+    entire, visible = pictures(route)
+    # Existing fallback guarantees all eight when no new picture is visible.
+    if not visible or len(visible) == len(newer):
+        return route
+    for skips in (1, 2):
+        retry_rng = random.Random()
+        retry_rng.setstate(snapshot)
+        for _ in range(skips):
+            retry_rng.random()
+        candidate = starting_route(tail(seed), 48, {seed}, retry_rng,
+                                   allow_lipstick=True, allow_extra=True)
+        if candidate is None:
+            continue
+        candidate_entire, candidate_visible = pictures(candidate)
+        if (entire <= candidate_entire and visible <= candidate_visible and
+                (len(candidate_entire) > len(entire) or
+                 len(candidate_visible) > len(visible))):
+            route, entire, visible = candidate, candidate_entire, candidate_visible
+            if len(visible) == len(newer):
+                break
+    return route
 
 
 def chain_step(cards, stock, seen, move):
@@ -522,6 +791,7 @@ class ShiritoriRound:
         self.miss_until = 0
         self.hints = 3
         self.hint = None
+        self._paid_hint = None  # (board state, card index, message)
         self.winner = None
         self.perfect = False
         self.turn = "you"
@@ -579,6 +849,9 @@ class ShiritoriRound:
                     if (extra_total >= best_total and extra_visible >= best_visible
                             and (extra_total > best_total or extra_visible > best_visible)):
                         route_words = extra
+        # Keep the established CPU battle deal and pacing unchanged.
+        if self.total == 48 and self.mode == 'solo':
+            route_words = improve_48_new_cards(route_words, seed, snapshot)
         # A 48-card round should visibly offer a newer connector even when a
         # successful search happens to place every one of them in the stock.
         if self.total == 48 and route_words is not None:
@@ -605,6 +878,7 @@ class ShiritoriRound:
         self.perfect = False
         self.cpu_move = None
         self.selected = self.hint = None
+        self._paid_hint = None
         self.mistakes, self.hints = 0, 3
         self.miss_card = None
         self.miss_until = 0
@@ -625,6 +899,15 @@ class ShiritoriRound:
     def moves(self):
         return chain_moves(tuple(None if i in self.used else c for i, c in enumerate(self.cards)),
                            self.required, self.seen)
+
+    def hint_state(self):
+        """Return the full choice state; mistakes and pauses do not change it."""
+        board = tuple(None if i in self.used else card for i, card in enumerate(self.cards))
+        return (board, tuple(self.stock), head(self.required),
+                frozenset(normalize_reading(word) for word in self.seen))
+
+    def hint_repeatable(self):
+        return self._paid_hint is not None and self._paid_hint[0] == self.hint_state()
 
     def capture_counts(self):
         """History is the sole source of capture totals (including replaced slots)."""
@@ -809,6 +1092,30 @@ class ShiritoriRound:
             self._chain_advice[state] = (move, {'length': len(route)-i, 'perfect': True,
                 'exact': True, 'nodes': 0, 'route': route[i:], 'witness': self.perfect_route[i:]})
 
+    def cached_perfect_move(self):
+        """Return the current certified next move without running a search."""
+        board = tuple(None if i in self.used else c for i, c in enumerate(self.cards))
+        state = (board, tuple(self.stock), head(self.required),
+                 frozenset(normalize_reading(w) for w in self.seen))
+        proof = self._chain_advice.get(state)
+        return proof[0] if proof and proof[1]['perfect'] else None
+
+    def remember_witnessed(self, state, plan):
+        """Cache actual partial-route suffixes, conservatively marked unproven.
+
+        State keys include the board, stock, required initial and every used
+        reading. A player deviation therefore cannot reuse a stale move.
+        """
+        route = tuple(plan['route'])
+        for i, move in enumerate(route):
+            if move not in chain_moves(state[0], state[2], state[3]):
+                break
+            if i:
+                self._chain_advice[state] = (move, {
+                    'length': len(route) - i, 'perfect': False,
+                    'exact': False, 'nodes': 0, 'route': route[i:]})
+            state = chain_step(state[0], state[1], state[3], move)
+
     def chain_advice(self):
         """Exact proof first, identity re-sync second, bounded replanning last.
 
@@ -841,6 +1148,10 @@ class ShiritoriRound:
                 identities.append((replay[0][index][0], word))
                 replay = chain_step(replay[0], replay[1], replay[3], (index, word))
             self.remember_perfect(certify_route(state, identities))
+        elif plan['exact']:
+            # A fully searched best route remains optimal along its suffix.
+            # Cut-off routes may improve on the next state, so re-plan those.
+            self.remember_witnessed(state, plan)
         return move, plan
 
     def best_relink(self):
@@ -1033,18 +1344,24 @@ class ShiritoriRound:
                     self.message = f"この絵は「{self.required}」につながらないよ（使用済み・ん終わりも不可）。" + (" 選び直そう。" if self.mode == "solo" else " −3秒")
                     self.revision += 1
                     self.update()
-            elif action == "hint" and self.hints and self.moves():
-                self.hints -= 1
-                started = self.clock()
-                self.chain.sync(started, ())
-                move, plan = self.chain_advice()
-                self.chain.sync(self.clock(), (self.turn,))
-                # Thinking for a hint must not consume the player's turn time.
-                if self.mode == "battle" and self.deadline > started:
-                    self.deadline += max(0, self.clock() - started)
-                self.hint = move[0]
-                self.message = ("完走につながるルートを発見！光る絵をつなごう。" if plan['perfect']
-                                else "長くつながる候補を探したよ。光る絵をつなごう。")
+            elif action == "hint" and self.moves():
+                if self.hint_repeatable():
+                    # Re-show the paid hint without searching or charging again.
+                    _, self.hint, self.message = self._paid_hint
+                elif self.hints:
+                    state = self.hint_state()
+                    self.hints -= 1
+                    started = self.clock()
+                    self.chain.sync(started, ())
+                    move, plan = self.chain_advice()
+                    self.chain.sync(self.clock(), (self.turn,))
+                    # Thinking for a hint must not consume the player's turn time.
+                    if self.mode == "battle" and self.deadline > started:
+                        self.deadline += max(0, self.clock() - started)
+                    self.hint = move[0]
+                    self.message = ("完走につながるルートを発見！光る絵をつなごう。" if plan['perfect']
+                                    else "長くつながる候補を探したよ。光る絵をつなごう。")
+                    self._paid_hint = (state, self.hint, self.message)
 
     def active_miss_card(self):
         """Wrong-card outline while playing/blocked and within the durable TTL."""
@@ -1078,11 +1395,11 @@ class ShiritoriRound:
                 "perfect_clear": self.perfect and self.phase == "finished",
                 "you_count": you_count, "cpu_count": cpu_count,
                 "mistakes": self.mistakes, "miss_card": self.active_miss_card(),
-                "hints": self.hints, "hint": self.hint,
+                "hints": self.hints, "hint": self.hint, "hint_repeatable": self.hint_repeatable(),
                 "selected": self.selected, "revision": self.revision,
                 "mode": self.mode, "total": self.total, "stock": len(self.stock), "completed": len(self.history),
                 "relinks": self.relinks, "refilled": self.refilled, "seen": sorted(self.seen) if visible else [],
                 "cards": [{"id": c[0], "icon": c[1], "words": c[2], "owner": self.used.get(i)} for i, c in enumerate(self.cards)] if visible else [],
-                "catalog": [{"id": c[0], "icon": c[1], "words": c[2]} for c in CARDS] if self.phase in ("intro", "finished") else [],
+                "catalog": [{"id": c[0], "icon": c[1], "words": c[2], "legacy": LEGACY_READINGS.get(c[0], {})} for c in CARDS] if self.phase in ("intro", "finished") else [],
                 "discoveries": [{"id": i, "word": w, "owner": "you"} for i, w in sorted(self.discoveries)],
                 "history": self.history if visible else []}

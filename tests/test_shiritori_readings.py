@@ -2,7 +2,7 @@
 import random
 import unittest
 
-from shiritori import (ADDITIONAL_READINGS, CARDS, CONNECTION_CARDS, SPECIAL_READINGS, ShiritoriRound, chain_moves,
+from shiritori import (ADDITIONAL_READINGS, CARDS, CONNECTION_CARDS, LEGACY_READINGS, RETIRED_SEMANTIC_READINGS, SPECIAL_READINGS, ShiritoriRound, chain_moves,
                        head, normalize_reading, reading_connections, tail)
 
 STEP25_WEAK_COMMON = 17
@@ -30,7 +30,7 @@ class ReadingAndScoreTests(unittest.TestCase):
         graph = reading_connections()
         self.assertEqual(len(CARDS), 81)
         self.assertEqual(len(BASE_CARDS), 73)
-        self.assertEqual(sum(len(card[2]) for card in BASE_CARDS), 278)
+        self.assertEqual(sum(len(card[2]) for card in BASE_CARDS), 270)
         self.assertEqual(len({card[0] for card in CARDS}), len(CARDS))
         self.assertEqual(len(graph), sum(tail(w) != 'ん' for c in CARDS for w in c[2]))
         for card in CARDS:
@@ -41,10 +41,12 @@ class ReadingAndScoreTests(unittest.TestCase):
                 if (card[0] not in CONNECTION_IDS
                         and word not in ADDITIONAL_READINGS.get(card[0], ())
                         and word not in SPECIAL_READINGS and tail(word) != 'ん'):
-                    self.assertGreater(reading_connections(BASE_CARDS)[(card[0], word)], 0, (card[0], word))
+                    # 'もも' uses the valid added reading 'もみ' after removing 'もみのき'.
+                    graph_for_word = graph if (card[0], word) == ('peach', 'もも') else reading_connections(BASE_CARDS)
+                    self.assertGreater(graph_for_word[(card[0], word)], 0, (card[0], word))
 
     def test_new_readings_are_automatically_selected_and_discovered(self):
-        additions = {'dog': 'わんこ', 'cat': 'にゃんこ', 'chair': 'チェア', 'tree': 'ツリー', 'moon': 'おつきさま', 'paint': 'パレット', 'pillow': 'ベッド', 'dragon': 'たつ', 'top': 'うずまき'}
+        additions = {'dog': 'わんこ', 'cat': 'にゃんこ', 'chair': 'チェア', 'tree': 'ツリー', 'moon': 'おつきさま', 'paint': 'パレット', 'pillow': 'ベッド', 'dragon': 'たつ'}
         by_id = {card[0]: card for card in CARDS}
         for mode in ('solo', 'battle'):
             for identity, reading in additions.items():
@@ -81,7 +83,10 @@ class ReadingAndScoreTests(unittest.TestCase):
                 if word not in SPECIAL_READINGS and count <= 1]
         dead = [(identity, word) for (identity, word), count in graph.items()
                 if word not in SPECIAL_READINGS and count == 0]
-        self.assertEqual(dead, [])
+        # The restricted old-only graph no longer contains 'もみのき'.
+        self.assertEqual(dead, [('peach', 'もも')])
+        # Gameplay includes the valid added reading 'もみ'.
+        self.assertGreater(reading_connections(CARDS)[('peach', 'もも')], 0)
         self.assertLessEqual(len(weak), 6)
         self.assertGreaterEqual((STEP25_WEAK_COMMON - len(weak)) / STEP25_WEAK_COMMON, .60)
         self.assertEqual({tail(word) for _, word in weak}, {'る', 'ゆ', 'も', 'ろ'})
@@ -146,15 +151,12 @@ class ReadingAndScoreTests(unittest.TestCase):
             'ship': ('きゃくせん', 'りょかくせん', 'クルーズシップ'),
             'chair': ('チェアー',),
             'lipstick': ('リップカラー',),
-            'gloves': ('てぶくろのペア',),
-            'snowman': ('ゆきのだるま',),
-            'grapes': ('ぶどうのふさ',),
             'curry': ('カレーソース',),
             'pudding': ('カスタードプリン', 'カラメルプリン'),
             'thread': ('ソーイングスレッド', 'ミシンいと'),
-            'candle': ('キャンドルライト', 'ろうそくのひ'),
+            'candle': ('キャンドルライト',),
         }
-        self.assertEqual(sum(map(len, additions.values())), 16)
+        self.assertEqual(sum(map(len, additions.values())), 12)
         cards = {card[0]: card for card in CARDS}
         for identity, words in additions.items():
             for word in words:
@@ -166,13 +168,13 @@ class ReadingAndScoreTests(unittest.TestCase):
     def test_new_common_aliases_preserve_dictionary_and_legality(self):
         additions = {
             'lipstick': ('べに', 'ぼうべに', 'コスメ'),
-            'grapes': ('ぶどうのみ', 'かじつ'),
+            'grapes': ('かじつ',),
             'pudding': ('おかし', 'ようがし'),
             'thread': ('ボビン', 'スプール'),
             'ship': ('クルーズせん',),
             'gift': ('つつみもの',),
         }
-        self.assertEqual(sum(map(len, additions.values())), 11)
+        self.assertEqual(sum(map(len, additions.values())), 10)
         cards = {card[0]: card for card in CARDS}
         for identity, words in additions.items():
             for word in words:
@@ -185,14 +187,10 @@ class ReadingAndScoreTests(unittest.TestCase):
 
     def test_added_aliases_remain_legal_and_unique(self):
         additions = {
-            'cat': ('にゃー',), 'ear': ('みみのあな',),
-            'ice': ('こおりのキューブ',), 'knife': ('クッキングナイフ',),
-            'parsley': ('ハーブのは',), 'tree': ('コニファー',),
-            'mushroom': ('きのこのじく',), 'gloves': ('てぶくろのセット',),
-            'grapes': ('ぶどうのつぶ',), 'curry': ('カレーとごはん',),
-            'thread': ('いとのボビン',),
+            'cat': ('にゃー',), 'knife': ('クッキングナイフ',),
+            'tree': ('コニファー',),
         }
-        self.assertEqual(sum(map(len, additions.values())), 11)
+        self.assertEqual(sum(map(len, additions.values())), 3)
         cards = {card[0]: card for card in CARDS}
         for identity, words in additions.items():
             for word in words:
@@ -227,12 +225,9 @@ class ReadingAndScoreTests(unittest.TestCase):
         additions = {
             'curry': ('カリー', 'カレールー', 'カレールウ'),
             'loupe': ('マグニファイア',), 'snowman': ('ゆきにんぎょう',),
-            'gift': ('ラッピングボックス',), 'glasses': ('めがねのレンズ',),
-            'radish': ('にんじんのは',), 'bee': ('はちのはね',),
-            'teddy': ('くまのおもちゃ',), 'golf': ('ゴルフのホール',),
-            'candle': ('キャンドルのひ',),
+            'gift': ('ラッピングボックス',),
         }
-        self.assertEqual(sum(map(len, additions.values())), 12)
+        self.assertEqual(sum(map(len, additions.values())), 6)
         cards = {card[0]: card for card in CARDS}
         for identity, words in additions.items():
             for word in words:
@@ -245,9 +240,8 @@ class ReadingAndScoreTests(unittest.TestCase):
 
     def test_additional_recognizable_picture_aliases(self):
         additions = {
-            'teddy': ('ベアー',), 'top': ('トルネード',),
+            'teddy': ('ベアー',), 'top': ('スピニングトップ',),
             'sand': ('かさ',), 'knife': ('ブレード',),
-            'tie': ('シャツとネクタイ',),
         }
         cards = {card[0]: card for card in CARDS}
         for identity, words in additions.items():
@@ -272,8 +266,8 @@ class ReadingAndScoreTests(unittest.TestCase):
                     'mushroom': 'ファンガス', 'golf': 'ゴルフコース',
                     'gift': 'プレゼントボックス', 'tree': 'しんようじゅ',
                     'mouse': 'ハツカネズミ', 'backpack': 'ランドセル',
-                    'top': 'たいふう', 'tomato': 'トメイト', 'pot': 'シチュー',
-                    'zucchini': 'ピクルス', 'cow': 'めうし',
+                    'top': 'スピニングトップ', 'tomato': 'トメイト', 'pot': 'シチュー',
+                    'zucchini': 'ズッキーニ', 'cow': 'めうし',
                     'orange': 'マンダリンオレンジ', 'otter': 'シーオッター',
                     'umbrella': 'ひがさ'}
         by_id = {card[0]: card for card in CARDS}
@@ -418,6 +412,139 @@ class ReadingAndScoreTests(unittest.TestCase):
             game.take(0, 'りんご')
             self.assertEqual(game.winner, expected)
             self.assertFalse(game.snapshot()['perfect_clear'])
+
+
+    def test_pre_change_catalog_preserves_allowed_words_and_legacy_mappings(self):
+        import json
+        from pathlib import Path
+        fixture = Path(__file__).parent / 'fixtures' / 'shiritori-catalog-pre-particle.json'
+        baseline = json.loads(fixture.read_text(encoding='utf-8'))
+        self.assertEqual(sum(len(card['words']) for card in baseline), 829)
+        self.assertEqual(sum(len(card[2]) for card in CARDS), 731)
+        self.assertEqual(sum(len(aliases) for aliases in LEGACY_READINGS.values()), 73)
+        self.assertEqual([card['id'] for card in baseline], [card[0] for card in CARDS])
+        added = {'curry': ('ごはんりょうり',), 'riceball': ('ごはんりょうり',),
+                 'lavender': ('むらさき',)}
+        self.assertEqual(sum(map(len, added.values())), 3)
+        for old, current in zip(baseline, CARDS):
+            identity, icon, words = current
+            aliases = LEGACY_READINGS.get(identity, {})
+            with self.subTest(identity=identity):
+                self.assertEqual(icon, old['icon'])
+                self.assertTrue(set(aliases) <= set(old['words']))
+                retained = tuple(word for word in old['words']
+                                 if word not in aliases and (identity, word) not in RETIRED_SEMANTIC_READINGS)
+                self.assertTrue(all(word not in old['words'] for word in added.get(identity, ())))
+                self.assertEqual(words, retained + added.get(identity, ()))
+                for former, representative in aliases.items():
+                    self.assertNotIn(former, words)
+                    if representative is not None:
+                        self.assertIn(representative, words)
+                    self.assertNotIn((0, former), chain_moves((current,), head(former), frozenset()))
+        self.assertEqual(LEGACY_READINGS['radish']['にんじんのは'], 'にんじん')
+        self.assertEqual(LEGACY_READINGS['tree']['もみのき'], 'もみ')
+        for phase in ('intro', 'finished'):
+            game = ShiritoriRound()
+            game.phase = phase
+            catalog = game.snapshot()['catalog']
+            self.assertEqual(len(catalog), 81)
+            for card in catalog:
+                self.assertEqual(card['legacy'], LEGACY_READINGS.get(card['id'], {}))
+
+    def test_semantic_retirements_are_not_active_and_other_759_readings_keep_order(self):
+        import json
+        from pathlib import Path
+        fixture = Path(__file__).parent / 'fixtures' / 'shiritori-catalog-pre-semantic.json'
+        before = json.loads(fixture.read_text(encoding='utf-8'))
+        self.assertEqual(sum(len(card['words']) for card in before), 759)
+        self.assertEqual(len(RETIRED_SEMANTIC_READINGS), 28)
+        self.assertEqual([card['id'] for card in before], [card[0] for card in CARDS])
+        for old, current in zip(before, CARDS):
+            identity, icon, words = current
+            self.assertEqual(icon, old['icon'])
+            self.assertEqual(words, tuple(w for w in old['words']
+                                          if (identity, w) not in RETIRED_SEMANTIC_READINGS))
+            for removed_id, removed_word in RETIRED_SEMANTIC_READINGS:
+                if removed_id == identity:
+                    self.assertIn(removed_word, old['words'])
+                    self.assertNotIn(removed_word, words)
+                    self.assertNotIn((0, removed_word),
+                                     chain_moves((current,), head(removed_word), frozenset()))
+        self.assertEqual(LEGACY_READINGS['lavender']['ヒヤシンスのはな'], 'ヒヤシンス')
+        self.assertEqual(LEGACY_READINGS['paint']['えのぐのパレット'], 'パレット')
+        self.assertEqual(LEGACY_READINGS['plate']['フォークとナイフ'], 'フォーク')
+        self.assertIsNone(LEGACY_READINGS['blocks']['レンガのかべ'])
+
+    def test_natural_single_term_categories_are_special_and_discovered(self):
+        additions = {'curry': 'ごはんりょうり', 'riceball': 'ごはんりょうり',
+                     'lavender': 'むらさき'}
+        cards = {card[0]: card for card in CARDS}
+        for mode in ('solo', 'battle'):
+            for identity, word in additions.items():
+                with self.subTest(mode=mode, identity=identity):
+                    card = cards[identity]
+                    self.assertIn(word, SPECIAL_READINGS)
+                    # No playable specific reading on this card begins with
+                    # the same character, so a generic category displaces none.
+                    self.assertEqual(chain_moves((card,), head(word), frozenset()), [(0, word)])
+                    game = self.round(mode=mode)
+                    game.cards = [card]
+                    game.stock = []; game.used = {}; game.history = []
+                    game.required = head(word); game.seen = set()
+                    game.perfect_route = (); game._chain_advice.clear()
+                    game.command('card', 0)
+                    self.assertEqual(game.history[-1]['word'], word)
+                    self.assertIn((identity, word), game.discoveries)
+
+        # One shared reading can be discovered per picture, but a round
+        # cannot use that same normalized reading for both pictures.
+        both = (cards['curry'], cards['riceball'])
+        shared = 'ごはんりょうり'
+        self.assertEqual(chain_moves(both, 'ご', frozenset()), [(0, shared), (1, shared)])
+        self.assertEqual(chain_moves(both, 'ご', frozenset({normalize_reading(shared)})), [])
+
+    def test_new_picture_aliases_are_chosen_and_discovered(self):
+        additions = {
+            'ramune': ('ラムネびん', 'ラムネボトル', 'ビーだま'),
+            'umbrella': ('あまぐ',),
+            'top': ('スピニングトップ',),
+            'riceball': ('のりおにぎり',),
+            'thread': ('いとのまき',),
+            'glasses': ('めがねのフレーム',),
+            'guitar': ('ギターのげん',),
+            'car': ('タイヤ', 'くるまのタイヤ', 'ホイール'),
+        }
+        cards = {card[0]: card for card in CARDS}
+        self.assertEqual(sum(map(len, additions.values())), 12)
+        retired = {(i, w) for i, words in additions.items() for w in words if w in LEGACY_READINGS.get(i, {})}
+        self.assertEqual(retired, {('thread', 'いとのまき'), ('glasses', 'めがねのフレーム'),
+                                   ('guitar', 'ギターのげん'), ('car', 'くるまのタイヤ')})
+        for mode in ('solo', 'battle'):
+            for identity, words in additions.items():
+                for word in words:
+                    with self.subTest(mode=mode, identity=identity, word=word):
+                        card = cards[identity]
+                        if (identity, word) in retired:
+                            self.assertNotIn(word, card[2])
+                            self.assertIn(LEGACY_READINGS[identity][word], card[2])
+                            self.assertNotIn((0, word), chain_moves((card,), head(word), frozenset()))
+                            continue
+                        self.assertEqual(sum(normalize_reading(w) == normalize_reading(word)
+                                             for w in card[2]), 1)
+                        self.assertIn(word, card[2])
+                        game = self.round(mode=mode)
+                        game.cards = [card]
+                        game.stock = []; game.used = {}; game.history = []
+                        game.required = head(word)
+                        game.seen = {normalize_reading(w) for w in card[2]
+                                     if w != word and head(w) == head(word)}
+                        game.perfect_route = (); game._chain_advice.clear()
+                        if tail(word) == 'ん':
+                            self.assertNotIn((0, word), game.moves())
+                        else:
+                            game.command('card', 0)
+                            self.assertEqual(game.history[0]['word'], word)
+                            self.assertIn((identity, word), game.discoveries)
 
 
 if __name__ == '__main__':

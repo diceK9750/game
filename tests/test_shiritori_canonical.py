@@ -1,6 +1,8 @@
 """Display kana, actual refill witnesses, and safe identity-based rejoining."""
+import json
 import random
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from shiritori import (CARDS, CONNECTION_CARDS, PERFECT_RING, PERFECT_CANONICAL_SEGMENT, ShiritoriRound,
@@ -26,7 +28,7 @@ class CanonicalRouteTests(unittest.TestCase):
         self.assertEqual(tail('おもチャ'), 'や')
         self.assertEqual(tail('ラッパー'), 'ぱ')
         self.assertEqual(normalize_reading('コ\u3099リラ'), 'ごりら')
-        for word in ('りんご', 'しんしゅうりんご', 'すりおろしりんご', 'フルーツ'):
+        for word in ('りんご', 'しんしゅうりんご', 'フルーツ'):
             self.assertIn(word, BY_ID['apple'][2])
         # The existing melon identity depicts watermelon, NOT a cantaloupe.
         self.assertEqual(BY_ID['melon'][2][0], 'すいか')
@@ -214,6 +216,79 @@ class CanonicalRouteTests(unittest.TestCase):
                     search.assert_called_once()
                     self.assertNotIn('allow_lipstick', search.call_args.kwargs)
 
+    def test_48_extra_order_keeps_each_new_picture_and_game_rng(self):
+        newer = {card[0] for card in CONNECTION_CARDS}
+        improved = 0
+        for seed in range(5270000, 5270200):
+            with patch('shiritori.improve_48_new_cards',
+                       side_effect=lambda route, seed, snapshot: route):
+                before = ShiritoriRound(total=48, mode='solo', rng=random.Random(seed), clock=lambda: 0)
+                before.start()
+            after = ShiritoriRound(total=48, mode='solo', rng=random.Random(seed), clock=lambda: 0)
+            after.start()
+            old_board = {card[0] for card in before.cards} & newer
+            new_board = {card[0] for card in after.cards} & newer
+            old_entire = {card[0] for card in before.cards + before.stock} & newer
+            new_entire = {card[0] for card in after.cards + after.stock} & newer
+            self.assertLessEqual(old_board, new_board, seed)
+            self.assertLessEqual(old_entire, new_entire, seed)
+            self.assertEqual(before.rng.getstate(), after.rng.getstate(), seed)
+            route = tuple((step.identity, step.reading) for step in after.initial_perfect_route)
+            self.assertIsNotNone(certify_route(self.state(after), route), seed)
+            if old_board != new_board or old_entire != new_entire:
+                improved += 1
+            else:
+                self.assertEqual(before.initial_perfect_route, after.initial_perfect_route, seed)
+        self.assertGreater(improved, 0)
+
+    def test_48_extra_order_is_not_used_for_battle_or_smaller_games(self):
+        modes = [(total, mode) for total in (12, 24, 36) for mode in ('solo', 'battle')]
+        modes.append((48, 'battle'))
+        for total, mode in modes:
+            with self.subTest(total=total, mode=mode):
+                with patch('shiritori.improve_48_new_cards') as extra:
+                    game = ShiritoriRound(total=total, mode=mode,
+                                          rng=random.Random(17), clock=lambda: 0)
+                    game.start()
+                extra.assert_not_called()
+                route = tuple((step.identity, step.reading) for step in game.initial_perfect_route)
+                self.assertIsNotNone(certify_route(self.state(game), route))
+
+    def test_battle_deals_are_reproducible_and_exclude_retired_readings(self):
+        # Removing retired readings intentionally changes historical deals.
+        # The current catalog must still yield deterministic, certified deals.
+        from shiritori import LEGACY_READINGS, RETIRED_SEMANTIC_READINGS
+
+        retired = {(identity, normalize_reading(word))
+                   for identity, aliases in LEGACY_READINGS.items()
+                   for word in aliases}
+        retired |= {(identity, normalize_reading(word))
+                    for identity, word in RETIRED_SEMANTIC_READINGS}
+        for identity, _, words in CARDS:
+            for word in words:
+                self.assertNotIn((identity, normalize_reading(word)), retired)
+        for total in (12, 24, 36, 48):
+            for seed in range(100):
+                with self.subTest(total=total, seed=seed):
+                    games = [ShiritoriRound(total=total, mode='battle',
+                                            rng=random.Random(seed), clock=lambda: 0)
+                             for _ in range(2)]
+                    for game in games:
+                        game.start()
+                    first, second = games
+                    routes = [tuple((step.identity, step.reading)
+                                    for step in game.initial_perfect_route)
+                              for game in games]
+                    self.assertEqual(routes[0], routes[1])
+                    self.assertEqual([card[0] for card in first.cards],
+                                     [card[0] for card in second.cards])
+                    self.assertEqual([card[0] for card in first.stock],
+                                     [card[0] for card in second.stock])
+                    self.assertEqual(first.rng.getstate(), second.rng.getstate())
+                    for identity, word in routes[0]:
+                        self.assertNotIn((identity, normalize_reading(word)), retired)
+                    self.assertIsNotNone(certify_route(self.state(first), routes[0]))
+
     def canonical_game(self, total=48):
         with patch('shiritori.starting_route', return_value=None):
             g = ShiritoriRound(total=total, mode='solo', clock=lambda: 0, rng=random.Random(11))
@@ -245,8 +320,8 @@ class CanonicalRouteTests(unittest.TestCase):
                 self.assertEqual(g.stock, [])
                 self.assertEqual([r['word'] for r in g.history[:6]], [w for _, w in PERFECT_CANONICAL_SEGMENT])
 
-    def test_apple_both_rejoins_certify_remaining_stock_not_just_matching_tail(self):
-        for required, reading in [('し', 'しんしゅうりんご'), ('す', 'すりおろしりんご')]:
+    def test_apple_shinshu_rejoins_certify_remaining_stock_not_just_matching_tail(self):
+        for required, reading in [('し', 'しんしゅうりんご')]:
             for mode in ('solo', 'battle'):
                 g = self.canonical_game()
                 g.take(*g.chain_advice()[0])  # tomato
@@ -271,18 +346,17 @@ class CanonicalRouteTests(unittest.TestCase):
         g = self.canonical_game(12)
         for _ in range(2):
             g.take(*g.chain_advice()[0])
-        g.required = 'す'
+        g.required = 'し'
         index = next(i for i, c in enumerate(g.cards) if c[0] == 'apple')
         g.command('card', index)
-        self.assertEqual(g.history[-1]['word'], 'すりおろしりんご')
+        self.assertEqual(g.history[-1]['word'], 'しんしゅうりんご')
         with patch('shiritori.longest_chain_move', side_effect=AssertionError('replay suffix')):
             self.assertEqual(g.chain_advice()[0][1], 'ゴリラ')
 
     def test_actual_legal_detours_rejoin_without_overriding_required(self):
         # Move a legal detour from after parsley to before apple. Unlike a
         # synthetic head override, every transition here is a real player tap.
-        for detour, reading in [(['dragon', 'cow'], 'しんしゅうりんご'),
-                                 (['squirrel'], 'すりおろしりんご')]:
+        for detour, reading in [(['dragon', 'cow'], 'しんしゅうりんご')]:
             identities = [i for i, _ in PERFECT_CANONICAL_SEGMENT] + detour
             g = ShiritoriRound(mode='solo', clock=lambda: 0)
             g.cards = [BY_ID[i] for i in identities]

@@ -419,9 +419,10 @@ function browserHarness() {
   // Distinct parent mimics the host shell iframe relationship.
   browserWindow.parent = { postMessage: (data, origin) => { posts.push({data, origin}); } };
   browserWindow.rivalCursor=require('../rival-cursor.js').rivalCursor;
-  browserWindow.createShiritoriView=({section})=>({page:section('shiritori','sh-page'),update(){},isOverlayOpen:()=>false,headerAction(){}});
+  const debug = {toggles:0, overlay:false, now:100};
+  browserWindow.createShiritoriView=({section})=>({page:section('shiritori','sh-page'),update(){},isOverlayOpen:()=>debug.overlay,headerAction(){},toggleDebug(){return ++debug.toggles % 2 === 1;}});
   vm.runInNewContext(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'), {
-    document, window: browserWindow, location: {origin: 'http://localhost'}, console,
+    document, window: browserWindow, location: {origin: 'http://localhost'}, console, Date:{now:()=>debug.now},
     MutationObserver: class { constructor(callback) { observers.push(callback); } observe() {} },
   });
   function notify(attributeName) { for (const observer of observers) observer([{attributeName}]); }
@@ -430,7 +431,7 @@ function browserHarness() {
       ack: 0, bgm: true, sfx: true, target: 1, cells: ['playing', 'finished', 'review'].includes(screen) ? state().cells : [], ...overrides};
     root.setAttribute('data-modern-state', JSON.stringify(next)); notify('data-modern-state'); return next;
   }
-  return {root, app, document, render, notify, posts, cells: () => walk(app).filter(node => node.className === 'nr-cell'),
+  return {root, app, document, render, notify, posts, debug, cells: () => walk(app).filter(node => node.className === 'nr-cell'),
     queue: () => JSON.parse(root.getAttribute('data-modern-commands') || '[]')};
 }
 function walk(element) { return element.children.flatMap(child => [child, ...walk(child)]); }
@@ -2381,4 +2382,25 @@ test('numbers play HUD localizes TIME label to タイム (parity with result #10
   const index = fs.readFileSync(require.resolve('../index.html'), 'utf8');
   assert.match(player, /modern-ui\.js\?v=shared-arena-114-2/);
   assert.match(index, /player\.html\?v=shared-arena-114-2/);
+});
+
+
+test('developer gesture is scoped to picture setup, bounded and keyboard accessible', () => {
+  const b=browserHarness();
+  const brand=walk(b.app).find(n=>n.className==='nr-brand');
+  const toast=walk(b.app).find(n=>n.className==='nr-settings-toast');
+  const tap=()=>brand.emit('click');
+  b.render('ready'); for(let i=0;i<7;i++) tap();
+  assert.equal(b.debug.toggles,0);
+  b.render('shiritori',{shiritori:{phase:'intro'}});
+  assert.equal(brand.tabIndex,0);
+  for(let i=0;i<6;i++) tap(); assert.equal(b.debug.toggles,0);
+  b.debug.now += 5001; tap(); assert.equal(b.debug.toggles,0);
+  for(let i=0;i<6;i++) tap();
+  assert.equal(b.debug.toggles,1); assert.equal(toast.textContent,'デバッグモード ON');
+  for(let i=0;i<7;i++) brand.emit('keydown',{key:'Enter'});
+  assert.equal(b.debug.toggles,2); assert.equal(toast.textContent,'デバッグモード OFF');
+  b.debug.overlay=true; for(let i=0;i<7;i++) tap(); assert.equal(b.debug.toggles,2);
+  b.debug.overlay=false; b.render('shiritori',{shiritori:{phase:'playing'}});
+  assert.equal(brand.tabIndex,-1); for(let i=0;i<7;i++) tap(); assert.equal(b.debug.toggles,2);
 });

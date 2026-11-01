@@ -92,6 +92,20 @@ class ModernUI:
             if action == "sh_exit" and app.shiritori.phase in ("intro", "paused", "finished"):
                 app.screen = "ready"
                 app.game_selected = False
+            elif action == "sh_debug_mode":
+                # A local, non-persistent developer switch; not an access boundary.
+                app._shiritori_debug_enabled = value is True
+            elif action == "sh_debug_hint":
+                sh = app.shiritori
+                if (getattr(app, '_shiritori_debug_enabled', False)
+                        and sh.phase == 'playing' and sh.turn == 'you'):
+                    # Use a verified cached move only. Never launch a search here.
+                    move = sh.cached_perfect_move()
+                    if move is not None:
+                        sh.hint = move[0]
+                        sh.message = "DEBUG: 認証済みルートの次の絵を表示中"
+                    else:
+                        sh.message = "DEBUG: この局面の認証済みルートなし"
             elif action.startswith("sh_"):
                 before = (len(app.shiritori.history), app.shiritori.mistakes)
                 app.shiritori.command(action[3:], value)
