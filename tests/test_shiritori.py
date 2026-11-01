@@ -24,7 +24,7 @@ class ShiritoriTests(unittest.TestCase):
         self.assertEqual(len(CARDS), len({c[0] for c in CARDS}))
         for _, _, words in CARDS:
             self.assertGreaterEqual(len(words), 3)
-            self.assertEqual(len(words), len({head(w) for w in words}))
+            self.assertGreaterEqual(len({head(w) for w in words}), 3)
             self.assertEqual(len(words), len({normalize_reading(w) for w in words}))
             self.assertTrue(all(all('ぁ' <= c <= 'ゖ' or 'ァ' <= c <= 'ヶ' or c == 'ー' for c in word) for word in words))
         self.assertEqual(tail('おもちゃ'), 'や')
@@ -300,7 +300,10 @@ class ShiritoriTests(unittest.TestCase):
                 with self.subTest(card=card[0], word=word):
                     game = ShiritoriRound(mode='solo')
                     game.phase, game.cards = 'playing', [card]
-                    game.required = word[0]
+                    game.required = head(word)
+                    # Isolate this valid reading when several share an initial.
+                    game.seen = {normalize_reading(w) for w in card[2]
+                                 if w != word and head(w) == head(word)}
                     game.command('card', 0)
                     if tail(word) == 'ん':
                         self.assertFalse(game.history)

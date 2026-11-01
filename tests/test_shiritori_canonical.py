@@ -3,7 +3,7 @@ import random
 import unittest
 from unittest.mock import patch
 
-from shiritori import (CARDS, PERFECT_CANONICAL_SEGMENT, ShiritoriRound,
+from shiritori import (CARDS, CONNECTION_CARDS, PERFECT_RING, PERFECT_CANONICAL_SEGMENT, ShiritoriRound,
                        chain_moves, chain_step, certify_route, head, tail,
                        normalize_reading, starting_route)
 
@@ -31,14 +31,14 @@ class CanonicalRouteTests(unittest.TestCase):
         # The existing melon identity depicts watermelon, NOT a cantaloupe.
         self.assertEqual(BY_ID['melon'][2][0], 'すいか')
 
-    def test_all_catalog_readings_are_kana_unique_by_pronunciation_and_head(self):
+    def test_all_catalog_readings_are_kana_unique_by_pronunciation(self):
         for identity, _, words in CARDS:
             with self.subTest(identity=identity):
                 self.assertGreaterEqual(len(words), 3)
                 for word in words:
                     self.assertRegex(word, r'^[ぁ-ゖァ-ヶー]+$')
                 self.assertEqual(len(words), len(set(map(normalize_reading, words))))
-                self.assertEqual(len(words), len(set(map(head, words))))
+                self.assertGreaterEqual(len(set(map(head, words))), 3)
 
     def test_200_seeds_each_size_mode_replay_real_refill_and_canonical_block(self):
         boards, paths = set(), set()
@@ -72,6 +72,147 @@ class CanonicalRouteTests(unittest.TestCase):
                 g.start()
                 self.assertEqual(tuple((s.identity, s.reading) for s in g.perfect_route[:6]), PERFECT_CANONICAL_SEGMENT)
                 self.assertTrue(g.chain_advice()[1]['perfect'])
+
+    def test_48_fallback_new_cards_appear_and_refill_route_is_certified(self):
+        # Exhausting the randomized search must still offer a full proof, not
+        # silently revert to a 48-card deal without the newer pictures.
+        witnessed_routes = set()
+        with patch('shiritori.starting_route', return_value=None):
+            for mode in ('solo', 'battle'):
+                for seed in range(20):
+                    g = ShiritoriRound(total=48, mode=mode, clock=lambda: 0,
+                                       rng=random.Random(seed))
+                    g.start()
+                    board_ids = {card[0] for card in g.cards}
+                    self.assertTrue({card[0] for card in CONNECTION_CARDS} <= board_ids)
+                    route = tuple((step.identity, step.reading)
+                                  for step in g.initial_perfect_route)
+                    witnessed_routes.add(route)
+                    self.assertEqual(route[:6], PERFECT_CANONICAL_SEGMENT)
+                    self.assertEqual(len({identity for identity, _ in route}), 48)
+                    self.assertIsNotNone(certify_route(self.state(g), route))
+                    while g.phase == 'playing':
+                        move, plan = g.chain_advice()
+                        self.assertTrue(plan['perfect'])
+                        g.take(*move)
+                    self.assertEqual(len(g.history), 48)
+                    self.assertEqual(g.stock, [])
+        self.assertGreaterEqual(len(witnessed_routes), 2)
+
+    def test_48_search_without_visible_new_pictures_uses_certified_fallback(self):
+        route = [(key, BY_ID[key][2][0]) for key in PERFECT_RING[:48]]
+        self.assertFalse({card[0] for card in CONNECTION_CARDS} &
+                         {identity for identity, _ in route[:24]})
+        with patch('shiritori.starting_route', return_value=route):
+            game = ShiritoriRound(total=48, rng=random.Random(9), clock=lambda: 0)
+            game.start()
+        self.assertTrue({card[0] for card in CONNECTION_CARDS} <=
+                        {card[0] for card in game.cards})
+        proof = [(step.identity, step.reading) for step in game.initial_perfect_route]
+        self.assertIsNotNone(certify_route(self.state(game), proof))
+
+    def test_48_deals_keep_all_catalog_pictures_available(self):
+        seen = set()
+        for seed in range(500):
+            game = ShiritoriRound(total=48, rng=random.Random(seed), clock=lambda: 0)
+            game.start()
+            seen.update(card[0] for card in game.cards + game.stock)
+            if len(seen) == len(CARDS):
+                break
+        self.assertEqual(seen, {card[0] for card in CARDS})
+
+    def test_connector_priority_is_limited_to_48_card_searches(self):
+        for total in (12, 24, 36):
+            for seed in range(10):
+                with self.subTest(total=total, seed=seed):
+                    ordinary = starting_route('と', total, {'トースト'}, random.Random(seed))
+                    with patch('shiritori.CONNECTION_CARDS', ()):
+                        no_priority = starting_route('と', total, {'トースト'}, random.Random(seed))
+                    self.assertEqual(ordinary, no_priority)
+
+    def test_48_card_starts_show_new_pictures_across_varied_deals(self):
+        newer = {card[0] for card in CONNECTION_CARDS}
+        counts, pictures = [], set()
+        for seed in range(200):
+            g = ShiritoriRound(total=48, rng=random.Random(seed), clock=lambda: 0)
+            g.start()
+            ids = {card[0] for card in g.cards + g.stock}
+            counts.append(len(ids & newer))
+            pictures.update(ids)
+        self.assertGreaterEqual(sum(counts) / len(counts), 7)
+        self.assertEqual(pictures, {card[0] for card in CARDS})
+
+    def test_48_retry_never_reduces_new_cards_and_preserves_game_rng(self):
+        # Suppress just the cloned-RNG retry to reproduce the original deal.
+        # This compares actual starting boards and stock, not catalog edges.
+        newer = {card[0] for card in CONNECTION_CARDS}
+        def without_retry(*args, **kwargs):
+            if kwargs.get('allow_lipstick'):
+                return None
+            return starting_route(*args, **kwargs)
+        changed = 0
+        for seed in range(200):
+            with patch('shiritori.starting_route', side_effect=without_retry):
+                before = ShiritoriRound(total=48, rng=random.Random(seed), clock=lambda: 0)
+                before.start()
+            after = ShiritoriRound(total=48, rng=random.Random(seed), clock=lambda: 0)
+            after.start()
+            def counts(game):
+                visible = {card[0] for card in game.cards} & newer
+                entire = {card[0] for card in game.cards + game.stock} & newer
+                return len(entire), len(visible)
+            old_total, old_visible = counts(before)
+            new_total, new_visible = counts(after)
+            self.assertGreaterEqual(new_total, old_total, seed)
+            self.assertGreaterEqual(new_visible, old_visible, seed)
+            self.assertEqual(before.rng.getstate(), after.rng.getstate(), seed)
+            if (new_total, new_visible) == (old_total, old_visible):
+                self.assertEqual(before.initial_perfect_route, after.initial_perfect_route, seed)
+            else:
+                changed += 1
+                proof = [(s.identity, s.reading) for s in after.initial_perfect_route]
+                self.assertIsNotNone(certify_route(self.state(after), proof), seed)
+        self.assertGreater(changed, 0)
+
+    def test_extra_retry_preserves_counts_and_game_rng(self):
+        newer = {card[0] for card in CONNECTION_CARDS}
+        def without_extra(*args, **kwargs):
+            if kwargs.get('allow_extra'):
+                return None
+            return starting_route(*args, **kwargs)
+        changed = 0
+        for seed in range(300):
+            with patch('shiritori.starting_route', side_effect=without_extra):
+                before = ShiritoriRound(total=48, rng=random.Random(seed), clock=lambda: 0)
+                before.start()
+            after = ShiritoriRound(total=48, rng=random.Random(seed), clock=lambda: 0)
+            after.start()
+            def counts(game):
+                return (len({card[0] for card in game.cards + game.stock} & newer),
+                        len({card[0] for card in game.cards} & newer))
+            old_total, old_visible = counts(before)
+            new_total, new_visible = counts(after)
+            self.assertGreaterEqual(new_total, old_total, seed)
+            self.assertGreaterEqual(new_visible, old_visible, seed)
+            self.assertEqual(before.rng.getstate(), after.rng.getstate(), seed)
+            if (new_total, new_visible) == (old_total, old_visible):
+                self.assertEqual(before.initial_perfect_route, after.initial_perfect_route, seed)
+            else:
+                changed += 1
+                proof = [(s.identity, s.reading) for s in after.initial_perfect_route]
+                self.assertIsNotNone(certify_route(self.state(after), proof), seed)
+        self.assertGreater(changed, 0)
+
+    def test_retry_is_only_used_in_48_card_games(self):
+        for total in (12, 24, 36):
+            for mode in ('solo', 'battle'):
+                with self.subTest(total=total, mode=mode):
+                    with patch('shiritori.starting_route', wraps=starting_route) as search:
+                        game = ShiritoriRound(total=total, mode=mode,
+                                              rng=random.Random(17), clock=lambda: 0)
+                        game.start()
+                    search.assert_called_once()
+                    self.assertNotIn('allow_lipstick', search.call_args.kwargs)
 
     def canonical_game(self, total=48):
         with patch('shiritori.starting_route', return_value=None):
@@ -175,7 +316,11 @@ class CanonicalRouteTests(unittest.TestCase):
     def test_seen_spelling_variants_block_moves_and_rescue_uses_keys(self):
         self.assertFalse(chain_moves([BY_ID['gorilla']], 'ゴ', {'ごりら'}))
         self.assertFalse(chain_moves([BY_ID['gorilla']], 'ご', {'ゴリラ'}))
-        self.assertEqual(chain_moves([BY_ID['tomato']], 'と', set()), [(0, 'トマト')])
+        # Multiple legitimate readings may share the same initial.
+        self.assertIn((0, 'トマト'), chain_moves([BY_ID['tomato']], 'と', set()))
+        after_seen = chain_moves([BY_ID['tomato']], 'と', {'とまと'})
+        self.assertNotIn((0, 'トマト'), after_seen)
+        self.assertIn((0, 'トメイト'), after_seen)
         cards = (BY_ID['apple'], BY_ID['cat'])
         after = chain_step(cards, (BY_ID['tree'], BY_ID['gorilla']), frozenset(), (0, 'りんご'))
         self.assertEqual(after[0][0][0], 'gorilla')
@@ -200,6 +345,105 @@ class CanonicalRouteTests(unittest.TestCase):
         state = ((BY_ID['apple'], ('other', '絵', ('ごま',))),
                  (BY_ID['tree'], BY_ID['gorilla']), 'り', frozenset())
         self.assertIsNone(certify_route(state, [('apple', 'りんご'), ('gorilla', 'ゴリラ')]))
+
+
+    def test_hint_tap_keeps_nonperfect_advised_reading_on_same_card(self):
+        # The one-step heuristic prefers いす (two next cards), but the actual
+        # bounded search proves a longer route via いぬ, without a full clear.
+        cards = [('test', '', ('いす', 'いぬ')), ('melon', '', ('すいか',)),
+                 ('sand', '', ('すな',)), ('teddy', '', ('ぬいぐるみ',)),
+                 ('miso', '', ('みそ',)), ('sky', '', ('そら',))]
+        for mode in ('solo', 'battle'):
+            with self.subTest(mode=mode):
+                g = ShiritoriRound(mode=mode, clock=lambda: 0)
+                g.cards, g.stock, g.used = list(cards), [], {}
+                g.required, g.seen, g.phase, g.deadline = 'い', set(), 'playing', 100
+                g.perfect_route = ()
+                g._chain_advice.clear()
+                g.command('hint')
+                self.assertEqual(g.hint, 0)
+                move, plan = g._chain_advice[self.state(g)]
+                self.assertEqual(move, (0, 'いぬ'))
+                self.assertFalse(plan['perfect'])
+                self.assertEqual(plan['length'], 4)
+                g.command('card', g.hint)
+                self.assertEqual(g.history[-1]['word'], 'いぬ')
+
+    def test_hint_does_not_override_a_different_selected_card(self):
+        cards = [('test', '', ('いす', 'いぬ')), ('melon', '', ('すいか',)),
+                 ('sand', '', ('すな',)), ('teddy', '', ('ぬいぐるみ',)),
+                 ('miso', '', ('みそ',)), ('sky', '', ('そら',)),
+                 ('squid', '', ('いか',))]
+        g = ShiritoriRound(mode='solo', clock=lambda: 0)
+        g.cards, g.stock, g.used = cards, [], {}
+        g.required, g.seen, g.phase = 'い', set(), 'playing'
+        g.perfect_route = ()
+        g.command('hint')
+        self.assertEqual(g.hint, 0)
+        g.command('card', 6)
+        self.assertEqual(g.history[-1]['id'], 'squid')
+        self.assertEqual(g.history[-1]['word'], 'いか')
+
+    def test_early_detour_reading_recertifies_shuffled_witness(self):
+        cards = [('a', '', ('あすあ',)), ('b', '', ('あかす', 'あかあ')),
+                 ('c', '', ('あす',)), ('d', '', ('すきす',)), ('e', '', ('すか',))]
+        original = [('a', 'あすあ'), ('b', 'あかあ'), ('c', 'あす'),
+                    ('d', 'すきす'), ('e', 'すか')]
+        reordered = [original[1], original[0], *original[2:]]
+        g = ShiritoriRound(mode='solo', clock=lambda: 0)
+        g.cards, g.stock, g.used = cards, [], {}
+        g.required, g.seen, g.phase = 'あ', set(), 'playing'
+        state = self.state(g)
+        self.assertIsNotNone(certify_route(state, reordered))
+        g.remember_perfect(certify_route(state, original))
+        # A different legal reading of b is tied under the local heuristic.
+        # Choosing b must preserve the route only after the replay certifies it.
+        with patch('shiritori.longest_chain_move', side_effect=AssertionError('unnecessary search')):
+            g.command('card', 1)
+            self.assertEqual(g.history[-1]['word'], 'あかあ')
+            self.assertTrue(g.chain_advice()[1]['perfect'])
+            for identity in ('a', 'c', 'd', 'e'):
+                g.command('card', next(i for i, card in enumerate(g.cards)
+                                       if card[0] == identity))
+        self.assertEqual(len(g.history), 5)
+        self.assertEqual(g.phase, 'finished')
+
+    def test_detour_recertification_replays_stock_refill(self):
+        cards = [('a', '', ('あすあ',)), ('b', '', ('あかす', 'あかあ')),
+                 ('c', '', ('あす',)), ('d', '', ('すきす',)), ('e', '', ('すか',))]
+        original = [('a', 'あすあ'), ('b', 'あかあ'), ('c', 'あす'),
+                    ('d', 'すきす'), ('e', 'すか')]
+        reordered = [original[1], original[0], *original[2:]]
+        g = ShiritoriRound(mode='solo', clock=lambda: 0)
+        g.cards, g.stock, g.used = cards[:4], cards[4:], {}
+        g.required, g.seen, g.phase = 'あ', set(), 'playing'
+        state = self.state(g)
+        self.assertIsNotNone(certify_route(state, original))
+        self.assertIsNotNone(certify_route(state, reordered))
+        g.remember_perfect(certify_route(state, original))
+        with patch('shiritori.longest_chain_move', side_effect=AssertionError('unnecessary search')):
+            g.command('card', 1)
+            self.assertEqual(g.history[-1]['word'], 'あかあ')
+            self.assertEqual(g.cards[1][0], 'e')
+            self.assertEqual(g.stock, [])
+            self.assertTrue(g.chain_advice()[1]['perfect'])
+
+    def test_early_detour_must_not_certify_a_seen_remaining_reading(self):
+        cards = [('a', '', ('あすあ',)), ('b', '', ('あかす', 'あかあ')),
+                 ('c', '', ('あす',)), ('d', '', ('すきす',)), ('e', '', ('すか',))]
+        original = [('a', 'あすあ'), ('b', 'あかあ'), ('c', 'あす'),
+                    ('d', 'すきす'), ('e', 'すか')]
+        reordered = [original[1], original[0], *original[2:]]
+        g = ShiritoriRound(mode='solo', clock=lambda: 0)
+        g.cards, g.stock, g.used = cards, [], {}
+        g.required, g.seen, g.phase = 'あ', set(), 'playing'
+        g.remember_perfect(certify_route(self.state(g), original))
+        # A changed used-word set invalidates the stored full route.
+        g.seen = {normalize_reading('あす')}
+        state = self.state(g)
+        self.assertIsNone(certify_route(state, reordered))
+        self.assertIn(g.choose_move_for_card(1), chain_moves(state[0], state[2], state[3]))
+        self.assertFalse(g._chain_advice.get(state, (None, {}))[1].get('perfect', False))
 
 
 if __name__ == '__main__':

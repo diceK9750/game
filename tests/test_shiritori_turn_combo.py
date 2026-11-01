@@ -118,6 +118,70 @@ class BattleTurnComboTests(unittest.TestCase):
         self.assertEqual(self.game.chain.players['cpu']['best'], 5)
         self.assertIsNone(self.game.winner)
 
+    def test_valid_tap_before_combo_expiry_freezes_reading_search_time(self):
+        self.player_hit()
+        move = self.game.chain_advice()[0]
+        self.now[0] += self.game.combo_remaining() - .01
+        original = self.game.choose_move_for_card
+
+        def slow_choose(index):
+            self.now[0] += .05
+            return original(index)
+
+        with patch.object(self.game, 'choose_move_for_card', side_effect=slow_choose):
+            self.game.command('card', move[0])
+        self.assertEqual(len(self.game.history), 2)
+        self.assertEqual(self.game.history[-1]['word'], move[1])
+        self.assertEqual(self.game.chain.players['you']['count'], 2)
+        self.assertEqual(self.game.turn, 'you')
+
+    def test_valid_tap_before_ordinary_deadline_freezes_reading_search_time(self):
+        move = self.game.chain_advice()[0]
+        deadline = self.game.deadline
+        self.now[0] = deadline - .01
+        original = self.game.choose_move_for_card
+
+        def slow_choose(index):
+            self.now[0] += .05
+            return original(index)
+
+        with patch.object(self.game, 'choose_move_for_card', side_effect=slow_choose):
+            self.game.command('card', move[0])
+        self.assertEqual(len(self.game.history), 1)
+        self.assertAlmostEqual(self.game.deadline, deadline + .05)
+        self.assertAlmostEqual(self.game.remaining(), .01)
+        self.assertEqual(self.game.phase, 'playing')
+        self.assertIsNone(self.game.winner)
+
+    def test_expired_ordinary_deadline_rejects_tap_before_any_search(self):
+        move = self.game.chain_advice()[0]
+        self.now[0] = self.game.deadline + .01
+        with patch.object(self.game, 'choose_move_for_card',
+                          side_effect=AssertionError('expired taps must not search')):
+            self.game.command('card', move[0])
+        self.assertEqual(self.game.history, [])
+        self.assertEqual(self.game.phase, 'finished')
+        self.assertEqual(self.game.winner, 'cpu')
+
+    def test_reading_search_does_not_revive_an_already_expired_deadline(self):
+        self.now[0] = self.game.deadline - .5
+        self.player_hit(0)
+        self.now[0] += 1
+        self.assertEqual(self.game.remaining(), 0)
+        move = self.game.chain_advice()[0]
+        deadline = self.game.deadline
+        original = self.game.choose_move_for_card
+
+        def slow_choose(index):
+            self.now[0] += .05
+            return original(index)
+
+        with patch.object(self.game, 'choose_move_for_card', side_effect=slow_choose):
+            self.game.command('card', move[0])
+        self.assertEqual(len(self.game.history), 2)
+        self.assertEqual(self.game.deadline, deadline)
+        self.assertEqual(self.game.remaining(), 0)
+
     def test_hint_during_combo_uses_next_certified_step_without_time_cost(self):
         self.player_hit()
         expected = self.game.chain_advice()[0]

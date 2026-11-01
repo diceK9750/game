@@ -7,7 +7,8 @@ from typing import NamedTuple
 from timed_chain import TimedChain
 
 # Emoji are platform pictograms, not artwork copied from a commercial game.
-# Finite picture names, categories and visible features; one reading per head.
+# Finite picture names, categories and visible features. Different readings
+# may share an initial; tapping still picks a continuation automatically.
 CARDS = (
     ("apple", "🍎", ("りんご", "くだもの", "フルーツ", "たべもの", "しんしゅうりんご", "すりおろしりんご")),
     ("gorilla", "🦍", ("ゴリラ", "さる", "どうぶつ", "るいじんえん")),
@@ -16,14 +17,14 @@ CARDS = (
     ("daruma", "🔴", ("だるま", "おきもの", "えんぎもの", "にんぎょう")),
     ("camel", "🐪", ("らくだ", "どうぶつ", "ひとこぶらくだ")),
     ("radish", "🥕", ("にんじん", "やさい", "キャロット", "こんさい", "たべもの")),
-    ("dog", "🐕", ("いぬ", "こいぬ", "どうぶつ", "ペット")),
+    ("dog", "🐕", ("いぬ", "こいぬ", "どうぶつ", "ペット", "わんこ")),
     ("teddy", "🧸", ("ぬいぐるみ", "くま", "おもちゃ", "テディベア", "にんぎょう")),
     ("orange", "🍊", ("みかん", "くだもの", "フルーツ", "たべもの", "オレンジ")),
     ("turtle", "🐢", ("かめ", "りくがめ", "どうぶつ", "はちゅうるい")),
     ("glasses", "👓", ("めがね", "がんきょう", "レンズ", "フレーム")),
-    ("cat", "🐈", ("ねこ", "こねこ", "どうぶつ", "ペット")),
-    ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく", "もみのき")),
-    ("moon", "🌙", ("つき", "よぞら", "みかづき", "てんたい")),
+    ("cat", "🐈", ("ねこ", "こねこ", "どうぶつ", "ペット", "にゃんこ")),
+    ("tree", "🌲", ("まつ", "き", "しょくぶつ", "じゅもく", "もみのき", "ツリー")),
+    ("moon", "🌙", ("つき", "よぞら", "みかづき", "てんたい", "おつきさま")),
     ("fox", "🦊", ("きつね", "どうぶつ", "けもの", "フォックス")),
     ("mouse", "🐁", ("ねずみ", "どうぶつ", "マウス", "けもの")),
     ("ear", "👂", ("みみ", "からだ", "じかく", "ちょうかくきかん")),
@@ -48,20 +49,20 @@ CARDS = (
     ("peach", "🍑", ("もも", "くだもの", "ピーチ", "フルーツ", "たべもの")),
     ("bread", "🍞", ("パン", "しょくパン", "トースト", "ブレッド", "たべもの")),
     ("lion", "🦁", ("ライオン", "どうぶつ", "しし", "けもの")),
-    ("top", "🌀", ("こま", "おもちゃ", "かいてんたい")),
-    ("pillow", "🛏️", ("まくら", "しんぐ", "ねどこ")),
+    ("top", "🌀", ("こま", "おもちゃ", "かいてんたい", "うずまき")),
+    ("pillow", "🛏️", ("まくら", "しんぐ", "ねどこ", "ベッド")),
     ("otter", "🦦", ("らっこ", "どうぶつ", "うみのいきもの")),
     ("koala", "🐨", ("コアラ", "どうぶつ", "ゆうたいるい")),
     ("ramune", "🍾", ("ラムネ", "のみもの", "たんさんいんりょう")),
     ("tie", "👔", ("ネクタイ", "ふく", "えりもと")),
-    ("chair", "🪑", ("いす", "かぐ", "ざせき")),
+    ("chair", "🪑", ("いす", "かぐ", "ざせき", "チェア")),
     ("zucchini", "🥒", ("ズッキーニ", "やさい", "たべもの", "きゅうり")),
     ("chicken", "🐔", ("にわとり", "とり", "どうぶつ")),
     ("backpack", "🎒", ("リュック", "かばん", "にもつ")),
     ("scarf", "🧣", ("マフラー", "えりまき", "ぼうかんぐ")),
     ("radio", "📻", ("ラジオ", "じゅしんき", "おんきょうきき")),
     ("riceball", "🍙", ("おにぎり", "ごはん", "たべもの")),
-    ("dragon", "🐉", ("りゅう", "ドラゴン", "でんせつのいきもの")),
+    ("dragon", "🐉", ("りゅう", "ドラゴン", "でんせつのいきもの", "たつ")),
     ("cow", "🐄", ("うし", "どうぶつ", "かちく")),
     ("salt", "🧂", ("しお", "ちょうみりょう", "ソルト")),
     ("plate", "🍽️", ("おさら", "しょっき", "プレート")),
@@ -73,7 +74,7 @@ CARDS = (
     ("pot", "🍲", ("なべ", "りょうり", "しょっき", "おなべ")),
     ("bagel", "🥯", ("ベーグル", "パン", "たべもの")),
     ("loupe", "🔍", ("ルーペ", "むしめがね", "かくだいきょう")),
-    ("paint", "🎨", ("ペンキ", "とりょう", "いろ")),
+    ("paint", "🎨", ("ペンキ", "とりょう", "いろ", "パレット")),
     ("knife", "🔪", ("ナイフ", "ほうちょう", "カトラリー")),
     ("tomato", "🍅", ("トマト", "やさい", "たべもの")),
     ("parsley", "🌿", ("パセリ", "ハーブ", "やさい", "かおりづけ")),
@@ -85,6 +86,107 @@ CARDS = (
     ("golf", "⛳", ("ゴルフ", "ホール", "スポーツ")),
     ("gift", "🎁", ("プレゼント", "おくりもの", "ギフト")),
 )
+# New pictures strengthen common weak endings while keeping the artwork local
+# to the platform emoji font. First readings cannot end with ん (start seed).
+CONNECTION_CARDS = (
+    ('lipstick', '💄', ('くちべに', 'リップ', 'ルージュ', 'けしょうひん', 'リップスティック')),
+    ('gloves', '🧤', ('てぶくろ', 'グローブ', 'ぼうかんぐ')),
+    ('snowman', '☃️', ('ゆきだるま', 'ゆき', 'スノーマン', 'せつぞう', 'ふゆ', 'スノー')),
+    ('grapes', '🍇', ('ぶどう', 'グレープ', 'くだもの', 'フルーツ', 'たべもの')),
+    ('curry', '🍛', ('カレーライス', 'カレー', 'ルウ', 'ライス', 'ごはん', 'たべもの')),
+    ('pudding', '🍮', ('プディング', 'プリン', 'カスタード', 'おやつ', 'デザート', 'スイーツ')),
+    ('thread', '🧵', ('ぬいいと', 'いとまき', 'スレッド', 'さいほう', 'いと', 'まきいと')),
+    ('candle', '🕯️', ('ろうそく', 'キャンドル', 'あかり', 'ともしび', 'ほのお')),
+)
+CARDS += CONNECTION_CARDS
+
+# Additional everyday names and English loanwords for existing pictures.
+# Keep the original spellings and order, including persisted dictionary keys.
+ADDITIONAL_READINGS = {
+    'golf': ('はた', 'フラッグ', 'フラグ', 'ゴルフじょう', 'ゴルフコース', 'グリーン', 'ピン', 'はたざお', 'ゴルフのはた', 'ピンフラッグ', 'フラッグスティック', 'あな', 'カップ', 'ゴルフのホール'),
+    'medaka': ('フィッシュ', 'おさかな', 'うお', 'こざかな'),
+    'ramune': ('ボトル', 'びん', 'ガラスびん', 'ガラスボトル', 'シャンパン', 'シャンペン', 'スパークリングワイン', 'コルク', 'ワイン', 'ワインボトル'),
+    'teddy': ('ベア', 'くまのぬいぐるみ', 'くまちゃん', 'くまさん', 'テディ', 'くまのにんぎょう', 'くまのおもちゃ', 'ベアー'),
+    'glasses': ('グラッシーズ', 'アイウェア', 'スペクタクルズ', 'グラス', 'めがねのレンズ'),
+    'trumpet': ('かんがっき', 'ホーン', 'きんぞくがっき', 'ブラスがっき', 'ブラス'),
+    'apple': ('アップル', 'あかいりんご', 'りんごのみ', 'かじつ'),
+    'camel': ('キャメル', 'さばくのふね', 'らくださん', 'ほにゅうるい', 'こぶ', 'らくだのこぶ'),
+    'dog': ('ドッグ', 'わんちゃん', 'わんわん', 'かいいぬ', 'いぬころ', 'ほにゅうるい', 'いぬか', 'いぬさん', 'わん'),
+    'orange': ('かんきつ', 'おみかん', 'かんきつるい', 'タンジェリン', 'マンダリン', 'シトラス', 'マンダリンオレンジ', 'かじつ'),
+    'turtle': ('タートル', 'かめさん', 'こうら', 'かめのこうら', 'トータス', 'ウミガメ'),
+    'cat': ('キャット', 'ねこちゃん', 'にゃんにゃん', 'かいねこ', 'ほにゅうるい', 'ねこか', 'ねこさん', 'にゃん', 'いえねこ', 'にゃー'),
+    'moon': ('ムーン', 'クレセント', 'クレセントムーン', 'よるのつき', 'おつきさん', 'ゆうづき', 'ルナ'),
+    'ear': ('イヤー', 'おみみ', 'みみたぶ', 'みみのあな'),
+    'bee': ('ビー', 'ハニービー', 'はちさん', 'みつばちさん', 'はね', 'はちのはね'),
+    'squirrel': ('スクイレル', 'しまりす', 'チップマンク', 'りすさん', 'げっしるい', 'ほにゅうるい', 'しっぽ', 'りすのしっぽ', 'リスか'),
+    'melon': ('ウォーターメロン', 'カットすいか', 'すいかのひときれ', 'すいかのスライス', 'カットフルーツ', 'かじつ'),
+    'umbrella': ('アンブレラ', 'こうもりがさ', 'かさのえ', 'ひがさ'),
+    'fish': ('ねったいぎょ', 'トロピカルフィッシュ', 'うお'),
+    'eggplant': ('エッグプラント', 'なすび', 'おなす', 'なすのじつ', 'オーバージーン', 'オーベルジーヌ', 'ベジタブル', 'おやさい'),
+    'trousers': ('パンツ', 'トラウザーズ', 'ながズボン', 'ジーパン', 'デニムパンツ', 'ボトム', 'ロングパンツ', 'ようふく', 'いふく', 'ブルージーンズ', 'デニムズボン'),
+    'ice': ('アイス', 'こおりのかけら', 'こおりのかたまり', 'アイスブロック', 'こおりのキューブ', 'キューブアイス'),
+    'car': ('カー', 'じょうようしゃ', 'おくるま', 'じょうようじどうしゃ', 'オートモービル', 'モーターカー'),
+    'top': ('スパイラル', 'うず', 'らせん', 'うずまきもよう', 'サイクロン', 'ハリケーン', 'たいふう', 'たつまき', 'ぐるぐる', 'トルネード'),
+    'otter': ('オッター', 'カワウソ', 'イタチか', 'すいせいどうぶつ', 'カワウソさん', 'ほにゅうるい', 'らっこさん', 'シーオッター'),
+    'tie': ('タイ', 'ワイシャツ', 'シャツ', 'えり', 'ドレスシャツ', 'ネクタイつきシャツ', 'えりつきシャツ', 'ビジネスシャツ', 'ようふく', 'いふく', 'シャツとネクタイ'),
+    'chair': ('こしかけ', 'シート', 'チェアー'),
+    'zucchini': ('キューカンバー', 'うり', 'ウリのなかま', 'ピクルス', 'つけもの', 'ベジタブル', 'おやさい', 'しょくざい'),
+    'chicken': ('チキン', 'にわとりさん', 'にわとりのかお', 'とさか', 'くちばし'),
+    'backpack': ('バックパック', 'リュックサック', 'ザック', 'ランドセル', 'スクールバッグ', 'せおいかばん', 'デイパック', 'バッグ', 'ナップザック', 'ナップサック'),
+    'scarf': ('スカーフ', 'くびまき', 'ぼうかんようひん', 'ストール'),
+    'radio': ('レディオ', 'かでん', 'ラジオじゅしんき', 'ポータブルラジオ'),
+    'riceball': ('おむすび', 'ライスボール', 'にぎりめし', 'むすび', 'ライス', 'おこめ', 'さんかくおにぎり', 'のり', 'おにぎりののり', 'こめ', 'しろごはん'),
+    'cow': ('カウ', 'ぎゅう', 'うしさん', 'ほにゅうるい', 'めうし', 'にゅうぎゅう', 'モーモー'),
+    'diamond': ('ダイヤモンド', 'ジュエリー', 'ジュエル', 'ジェムストーン', 'ジェム'),
+    'beans': ('ビーンズ', 'おまめ', 'まめるい', 'ビーン', 'おまめさん'),
+    'sand': ('サンド', 'うみべ', 'すなはま', 'はま', 'かいがん', 'パラソル', 'ビーチパラソル', 'ひがさ', 'ビーチアンブレラ', 'うみ', 'なぎさ', 'かさ'),
+    'pot': ('ポット', 'なべもの', 'スープ', 'なべりょうり', 'ホットポット', 'おなべりょうり', 'シチュー', 'にもの', 'にこみ'),
+    'loupe': ('レンズ', 'かくだいレンズ', 'マグニファインググラス', 'マグニファイア'),
+    'paint': ('ペイント', 'えのぐ', 'がざい', 'カラーパレット', 'えのぐのパレット', 'おえかき', 'げいじゅつ', 'え', 'アート', 'えのぐパレット'),
+    'knife': ('はもの', 'キッチンナイフ', 'ちょうりきぐ', 'やいば', 'クッキングナイフ', 'ブレード'),
+    'parsley': ('くさ', 'はっぱ', 'リーフ', 'パセリのは', 'みどりのはっぱ', 'バジル', 'ミント', 'は', 'やくそう', 'しょくぶつ', 'くき', 'ベジタブル', 'おやさい', 'しょくざい', 'ハーブのは', 'こうそう'),
+    'sewing_needle': ('ニードル', 'ソーイングニードル', 'いと', 'さいほうばり', 'はりといと', 'ぬいもの', 'さいほう'),
+    'snow_crab': ('クラブ', 'こうかくるい', 'かにさん', 'かいせん', 'かにのはさみ', 'はさみ', 'かにのつめ'),
+    'blocks': ('れんが', 'ブリック', 'レンガのかべ', 'レンガづみ', 'かべ', 'レンガブロック'),
+    'gift': ('はこ', 'リボン', 'プレゼントボックス', 'ギフトボックス', 'ラッピング', 'ほうそう', 'つつみ', 'ギフトラッピング', 'ほうそうがみ', 'ぞうとうひん', 'おいわい', 'つつみもの', 'ラッピングボックス'),
+    'butterfly': ('ちょうちょ', 'ちょうちょう', 'はね', 'ちょうのはね', 'ウィング'),
+    'plate': ('さら', 'ディッシュ', 'フォーク', 'ナイフ', 'カトラリー', 'テーブルウェア', 'フォークとナイフ'),
+    'rabbit': ('バニー', 'うさちゃん', 'うさぎさん', 'ほにゅうるい', 'ペット'),
+    'ship': ('せんぱく', 'おふね', 'きゃくせん', 'りょかくせん', 'クルーズシップ', 'クルーズせん',),
+    'mountain': ('おやま', 'さんがく', 'やまのてっぺん', 'さんちょう', 'ちょうじょう'),
+    'lavender': ('フラワー', 'ヒヤシンス', 'おはな', 'はなのくき', 'むらさきのはな', 'ヒヤシンスのはな', 'ルピナス'),
+    'gorilla': ('エイプ', 'おおざる', 'ほにゅうるい', 'れいちょうるい'),
+    'panda': ('パンダさん', 'くまさん', 'ほにゅうるい', 'パンダのかお', 'パンダベア'),
+    'daruma': ('だるまさん', 'おきあがりこぼし'),
+    'radish': ('おにんじん', 'ねやさい', 'ベジタブル', 'おやさい', 'しょくざい', 'にんじんのは'),
+    'tree': ('しんようじゅ', 'じょうりょくじゅ', 'まつのき', 'もみ', 'はっぱ', 'えだ', 'みき', 'きのえだ', 'コニファー'),
+    'fox': ('おきつね', 'きつねさん', 'ほにゅうるい', 'いぬか', 'きつねのかお'),
+    'mouse': ('ねずみさん', 'げっしるい', 'ほにゅうるい', 'ハツカネズミ', 'チューチュー'),
+    'guitar': ('エレキ', 'エレクトリックギター', 'でんきギター'),
+    'octopus': ('たこのあし', 'うみのどうぶつ'),
+    'bird': ('とりさん', 'ちょうるい', 'つばさ', 'はね', 'ウィング', 'くちばし'),
+    'bell': ('ハンドベル',),
+    'mushroom': ('きのこるい', 'きのこのかさ', 'ファンガス', 'きのこのじく'),
+    'peach': ('もものみ', 'かじつ'),
+    'lion': ('ひゃくじゅうのおう', 'たてがみ', 'ねこか', 'ほにゅうるい', 'ライオンのかお'),
+    'pillow': ('しんだい', 'マットレス', 'ふとん', 'シーツ'),
+    'koala': ('コアラちゃん', 'ほにゅうるい', 'コアラのかお', 'こもりぐま', 'きのぼりふくろぐま', 'ふくろぐま', 'コアラベア'),
+    'salt': ('しおいれ', 'しおびん', 'ソルトシェイカー', 'ソルトシェーカー', 'しおのいれもの'),
+    'bagel': ('ベーグルパン', 'リングパン', 'まるいパン'),
+    'tomato': ('トメイト', 'トメート', 'あかいトマト', 'トマトのみ', 'くだもの', 'フルーツ', 'かじつ', 'ベジタブル', 'おやさい', 'しょくざい'),
+    'lipstick': ('リップカラー', 'べに', 'ぼうべに', 'コスメ',),
+    'gloves': ('てぶくろのペア', 'てぶくろのセット'),
+    'snowman': ('ゆきのだるま', 'ゆきにんぎょう'),
+    'grapes': ('ぶどうのふさ', 'ぶどうのみ', 'かじつ', 'ぶどうのつぶ'),
+    'curry': ('カレーソース', 'カレーとごはん', 'ライスカレー', 'カリー', 'カレールー', 'カレールウ'),
+    'pudding': ('カスタードプリン', 'カラメルプリン', 'おかし', 'ようがし', 'フラン'),
+    'thread': ('ソーイングスレッド', 'ミシンいと', 'ボビン', 'スプール', 'いとのボビン'),
+    'candle': ('キャンドルライト', 'ろうそくのひ', 'キャンドルのひ'),
+    'bread': ('ローフ', 'スライスパン', 'スライスブレッド'),
+}
+CARDS = tuple((identity, icon, words + ADDITIONAL_READINGS.get(identity, ()))
+              for identity, icon, words in CARDS)
+
 # Broad categories, remote associations and discovery-style names remain valid
 # dictionary entries, but should not beat a natural picture name on a tap.
 SPECIAL_READINGS = frozenset({
@@ -99,6 +201,27 @@ SPECIAL_READINGS = frozenset({
     'レイングッズ', 'でんせつのいきもの', 'ゆうたいるい',
     'たんさんいんりょう', 'かくだいきょう', 'かおりづけ',
     'さいほうどうぐ', 'シーフード', 'ホール', 'スポーツ',
+    # Broad classifications remain valid but lose ties to familiar names.
+    'ほにゅうるい', 'げっしるい', 'ちょうるい', 'こうかくるい',
+    'ねこか', 'すいせいどうぶつ', 'うみのどうぶつ', 'かんきつるい',
+    'かじつ', 'ねやさい', 'きのこるい', 'まめるい', 'ウリのなかま',
+    'しんようじゅ', 'じょうりょくじゅ', 'きんぞくがっき',
+    'ちょうりきぐ', 'かでん', 'ぼうかんようひん', 'かいせん',
+    'いぬか', 'ねこか', 'ようふく', 'いふく', 'テーブルウェア',
+    'カットフルーツ', 'つけもの', 'ピクルス', 'シチュー', 'にもの',
+    'にこみ', 'やくそう', 'バジル', 'ミント', 'ぞうとうひん',
+    'れいちょうるい', 'リスか', 'ブラス', 'おえかき', 'げいじゅつ',
+    'ぬいもの', 'おいわい', 'たつまき', 'ウミガメ', 'にゅうぎゅう',
+    'ワイン', 'ワインボトル',
+    'ベジタブル', 'おやさい', 'え', 'アート', 'さいほう', 'あな', 'カップ',
+    'ぐるぐる', 'ルピナス', 'ゆうづき', 'きのぼりふくろぐま', 'ふくろぐま',
+    'ふゆ', 'おやつ', 'デザート', 'スイーツ',
+    'てぶくろのペア', 'ぶどうのふさ', 'ろうそくのひ',
+    'コスメ', 'おかし', 'ようがし', 'ボビン', 'スプール',
+    'コニファー', 'にゃー', 'きのこのじく', 'ぶどうのつぶ', 'てぶくろのセット', 'ハーブのは', 'いとのボビン', 'カレーとごはん', 'こおりのキューブ', 'みみのあな',
+    'ルナ', 'チューチュー', 'モーモー', 'フラン',
+    'カレールー', 'カレールウ', 'ゆきにんぎょう', 'めがねのレンズ', 'にんじんのは', 'はちのはね', 'くまのおもちゃ', 'ゴルフのホール', 'キャンドルのひ',
+    'トルネード', 'ブレード', 'シャツとネクタイ',
 })
 
 
@@ -127,6 +250,43 @@ PERFECT_RING = (
     'sand', 'pot', 'bagel', 'loupe', 'paint', 'mushroom', 'koala', 'camel',
     'daruma', 'tree', 'moon', 'fox', 'mouse', 'bee', 'butterfly', 'rabbit',
     'guitar', 'octopus', 'top', 'pillow', 'otter', 'ice',
+)
+# Two validated 48-card fallback witnesses. The opening board contains all
+# eight connector pictures; the random choice keeps the older pictures varied.
+# Each witness is checked against the actual refill rules before play starts.
+FALLBACK_48_ROUTES = (
+    PERFECT_CANONICAL_SEGMENT + (
+        ('lipstick', 'リップ'), ('pudding', 'プディング'), ('gloves', 'グローブ'),
+        ('grapes', 'ぶどう'), ('sand', 'うみべ'), ('bagel', 'ベーグル'),
+        ('curry', 'ルウ'), ('butterfly', 'ウィング'), ('glasses', 'グラッシーズ'),
+        ('zucchini', 'ズッキーニ'), ('daruma', 'にんぎょう'), ('rabbit', 'うさぎ'),
+        ('gift', 'ギフト'), ('fish', 'トロピカルフィッシュ'), ('snowman', 'ゆき'),
+        ('candle', 'キャンドルライト'), ('turtle', 'トータス'), ('thread', 'スレッド'),
+        ('tie', 'ドレスシャツ'), ('blocks', 'つみき'), ('radish', 'キャロット'),
+        ('paint', 'とりょう'), ('top', 'うずまきもよう'), ('cow', 'うし'),
+        ('pillow', 'しんだい'), ('dog', 'いぬ'), ('sewing_needle', 'ぬいばり'),
+        ('backpack', 'リュック'), ('moon', 'クレセント'), ('trousers', 'トラウザーズ'),
+        ('snow_crab', 'ズワイガニ'), ('cat', 'にゃんこ'), ('koala', 'コアラのかお'),
+        ('riceball', 'おにぎり'), ('squirrel', 'りす'), ('melon', 'すいか'),
+        ('plate', 'カトラリー'), ('dragon', 'りゅう'), ('medaka', 'うお'),
+        ('eggplant', 'おなす'), ('scarf', 'ストール'), ('loupe', 'ルーペ'),
+    ),
+    PERFECT_CANONICAL_SEGMENT + (
+        ('lipstick', 'リップ'), ('pudding', 'プディング'), ('grapes', 'グレープ'),
+        ('gift', 'プレゼントボックス'), ('thread', 'スレッド'), ('dog', 'ドッグ'),
+        ('gloves', 'グローブ'), ('blocks', 'ブロック'), ('snow_crab', 'クラブ'),
+        ('trousers', 'ブルージーンズ'), ('zucchini', 'ズッキーニ'), ('riceball', 'にぎりめし'),
+        ('pillow', 'しんだい'), ('sewing_needle', 'いと'), ('fish', 'トロピカルフィッシュ'),
+        ('snowman', 'ゆき'), ('candle', 'キャンドル'), ('curry', 'ルウ'),
+        ('sand', 'うみ'), ('bee', 'みつばち'), ('chair', 'チェア'),
+        ('umbrella', 'あまがさ'), ('mountain', 'さんちょう'), ('medaka', 'うお'),
+        ('moon', 'おつきさま'), ('tree', 'まつのき'), ('mushroom', 'きのこ'),
+        ('koala', 'コアラベア'), ('glasses', 'アイウェア'), ('ice', 'アイスブロック'),
+        ('scarf', 'くびまき'), ('diamond', 'きせき'), ('fox', 'きつね'),
+        ('cat', 'ねこ'), ('ramune', 'コルク'), ('panda', 'くま'),
+        ('loupe', 'マグニファインググラス'), ('melon', 'すいかのひときれ'), ('radio', 'レディオ'),
+        ('octopus', 'オクトパス'), ('pot', 'スープ'), ('plate', 'プレート'),
+    ),
 )
 SMALL = str.maketrans("ゃゅょぁぃぅぇぉっゎ", "やゆよあいうえおつわ")
 
@@ -172,7 +332,12 @@ def chain_moves(cards, required, seen):
             for word, key in _readings_from(card, required) if key not in seen]
 
 
-def starting_route(required, total, seen, rng, node_budget=256):
+# Keep initial certified deals stable; these aliases remain playable and discoverable.
+INITIAL_ROUTE_EXTRA_READINGS = frozenset((('dog', 'わんこ'), ('cat', 'にゃんこ'), ('chair', 'チェア'), ('tree', 'ツリー'), ('moon', 'おつきさま'), ('paint', 'パレット'), ('pillow', 'ベッド'), ('dragon', 'たつ'), ('top', 'うずまき'))) | frozenset(
+    (identity, word) for identity, words in ADDITIONAL_READINGS.items() for word in words
+)
+
+def starting_route(required, total, seen, rng, node_budget=256, allow_lipstick=False, allow_extra=False):
     """Bounded randomized chain with the six-card block as one atomic edge."""
     reserved = {identity for identity, _ in PERFECT_CANONICAL_SEGMENT}
     by_head = {}
@@ -180,9 +345,10 @@ def starting_route(required, total, seen, rng, node_budget=256):
         if card[0] in reserved:
             continue
         for word in card[2]:
-            if tail(word) != "ん":
+            if ((card[0], word) not in INITIAL_ROUTE_EXTRA_READINGS or (allow_lipstick and (card[0], word) == ('lipstick', 'リップカラー') or allow_extra and (card[0], word) in (('curry', 'カリー'), ('thread', 'スプール'), ('grapes', 'ぶどうのみ')))) and tail(word) != 'ん':
                 by_head.setdefault(head(word), []).append(((card[0], word),))
     by_head.setdefault('と', []).append(PERFECT_CANONICAL_SEGMENT)
+    connector_ids = {card[0] for card in CONNECTION_CARDS} if total == 48 else frozenset()
     nodes = 0
 
     def search(required, route, ids, words):
@@ -194,6 +360,10 @@ def starting_route(required, total, seen, rng, node_budget=256):
         nodes += 1
         choices = list(by_head.get(required, ()))
         rng.shuffle(choices)
+        # Preserve random order within each group; promote newer pictures only
+        # for 48-card starts, without changing any move or fallback rule.
+        if connector_ids:
+            choices.sort(key=lambda block: block[0][0] in connector_ids, reverse=True)
         for block in choices:
             new_ids = {identity for identity, _ in block}
             new_words = {normalize_reading(word) for _, word in block}
@@ -379,10 +549,48 @@ class ShiritoriRound:
         self._chain_advice.clear()
         by_id = {card[0]: card for card in CARDS}
         seed = self.rng.choice(CARDS)[2][0]
+        snapshot = self.rng.getstate() if self.total == 48 else None
         route_words = starting_route(tail(seed), self.total, {seed}, self.rng)
+        if (self.total == 48 and route_words is not None
+                and any(identity in {card[0] for card in CONNECTION_CARDS}
+                        for identity, _ in route_words[:24])):
+            newer = {card[0] for card in CONNECTION_CARDS}
+            def rank(route):
+                return (len({identity for identity, _ in route} & newer),
+                        len({identity for identity, _ in route[:24]} & newer))
+            retry_rng = random.Random()
+            retry_rng.setstate(snapshot)
+            candidate = starting_route(tail(seed), self.total, {seed}, retry_rng, allow_lipstick=True)
+            if candidate is not None:
+                candidate_total, candidate_visible = rank(candidate)
+                original_total, original_visible = rank(route_words)
+                if (candidate_total >= original_total and candidate_visible >= original_visible
+                        and (candidate_total > original_total or candidate_visible > original_visible)):
+                    route_words = candidate
+            # The extra search uses the same random state and cannot reduce either count.
+            if rank(route_words) != (len(newer), len(newer)):
+                extra_rng = random.Random()
+                extra_rng.setstate(snapshot)
+                extra = starting_route(tail(seed), self.total, {seed}, extra_rng,
+                                       allow_lipstick=True, allow_extra=True)
+                if extra is not None:
+                    extra_total, extra_visible = rank(extra)
+                    best_total, best_visible = rank(route_words)
+                    if (extra_total >= best_total and extra_visible >= best_visible
+                            and (extra_total > best_total or extra_visible > best_visible)):
+                        route_words = extra
+        # A 48-card round should visibly offer a newer connector even when a
+        # successful search happens to place every one of them in the stock.
+        if self.total == 48 and route_words is not None:
+            connector_ids = {card[0] for card in CONNECTION_CARDS}
+            if not any(identity in connector_ids for identity, _ in route_words[:24]):
+                route_words = None
         if route_words is None:
             seed = 'トースト'
-            route_words = [(key, by_id[key][2][0]) for key in PERFECT_RING[:self.total]]
+            if self.total == 48:
+                route_words = list(self.rng.choice(FALLBACK_48_ROUTES))
+            else:
+                route_words = [(key, by_id[key][2][0]) for key in PERFECT_RING[:self.total]]
         chosen = [by_id[key] for key, _ in route_words]
         self.cards, self.stock = chosen[:24], chosen[24:]
         self.rng.shuffle(self.cards)
@@ -432,9 +640,10 @@ class ShiritoriRound:
     def choose_move_for_card(self, index):
         """Choose a reading against the actual board/stock/seen after refill.
 
-        A current certified full route wins. Otherwise prefer common connected
-        readings and count distinct next card identities, with catalog order as
-        the final deterministic tie-break. No bounded search runs on every tap.
+        A current certified full route wins. Otherwise, if several readings
+        match, compare short witnessed continuations before the existing
+        common-reading and next-card tie-break. Single-reading taps never run
+        a bounded search. A cutoff does not prove the chosen route optimal.
         """
         board = tuple(None if i in self.used else c for i, c in enumerate(self.cards))
         state = (board, tuple(self.stock), head(self.required),
@@ -443,18 +652,25 @@ class ShiritoriRound:
         if not candidates:
             return None
         proof = self._chain_advice.get(state)
-        if proof is None and self.perfect_route and isinstance(self.perfect_route[0], PerfectStep) and board[index] is not None:
+        # If the chosen card occurs later in a known certificate, try moving
+        # only that card to the front. Accept it solely after replaying the
+        # entire route with the actual board, stock, seen words and refill.
+        if (not proof or proof[0] not in candidates) and self.perfect_route and isinstance(self.perfect_route[0], PerfectStep) and board[index] is not None:
             remaining_ids = {c[0] for c in board + tuple(self.stock) if c is not None}
             suffix = [(s.identity, s.reading) for s in self.perfect_route if s.identity in remaining_ids]
-            if suffix and suffix[0][0] == board[index][0] and {i for i, _ in suffix} == remaining_ids:
+            chosen_id = board[index][0]
+            if suffix and {i for i, _ in suffix} == remaining_ids and chosen_id in remaining_ids:
+                rest = [(identity, word) for identity, word in suffix if identity != chosen_id]
                 for move in candidates:
-                    route = [(board[index][0], move[1])] + suffix[1:]
-                    witnesses = certify_route(state, route)
+                    witnesses = certify_route(state, [(chosen_id, move[1])] + rest)
                     if witnesses:
                         self.remember_perfect(witnesses)
                         proof = self._chain_advice.get(state)
                         break
-        if proof and proof[1]['perfect'] and proof[0] in candidates:
+        # A hint/CPU plan contains an actually reached route even when bounded
+        # search could not prove it perfect. Tapping its card must use the same
+        # reading; a cutoff is still unknown, never proof of impossibility.
+        if proof and proof[0] in candidates:
             return proof[0]
 
         def score(move):
@@ -465,7 +681,18 @@ class ShiritoriRound:
             return (2 if common and connected else 1 if connected else 0,
                     len(next_cards), common, -candidates.index(move))
 
-        return max(candidates, key=score)
+        if len(candidates) == 1:
+            return candidates[0]
+
+        def projected(move):
+            next_board, next_stock, required, seen = chain_step(state[0], state[1], state[3], move)
+            if not any(next_board) and not next_stock:
+                return (1, 1, score(move))
+            _, plan = longest_chain_move(next_board, next_stock, required, seen, node_budget=48)
+            # Only achieved path lengths are compared. A cutoff is unknown.
+            return (int(plan['perfect']), plan['length'], score(move))
+
+        return max(candidates, key=projected)
 
     def finish(self, winner, reason):
         self.phase, self.winner, self.message = "finished", winner, reason
@@ -616,6 +843,49 @@ class ShiritoriRound:
             self.remember_perfect(certify_route(state, identities))
         return move, plan
 
+    def best_relink(self):
+        """Choose a witnessed continuation, not a claim of optimality.
+
+        This runs only for the player's blocked solo round. Each distinct
+        initial gets a small bounded search, using the same stock/refill rules.
+        The selected move and reading are cached for the highlighted card.
+        """
+        board = tuple(None if i in self.used else c for i, c in enumerate(self.cards))
+        stock = tuple(self.stock)
+        seen = frozenset(normalize_reading(w) for w in self.seen)
+        initials = sorted({head(word) for card in board if card is not None
+                           for word in card[2]
+                           if tail(word) != 'ん' and normalize_reading(word) not in seen})
+        best = None
+        for initial in initials:
+            move, plan = longest_chain_move(board, stock, initial, seen, node_budget=32)
+            if move is None:
+                continue
+            if best is None or (plan['perfect'], plan['length']) > (best[2]['perfect'], best[2]['length']):
+                best = (initial, move, plan)
+            if plan['perfect']:
+                break
+        if best is None:
+            return None
+        initial, move, plan = best
+        state = (board, stock, initial, seen)
+        # Non-perfect plans are actual witnessed routes but may be incomplete.
+        # Never present a bounded cutoff as a proof that no longer route exists.
+        self._chain_advice.clear()
+        if plan['perfect']:
+            replay, identities = state, []
+            for index, word in plan['route']:
+                identities.append((replay[0][index][0], word))
+                replay = chain_step(replay[0], replay[1], replay[3], (index, word))
+            witnesses = certify_route(state, identities)
+            if witnesses:
+                self.remember_perfect(witnesses)
+            else:
+                self._chain_advice[state] = (move, dict(plan, perfect=False, exact=False))
+        else:
+            self._chain_advice[state] = (move, plan)
+        return initial, move
+
     def take(self, index, word):
         owner = self.turn
         self.chain.hit(owner, self.clock())
@@ -721,25 +991,35 @@ class ShiritoriRound:
         elif action == "restart" and self.phase == "paused":
             self.start()
         elif action == "relink" and self.phase == "blocked" and self.mode == "solo" and self.relinks:
-            choices = [(i, w) for i, c in enumerate(self.cards) if i not in self.used
-                       for w in c[2] if tail(w) != "ん" and normalize_reading(w) not in self.seen]
-            if choices:
+            relink = self.best_relink()
+            if relink is not None:
+                initial, move = relink
                 self.chain.miss('you')
                 self.chain.sync(self.clock(), ('you',))
                 self.relinks -= 1
                 self.miss_card = None
                 self.miss_until = 0
-                self.required = head(choices[0][1])
+                self.required = initial
                 self.last_word = "つなぎ直し"
                 self.break_next = True
-                self.hint = choices[0][0]
+                self.hint = move[0]
                 self.phase = "playing"
                 self.message = f"「{self.required}」からもう一度つなごう！"
         elif action == "end" and self.phase == "paused" and self.mode == "solo":
             self.finish("draw", "ここまでの結果。自分のペースでまた遊ぼう！")
         elif self.phase == "playing" and self.turn == "you":
             if action == "card" and type(value) is int and 0 <= value < len(self.cards) and value not in self.used:
-                move = self.choose_move_for_card(value)
+                # Resolve the input at its arrival time. Bounded reading
+                # planning must not consume the player's combo or turn clock.
+                started = self.clock()
+                self.chain.sync(started, ())
+                try:
+                    move = self.choose_move_for_card(value)
+                finally:
+                    ended = self.clock()
+                    self.chain.sync(ended, ('you',))
+                    if self.mode == 'battle' and self.deadline > started:
+                        self.deadline += max(0, ended - started)
                 if move is not None:
                     self.take(*move)
                 else:

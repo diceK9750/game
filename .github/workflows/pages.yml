@@ -28,6 +28,20 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Test viewport sizing
         run: node --test tests/*.cjs
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Install pinned browser test dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.62.1
+          npx playwright install --with-deps chromium
+      - name: Test real browser layout
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          node tools/run-browser-layout.cjs
 
   deploy:
     needs: test

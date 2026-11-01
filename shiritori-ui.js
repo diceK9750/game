@@ -462,8 +462,9 @@
           const replaced = item.identity != null;
           item.identity = data.id;
           item.dealFlip = !item.dealFlip;
-          icon.textContent = data.id === 'daruma' ? '' : data.icon;
-          icon.className = `sh-icon${data.id === 'daruma' ? ' sh-daruma' : ''}`;
+          const custom = ['daruma', 'top', 'ramune', 'zucchini'].includes(data.id);
+          icon.textContent = custom ? '' : data.icon;
+          icon.className = `sh-icon${data.id === 'daruma' ? ' sh-daruma' : ''}${custom ? ` sh-art-${data.id}` : ''}`;
           card.dataset.dealt = replaced ? String(Number(item.dealFlip)) : '';
         }
         // NEW refill chip: distinct from owner marks so mobile stock swaps stay readable.
@@ -510,7 +511,13 @@
       const key = JSON.stringify(s.history);
       if (key !== historyKey) {
         historyKey = key;
-        log.replaceChildren(...s.history.map(row => add(E('li'), E('strong', '', `${row.relinked ? '↪ つなぎ直し · ' : ''}${row.owner === 'you' ? 'リン' : 'ルナ'}：${row.icon} ${row.word}`), E('small', '', `読み方：${(row.readings || [row.word]).join(' ／ ')}`))));
+        log.replaceChildren(...s.history.map(row => {
+          const custom = ['daruma', 'top', 'ramune', 'zucchini'].includes(row.id);
+          const picture = E('span', `sh-history-icon${row.id === 'daruma' ? ' sh-daruma' : ''}${custom ? ` sh-art-${row.id}` : ''}`, custom ? '' : row.icon);
+          picture.setAttribute('aria-hidden', 'true');
+          const title = add(E('strong', '', `${row.relinked ? '↪ つなぎ直し · ' : ''}${row.owner === 'you' ? 'リン' : 'ルナ'}：`), picture, E('span', '', ` ${row.word}`));
+          return add(E('li'), title, E('small', '', `読み方：${(row.readings || [row.word]).join(' ／ ')}`));
+        }));
       }
       if (lastPhase !== s.phase) {
         if (s.phase === 'finished' && perfect) window.chainVoice?.fanfare?.(s.winner);

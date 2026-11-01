@@ -1554,3 +1554,47 @@ test('shiritori solo help/pause omits phantom rival/CPU; battle keeps them (#111
   assert.match(soloPause, /札を隠して休憩中/, 'solo pause keeps hide-board copy');
   assert.doesNotMatch(soloPause, /ライバル|CPU/, 'solo pause must not invent rival/CPU');
 });
+
+
+test('distinct local picture art is shared by board, dictionary and result history', () => {
+  const {view, state} = harness();
+  const entries = [
+    {id:'top', icon:'🌀', words:['こま','うずまき','おもちゃ'], owner:null},
+    {id:'ramune', icon:'🍾', words:['ラムネ','のみもの','たんさん'], owner:null},
+    {id:'zucchini', icon:'🥒', words:['ズッキーニ','きゅうり','やさい'], owner:null},
+    {id:'daruma', icon:'🔴', words:['だるま','えんぎもの','にんぎょう'], owner:null}
+  ];
+  const cards = [...entries, ...state.cards.slice(4)];
+  view.update({...state, cards, catalog:entries});
+  let icons=view.page.querySelectorAll('.sh-card').slice(0,4).map(c=>c.querySelector('.sh-icon'));
+  for (let i=0;i<entries.length;i++) {
+    assert.ok(icons[i].className.includes(`sh-art-${entries[i].id}`));
+    assert.equal(icons[i].textContent, '');
+    assert.equal(icons[i]['aria-hidden'], 'true');
+  }
+  // A reused slot must not keep its old art after stock replenishment.
+  cards[0]={id:'apple',icon:'🍎',words:['りんご'],owner:null};
+  view.update({...state,cards});
+  icons=view.page.querySelectorAll('.sh-card').slice(0,4).map(c=>c.querySelector('.sh-icon'));
+  assert.equal(icons[0].textContent,'🍎');
+  assert.ok(!icons[0].className.includes('sh-art-top'));
+  view.update({...state,phase:'intro',cards:[],catalog:entries});
+  view.page.querySelectorAll('.sh-dict-open')[0].events.click();
+  const dictIcons=view.page.querySelectorAll('.sh-dict-icon');
+  for (const entry of entries) assert.ok(dictIcons.some(icon=>icon.className.includes(`sh-art-${entry.id}`)));
+  view.update({...state,phase:'finished',history:entries.map(entry=>({id:entry.id,icon:entry.icon,word:entry.words[0],readings:entry.words,owner:'you'}))});
+  const history=view.page.querySelector('.sh-log');
+  for (const entry of entries) assert.ok(history.querySelectorAll('.sh-history-icon').some(icon=>icon.className.includes(`sh-art-${entry.id}`)));
+});
+
+test('local picture files are available to Pages without external dependencies', () => {
+  const path=require('node:path');
+  const css=fs.readFileSync(require.resolve('../shiritori-ui.css'),'utf8');
+  const workflow=fs.readFileSync(require.resolve('../.github/workflows/pages.yml'),'utf8');
+  assert.match(workflow,/cp -r assets _site/);
+  for(const name of ['top','ramune','zucchini']) {
+    assert.ok(css.includes(`assets/shiritori/${name}.svg`));
+    const svg=fs.readFileSync(path.join(__dirname,'..','assets','shiritori',`${name}.svg`),'utf8');
+    assert.match(svg,/<svg\s/); assert.doesNotMatch(svg,/(?:https?:)?\/\/(?!www\.w3\.org)/i);
+  }
+});

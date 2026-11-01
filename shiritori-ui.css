@@ -132,6 +132,19 @@
   }
 }
 .sh-daruma { width: 1em; height: 1.2em; background: url('assets/shiritori/daruma.svg') center / contain no-repeat; }
+/* Shared local pictures keep the board, dictionary and review recognizable
+   across emoji fonts; catalog IDs and saved reading keys stay unchanged. */
+.sh-art-top, .sh-art-ramune, .sh-art-zucchini {
+  display: inline-block; width: 1em; height: 1em;
+  background-position: center; background-size: contain; background-repeat: no-repeat;
+}
+.sh-art-top { background-image: url('assets/shiritori/top.svg'); }
+.sh-art-ramune { background-image: url('assets/shiritori/ramune.svg'); }
+.sh-art-zucchini { background-image: url('assets/shiritori/zucchini.svg'); }
+.sh-history-icon.sh-daruma, .sh-history-icon.sh-art-top,
+.sh-history-icon.sh-art-ramune, .sh-history-icon.sh-art-zucchini {
+  display: inline-block; width: 1.25em; height: 1.25em; vertical-align: -.25em;
+}
 .sh-levels button[aria-pressed='true'] { background: #395d62; border-color: var(--nr-gold); }
 .sh-overlay { position: fixed; inset: 0; z-index: 60; background: #06121ecb; display: flex; align-items: center; justify-content: center; padding: 12px; }
 .sh-dialog { padding: 24px; border-radius: 20px; width: min(520px, 100%); max-height: 100%; overflow: auto; background: #17313e; display: grid; gap: 14px; }
