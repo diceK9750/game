@@ -801,6 +801,7 @@ class ShiritoriRound:
         self.cpu_due = 0
         self.saved_cpu_remaining = 0
         self.revision = 0
+        self.deal_id = 0  # Distinguish queued input across rounds.
         self.cpu_move = None
         self.counter_ready = False
         self.counter_active = False
@@ -894,6 +895,7 @@ class ShiritoriRound:
             raise ValueError('Invalid perfect starting route or refill witness')
         self.remember_perfect(witnesses)
         self.initial_perfect_route = self.perfect_route
+        self.deal_id += 1
         self.revision += 1
 
     def moves(self):
@@ -1266,8 +1268,15 @@ class ShiritoriRound:
         else:
             self.finish("draw", "ここまでつながった！次は別の読み方にも挑戦しよう。")
 
-    def command(self, action, value=None):
+    def command(self, action, value=None, *, expected_card_id=None, expected_deal_id=None):
         self.update()  # Expired timers cannot be bypassed by late commands.
+        # A queued tap refers to the picture that was actually displayed. CPU
+        # moves and stock refills can replace it before this command is drained.
+        if action == "card" and expected_card_id is not None:
+            if (expected_deal_id != self.deal_id or type(value) is not int
+                    or not 0 <= value < len(self.cards)
+                    or self.cards[value][0] != expected_card_id):
+                return
         if action == "setup" and self.phase in ("paused", "finished"):
             self.phase = "intro"
             self.selected = None
@@ -1396,7 +1405,7 @@ class ShiritoriRound:
                 "you_count": you_count, "cpu_count": cpu_count,
                 "mistakes": self.mistakes, "miss_card": self.active_miss_card(),
                 "hints": self.hints, "hint": self.hint, "hint_repeatable": self.hint_repeatable(),
-                "selected": self.selected, "revision": self.revision,
+                "selected": self.selected, "revision": self.revision, "deal_id": self.deal_id,
                 "mode": self.mode, "total": self.total, "stock": len(self.stock), "completed": len(self.history),
                 "relinks": self.relinks, "refilled": self.refilled, "seen": sorted(self.seen) if visible else [],
                 "cards": [{"id": c[0], "icon": c[1], "words": c[2], "owner": self.used.get(i)} for i, c in enumerate(self.cards)] if visible else [],

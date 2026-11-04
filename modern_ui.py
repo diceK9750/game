@@ -108,7 +108,16 @@ class ModernUI:
                         sh.message = "DEBUG: この局面の認証済みルートなし"
             elif action.startswith("sh_"):
                 before = (len(app.shiritori.history), app.shiritori.mistakes)
-                app.shiritori.command(action[3:], value)
+                if action == 'sh_card' and ('card_id' in command or 'deal_id' in command):
+                    card_id, deal_id = command.get('card_id'), command.get('deal_id')
+                    # New-format input must include both exact metadata fields.
+                    # Integer-only v1 commands remain valid for cached clients.
+                    if type(card_id) is not str or type(deal_id) is not int:
+                        return
+                    app.shiritori.command('card', value, expected_card_id=card_id,
+                                          expected_deal_id=deal_id)
+                else:
+                    app.shiritori.command(action[3:], value)
                 if app.shiritori.mistakes > before[1]:
                     app.play_sfx(1)
                 elif len(app.shiritori.history) > before[0]:

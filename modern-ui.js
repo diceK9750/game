@@ -69,6 +69,7 @@
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   let state = null, sequence = 0, active = false, previousScreen = '', announcement = '', historyKey = '';
   let prevPrefs = null; // null until first paint — avoid toast on cold load
+  let prevSetupChoice = null;
   let scrollLocked = false;
   function setScrollLock(locked) {
     locked = Boolean(locked);
@@ -108,6 +109,14 @@
     const item = {id: sequence, action};
     if (value !== undefined) item.value = value;
     if (index !== undefined) item.index = index;
+    // Capture the picture visible at input time, not a later refill occupying
+    // the same slot. With an older engine lacking deal_id, keep v1 input.
+    if (action === 'sh_card' && Number.isInteger(value)) {
+      const sh = state.shiritori, visible = sh?.cards?.[value];
+      if (typeof visible?.id === 'string' && Number.isSafeInteger(sh?.deal_id)) {
+        item.card_id = visible.id; item.deal_id = sh.deal_id;
+      }
+    }
     queue.push(item);
     root.setAttribute('data-modern-commands', JSON.stringify(queue));
   }
@@ -441,6 +450,17 @@
       effects.textContent=sfx.textContent; effects.setAttribute('aria-pressed',String(!!state.sfx));
       animation.textContent=motion.textContent; animation.setAttribute('aria-pressed',String(reduced));
     }
+    // Only compare choices on consecutive snapshots of the same setup screen.
+    // The initial storage status can be false before any save was attempted.
+    const shChoice = state.shiritori;
+    const setupChoice = state.screen === 'ready'
+      ? ['numbers', state.kind, state.max_number, state.difficulty]
+      : state.screen === 'shiritori' && shChoice?.phase === 'intro'
+        ? ['pictures', shChoice.mode, shChoice.total, shChoice.difficulty, shChoice.rival_style]
+        : null;
+    const setupChanged = !changedScreen && setupChoice && prevSetupChoice
+      && setupChoice[0] === prevSetupChoice[0]
+      && setupChoice.some((value, index) => value !== prevSetupChoice[index]);
     // Persist-confirm toast when BGM / 効果音 / 演出 actually flip (not cold load).
     const prefs = {bgm: !!state.bgm, sfx: !!state.sfx, reduced};
     if (prevPrefs) {
@@ -451,12 +471,17 @@
       if (parts.length) {
         const ok = state.storage_saved !== false;
         showSettingsToast(`${parts.join(' · ')} · ${ok ? '保存しました' : '保存できませんでした'}`);
+      } else if (setupChanged && state.storage_saved === false) {
+        showSettingsToast('設定を保存できませんでした');
+      } else if (setupChanged && state.storage_saved === true && settingsToast.textContent === '設定を保存できませんでした') {
+        hideSettingsToast();
       } else if (changedScreen) {
         // Reduced-motion path has no animationend; dismiss on screen change.
         hideSettingsToast();
       }
     }
     prevPrefs = prefs;
+    prevSetupChoice = setupChoice;
     select(kindButtons, ['battle', 'practice'], state.kind); select(rangeButtons, [10, 20, 30, 40], state.max_number); select(levelButtons, ['easy', 'normal', 'hard'], state.difficulty);
     difficultyWrap.hidden = !battle;
     kindDescription.textContent = battle ? `先に見つけると1点。${state.goal || Math.ceil(state.max_number * .6)}点以上で勝利！` : '自分のペースで、すべての数字を見つけよう。';

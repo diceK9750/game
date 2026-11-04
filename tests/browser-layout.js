@@ -174,6 +174,37 @@ document.querySelector('#run').onclick=async()=>{
       document.querySelector('#status').textContent=`Checking ${results.length}`;
     }
   }
+  // Exercise the real hidden debug toggle, then restore its previous state.
+  // Do not modify the player's dictionary or any other localStorage key.
+  const doc=fixture.contentDocument;
+  await show(393,852,'shiritori','solo','setup');
+  const debugControl=()=>[...doc.querySelectorAll('.sh-play-actions button')]
+    .find(button=>button.textContent==='DEBUG 完走サポート');
+  const wasDebug=!!debugControl() && !debugControl().hidden;
+  let originalDebug, canRestoreDebug=false;
+  try { originalDebug=fixture.contentWindow.localStorage.getItem('number-rush.debug'); canRestoreDebug=true; } catch { /* Storage may be blocked. */ }
+  const toggleDebug=()=>{ const brand=doc.querySelector('.nr-brand'); for(let i=0;i<7;i++) brand.click(); };
+  try {
+    if(!wasDebug) toggleDebug();
+    const debugSizes=[[320,568],[360,800],[375,667],[393,852],[667,250],[667,300],[667,375],[852,393],[1280,720]];
+    for(const [w,h] of debugSizes)for(const mode of ['battle','solo'])for(const count of [12,48])for(const phase of ['play','updated']){
+      await show(w,h,'shiritori',mode,phase,{count});
+      const control=debugControl(), rect=control?.getBoundingClientRect();
+      const debugVisible=!!control && !control.hidden && rect.width>0 && rect.height>0;
+      const result={size:`${w}x${h}`,game:'shiritori',mode,phase:`debug-${phase}`,count,debugVisible,...measure()};
+      result.pass=debugVisible && passed(result);
+      results.push(result);document.querySelector('#status').textContent=`Checking ${results.length}`;
+    }
+  } finally {
+    if(!wasDebug) { await show(393,852,'shiritori','solo','setup'); toggleDebug(); }
+    if(canRestoreDebug) {
+      try {
+        const storage=fixture.contentWindow.localStorage;
+        if(originalDebug===null) storage.removeItem('number-rush.debug');
+        else storage.setItem('number-rush.debug',originalDebug);
+      } catch { /* Ignore storage policy changes during a manual run. */ }
+    }
+  }
   // New composition no longer has the old sibling hierarchy. Negative control
   // explicitly squeezes its HUD; geometry must still detect the original fault.
   await show(667,375,'numbers','battle','updated');

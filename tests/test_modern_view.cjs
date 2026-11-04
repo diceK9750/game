@@ -420,7 +420,7 @@ function browserHarness() {
   browserWindow.parent = { postMessage: (data, origin) => { posts.push({data, origin}); } };
   browserWindow.rivalCursor=require('../rival-cursor.js').rivalCursor;
   const debug = {toggles:0, overlay:false, now:100};
-  browserWindow.createShiritoriView=({section})=>({page:section('shiritori','sh-page'),update(){},isOverlayOpen:()=>debug.overlay,headerAction(){},toggleDebug(){return ++debug.toggles % 2 === 1;}});
+  browserWindow.createShiritoriView=({section,command})=>{ debug.shCommand=command; return {page:section('shiritori','sh-page'),update(){},isOverlayOpen:()=>debug.overlay,headerAction(){},toggleDebug(){return ++debug.toggles % 2 === 1;}}; };
   vm.runInNewContext(fs.readFileSync(require.resolve('../modern-ui.js'), 'utf8'), {
     document, window: browserWindow, location: {origin: 'http://localhost'}, console, Date:{now:()=>debug.now},
     MutationObserver: class { constructor(callback) { observers.push(callback); } observe() {} },
@@ -2403,4 +2403,86 @@ test('developer gesture is scoped to picture setup, bounded and keyboard accessi
   b.debug.overlay=true; for(let i=0;i<7;i++) tap(); assert.equal(b.debug.toggles,2);
   b.debug.overlay=false; b.render('shiritori',{shiritori:{phase:'playing'}});
   assert.equal(brand.tabIndex,-1); for(let i=0;i<7;i++) tap(); assert.equal(b.debug.toggles,2);
+});
+
+
+test('picture input carries the last rendered card and round identity', () => {
+  const b=browserHarness();
+  const first={phase:'playing',deal_id:5,cards:[{id:'tomato'},{id:'bird'}]};
+  b.render('shiritori',{shiritori:first});
+  b.debug.shCommand('sh_card',0);
+  b.debug.shCommand('sh_card',1);
+  assert.deepEqual(b.queue().map(({action,value,card_id,deal_id})=>({action,value,card_id,deal_id})), [
+    {action:'sh_card',value:0,card_id:'tomato',deal_id:5},
+    {action:'sh_card',value:1,card_id:'bird',deal_id:5},
+  ]);
+  // An engine state not yet painted cannot change what an in-flight click saw.
+  const notPainted={v:1,screen:'shiritori',cells:[],shiritori:{phase:'playing',deal_id:5,cards:[{id:'tie'}]}};
+  b.root.setAttribute('data-modern-state',JSON.stringify(notPainted));
+  b.debug.shCommand('sh_card',0);
+  assert.equal(b.queue().at(-1).card_id,'tomato');
+  b.notify('data-modern-state');
+  b.debug.shCommand('sh_card',0);
+  assert.equal(b.queue().at(-1).card_id,'tie');
+  // Old engines without a deal id keep the original integer command format.
+  b.render('shiritori',{shiritori:{phase:'playing',cards:[{id:'tomato'}]}});
+  b.debug.shCommand('sh_card',0);
+  assert.equal(b.queue().at(-1).value,0);
+  assert.equal(Object.hasOwn(b.queue().at(-1),'card_id'),false);
+  assert.equal(Object.hasOwn(b.queue().at(-1),'deal_id'),false);
+});
+
+
+test('failed number setup changes announce only actual same-screen save failures', () => {
+  const b=browserHarness();
+  const toast=()=>walk(b.app).find(n=>n.className==='nr-settings-toast');
+  const ready=(options={})=>b.render('ready',{kind:'battle',max_number:10,difficulty:'normal',bgm:true,sfx:true,reduced:false,...options});
+  ready({storage_saved:false});
+  assert.equal(toast().hidden,true,'cold start is not a save attempt');
+  ready({storage_saved:false});
+  assert.equal(toast().hidden,true,'unchanged selection does not warn');
+  ready({max_number:20,storage_saved:false});
+  assert.equal(toast().hidden,false);
+  assert.match(toast().textContent,/設定を保存できませんでした/);
+  ready({max_number:30,storage_saved:true});
+  assert.equal(toast().hidden,true,'a successful later save clears the stale warning');
+  ready({max_number:20,storage_saved:false});
+  assert.match(toast().textContent,/設定を保存できませんでした/);
+  toast().emit('animationend',{target:toast()});
+  ready({max_number:20,storage_saved:false});
+  assert.equal(toast().hidden,true,'unchanged snapshots do not repeat warnings');
+  ready({kind:'practice',max_number:20,storage_saved:true});
+  assert.equal(toast().hidden,true,'successful selection is quiet');
+  ready({kind:'practice',max_number:20,difficulty:'hard',storage_saved:false});
+  assert.match(toast().textContent,/設定を保存できませんでした/);
+});
+
+test('failed picture setup changes announce each supported setting without navigation false positives', () => {
+  const initial={phase:'intro',mode:'solo',total:12,difficulty:'normal',rival_style:'chain'};
+  for(const [key,value] of [['mode','battle'],['total',24],['difficulty','hard'],['rival_style','speed']]) {
+    const b=browserHarness();
+    const toast=()=>walk(b.app).find(n=>n.className==='nr-settings-toast');
+    b.render('ready',{storage_saved:false});
+    b.render('shiritori',{shiritori:{...initial},storage_saved:false});
+    assert.equal(toast().hidden,true,`${key}: screen change is not a warning`);
+    b.render('shiritori',{shiritori:{...initial,[key]:value},storage_saved:false});
+    assert.equal(toast().hidden,false,key);
+    assert.match(toast().textContent,/設定を保存できませんでした/,key);
+    toast().emit('animationend',{target:toast()});
+    b.render('shiritori',{shiritori:{...initial,[key]:value},storage_saved:false});
+    assert.equal(toast().hidden,true,`${key}: unchanged snapshot does not repeat`);
+  }
+});
+
+test('setup transitions, unavailable audio and successful picture saves do not warn', () => {
+  const b=browserHarness();
+  const toast=()=>walk(b.app).find(n=>n.className==='nr-settings-toast');
+  const settings={phase:'intro',mode:'solo',total:12,difficulty:'normal',rival_style:'chain'};
+  b.render('shiritori',{shiritori:settings,storage_saved:false,bgm:false,sfx:false,audio_available:false});
+  assert.equal(toast().hidden,true);
+  b.render('shiritori',{shiritori:{...settings,total:24},storage_saved:true,bgm:false,sfx:false,audio_available:false});
+  assert.equal(toast().hidden,true,'successful save has no failure message');
+  b.render('shiritori',{shiritori:{...settings,phase:'playing'},storage_saved:false,bgm:false,sfx:false,audio_available:false});
+  b.render('shiritori',{shiritori:{...settings,total:48},storage_saved:false,bgm:false,sfx:false,audio_available:false});
+  assert.equal(toast().hidden,true,'returning to setup is not a change within setup');
 });
