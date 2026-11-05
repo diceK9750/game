@@ -119,3 +119,55 @@ test('mute and page hiding cancel scheduled flourish notes and allow later playb
   handlers.visibilitychange();
   assert.ok(oscillators.every(osc => osc.disconnected === 1), 'cleanup remains idempotent');
 });
+
+test('voice graph failures do not propagate and later playback still works', async () => {
+  const handlers = {}, sources = [], gains = [];
+  const document = {hidden:false, addEventListener:(key, fn) => { handlers[key] = fn; }};
+  let failure = '';
+  class AudioContext {
+    state = 'running'; destination = {}; currentTime = 10;
+    resume(){ return Promise.resolve(); }
+    decodeAudioData(data){ return Promise.resolve(data); }
+    createBufferSource() {
+      if (failure === 'source') throw Error('source unavailable');
+      const item = {connected:0, disconnected:0, stopped:0, started:0,
+        connect(){ if (failure === 'source-connect') throw Error('connect failed'); this.connected++; },
+        disconnect(){ this.disconnected++; }, stop(){ this.stopped++; },
+        start(){ if (failure === 'start') throw Error('start failed'); this.started++; }};
+      sources.push(item); return item;
+    }
+    createGain() {
+      if (failure === 'gain') throw Error('gain unavailable');
+      const item = {disconnected:0,
+        gain:{value:0, setValueAtTime(){}, linearRampToValueAtTime(){ if (failure === 'envelope') throw Error('envelope failed'); }, cancelScheduledValues(){}},
+        connect(){ if (failure === 'gain-connect') throw Error('connect failed'); },
+        disconnect(){ this.disconnected++; }};
+      gains.push(item); return item;
+    }
+  }
+  const window = {AudioContext};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../chain-voice.js'), 'utf8'),
+    {window, document, fetch:async () => ({ok:true, arrayBuffer:async () => new ArrayBuffer(1)})});
+  await handlers.pointerdown(); await new Promise(resolve => setImmediate(resolve));
+  window.chainVoice.setEnabled(true);
+  for (const stage of ['source', 'gain', 'envelope', 'source-connect', 'gain-connect', 'start']) {
+    failure = stage;
+    const previousSources = sources.length, previousGains = gains.length;
+    assert.doesNotThrow(() => window.chainVoice.play('you', 1), `${stage} must not break game updates`);
+    if (sources.length > previousSources) {
+      assert.equal(sources.at(-1).stopped, 1, `${stage} source stopped`);
+      assert.equal(sources.at(-1).disconnected, 1, `${stage} source disconnected`);
+    }
+    if (gains.length > previousGains) assert.equal(gains.at(-1).disconnected, 1, `${stage} gain disconnected`);
+    failure = '';
+    window.chainVoice.play('you', 2);
+    assert.equal(sources.at(-1).started, 1, `${stage} does not prevent later playback`);
+    window.chainVoice.setEnabled(false);
+    assert.equal(sources.at(-1).stopped, 1, 'muting still stops successful playback');
+    window.chainVoice.setEnabled(true);
+  }
+  window.chainVoice.play('cpu', 1);
+  document.hidden = true;
+  handlers.visibilitychange();
+  assert.equal(sources.at(-1).stopped, 1, 'hiding still stops successful playback');
+});

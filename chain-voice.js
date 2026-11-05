@@ -107,24 +107,35 @@
       const buffer = buffers.get(`${owner}-${Math.min(7, count)}`);
       if (!buffer) return;
       stop(false);
-      const now = context.currentTime;
-      source = context.createBufferSource();
-      source.buffer = buffer;
-      gainNode = context.createGain();
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(LEVEL, now + FADE_IN);
-      const playingSource = source;
-      const playingGain = gainNode;
-      source.onended = () => {
-        try { playingSource.disconnect(); playingGain.disconnect(); } catch (_) {}
-        if (source === playingSource) {
-          source = null;
-          gainNode = null;
-        }
-      };
-      source.connect(gainNode);
-      gainNode.connect(context.destination);
-      source.start();
+      let playingSource, playingGain;
+      try {
+        const now = context.currentTime;
+        playingSource = context.createBufferSource();
+        playingSource.buffer = buffer;
+        playingGain = context.createGain();
+        playingGain.gain.setValueAtTime(0, now);
+        playingGain.gain.linearRampToValueAtTime(LEVEL, now + FADE_IN);
+        source = playingSource;
+        gainNode = playingGain;
+        playingSource.onended = () => {
+          try { playingSource.disconnect(); } catch (_) {}
+          try { playingGain.disconnect(); } catch (_) {}
+          if (source === playingSource) {
+            source = null;
+            gainNode = null;
+          }
+        };
+        playingSource.connect(playingGain);
+        playingGain.connect(context.destination);
+        playingSource.start();
+      } catch (_) {
+        // Audio failure must never disable the game UI. Release any partially
+        // constructed graph so the next call can try again normally.
+        if (source === playingSource) { source = null; gainNode = null; }
+        try { playingSource?.stop(); } catch (_) {}
+        try { playingSource?.disconnect(); } catch (_) {}
+        try { playingGain?.disconnect(); } catch (_) {}
+      }
     }
   };
 })();
