@@ -121,6 +121,11 @@
     dictionarySaveLive.setAttribute('role', 'status');
     dictionarySaveLive.setAttribute('aria-live', 'polite');
     dictionarySaveLive.setAttribute('aria-atomic', 'true');
+    const hintLive = E('div', 'nr-sr-only sh-hint-live');
+    hintLive.setAttribute('role', 'status');
+    hintLive.setAttribute('aria-live', 'polite');
+    hintLive.setAttribute('aria-atomic', 'true');
+    let hintAnnouncement = '';
     const stock = E('span', 'sh-stock'), completed = E('span');
     const board = E('div', 'sh-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', 'しりとりの絵札');
     const boardSpace = add(E('div', 'sh-board-space'), board);
@@ -134,7 +139,14 @@
       const hintLabel = E('span', 'sh-hint-label', '◆ ヒント'); hintLabel.hidden = true; hintLabel.setAttribute('aria-hidden', 'true');
       add(card, icon, mark, hintLabel); board.append(card); return {card, icon, mark, hintLabel, identity:null};
     });
-    const hint = button('ヒント', 'sh_hint');
+    const hint = button('ヒント', () => {
+      // Explicitly repeating the same paid hint should announce it again.
+      if (latest?.phase === 'playing' && latest.turn === 'you' && !hint.disabled && Number.isInteger(latest.hint)) {
+        hintAnnouncement = '';
+        hintLive.textContent = '';
+      }
+      return 'sh_hint';
+    });
     const timedChain = window.createTimedChainView?.({E, add, portraits:[rin,koh]});
     const relink = button('つなぎ直す', 'sh_relink', undefined, 'nr-primary');
     const toolbar = add(E('div', 'sh-actions sh-play-actions'), hint, relink);
@@ -212,7 +224,7 @@
     add(result, perfectFx, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultScore, resultKoh.wrap), reason, resultSecondary,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
-    add(page, statusLive, counterLive, dictionarySaveLive, intro, stage, pause, result);
+    add(page, statusLive, counterLive, dictionarySaveLive, hintLive, intro, stage, pause, result);
     let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false, keyboardCard = 0, boardCols = 4;
     // Remember keyboard ownership before a card becomes disabled. A pointer,
     // explicit focus change, window blur, or leaving play cancels recovery.
@@ -434,6 +446,15 @@
       styleHint.textContent = {chain:'連続回答を狙うバランス型', speed:'回答が速い。連鎖はやや控えめ', counter:'4連鎖後の次のCPUターンで反撃'}[s.rival_style] || '連続回答を狙うバランス型';
       start.textContent = solo ? '一人でスタート' : '対戦スタート';
       const mine = s.turn === 'you';
+      // Use reading-order card numbers: responsive columns can change on rotation.
+      const hintedCard = s.phase === 'playing' && mine && Number.isInteger(s.hint) &&
+        s.hint >= 0 && s.hint < slots.length ? s.cards?.[s.hint] : null;
+      const hintName = !hintedCard?.owner && typeof hintedCard?.words?.[0] === 'string' ? hintedCard.words[0] : '';
+      const nextHintAnnouncement = hintName ? `ヒントは左上から${s.hint + 1}番目の絵札、${hintName}です。` : '';
+      if (nextHintAnnouncement !== hintAnnouncement) {
+        hintAnnouncement = nextHintAnnouncement;
+        hintLive.textContent = hintAnnouncement;
+      }
       turn.textContent = solo ? '一人でじっくり' : s.combo_active ? mine ? 'あなたの連鎖中！' : 'ルナの連鎖中…' : mine ? 'あなたの番' : 'ルナが考えています…';
       prompt.textContent = `${s.last_word} →「${s.required}」`;
       const requiredKey = String(s.required ?? '');

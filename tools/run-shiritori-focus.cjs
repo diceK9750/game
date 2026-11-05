@@ -44,6 +44,23 @@ await render();assert.equal(await f.evaluate(()=>window.turnLiveWrites),cpuWrite
 state.shiritori.turn='you';await render();assert.match(await live.textContent(),/あなたの番。/);
 assert.ok(await f.evaluate(()=>window.turnLiveWrites)>cpuWrites,'player handoff updates live region');
 await f.evaluate(()=>window.turnLiveObserver.disconnect());
+// Picture hints expose the same card as the visible marker without flooding live output.
+const pictureHintLive=f.locator('.sh-hint-live'), pictureHintButton=f.locator('.sh-play-actions button').first();
+assert.equal(await pictureHintLive.textContent(),'');
+await f.evaluate(()=>{window.pictureHintWrites=0;window.pictureHintObserver=new MutationObserver(()=>window.pictureHintWrites++);window.pictureHintObserver.observe(document.querySelector('.sh-hint-live'),{childList:true,characterData:true,subtree:true});});
+state.shiritori.hint=3;await render();
+const hintText=await pictureHintLive.textContent();
+assert.match(hintText,/左上から4番目の絵札/);assert.ok(hintText.includes(state.shiritori.cards[3].words[0]));
+assert.equal(await cards.nth(3).getAttribute('data-hint'),'true');
+const pictureHintWrites=await f.evaluate(()=>window.pictureHintWrites);await render();
+assert.equal(await f.evaluate(()=>window.pictureHintWrites),pictureHintWrites,'same state does not reannounce picture hint');
+await pictureHintButton.click();assert.equal(await pictureHintLive.textContent(),'');await render();assert.equal(await pictureHintLive.textContent(),hintText,'repeat hint reannounces');
+state.shiritori.turn='cpu';await render();assert.equal(await pictureHintLive.textContent(),'','CPU turn hides hint announcement');
+state.shiritori.turn='you';await render();assert.equal(await pictureHintLive.textContent(),hintText);
+state.shiritori.phase='paused';await render();assert.equal(await pictureHintLive.textContent(),'');
+state.shiritori.phase='playing';await render();assert.equal(await pictureHintLive.textContent(),hintText);
+state.shiritori.hint=null;await render();assert.equal(await pictureHintLive.textContent(),'');
+await f.evaluate(()=>window.pictureHintObserver.disconnect());
 await f.evaluate(()=>{window.testClicks=0;document.querySelector('.sh-card').addEventListener('click',()=>window.testClicks++);document.addEventListener('keypress',e=>e.preventDefault());});
 await cards.nth(0).focus();await p.keyboard.press('Enter');assert.equal(await f.evaluate(()=>window.testClicks),1,'Enter sends one click');
 await p.keyboard.press('Space');assert.equal(await f.evaluate(()=>window.testClicks),2,'Space sends one native click');
