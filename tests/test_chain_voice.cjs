@@ -69,3 +69,53 @@ test('COUNTER cue, FEVER stinger and PERFECT fanfare honor mute and audio faults
   assert.doesNotThrow(()=>window.chainVoice.counterCue());
   document.hidden=true;window.chainVoice.fanfare();window.chainVoice.counterCue();assert.equal(notes,13);
 });
+
+test('mute and page hiding cancel scheduled flourish notes and allow later playback', async () => {
+  const handlers = {}, oscillators = [], gains = [];
+  const document = {hidden:false, addEventListener:(key, fn) => {handlers[key] = fn;}};
+  const param = () => ({setValueAtTime(){}, linearRampToValueAtTime(){}, exponentialRampToValueAtTime(){}});
+  class AudioContext {
+    state = 'running'; destination = {}; currentTime = 10;
+    resume(){return Promise.resolve();}
+    decodeAudioData(data){return Promise.resolve(data);}
+    createGain(){const gain = {gain:param(), connect(){}, disconnected:0, disconnect(){this.disconnected++;}}; gains.push(gain); return gain;}
+    createOscillator(){
+      const osc = {frequency:param(), stops:[], disconnected:0, connect(){}, start(){},
+        stop(time){this.stops.push(time);}, disconnect(){this.disconnected++;}};
+      oscillators.push(osc); return osc;
+    }
+  }
+  const window = {AudioContext};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../chain-voice.js'), 'utf8'),
+    {window, document, fetch:async () => ({ok:false})});
+  await handlers.pointerdown();
+  window.chainVoice.setEnabled(true);
+  window.chainVoice.fanfare();
+  assert.equal(oscillators.length, 4);
+  assert.ok(oscillators.every(osc => osc.stops.length === 1 && osc.stops[0] > 10), 'normal envelopes keep their scheduled decay');
+  oscillators[0].onended();
+  assert.equal(oscillators[0].disconnected, 1, 'naturally finished notes are released');
+  window.chainVoice.setEnabled(false);
+  assert.equal(oscillators[0].stops.length, 1, 'finished notes are not stopped twice');
+  for (const osc of oscillators.slice(1)) {
+    assert.equal(osc.stops.length, 2);
+    assert.equal(osc.stops[1], undefined, 'mute cancels scheduled playback immediately');
+    assert.equal(osc.disconnected, 1);
+  }
+  assert.ok(gains.every(gain => gain.disconnected === 1));
+  window.chainVoice.setEnabled(true);
+  window.chainVoice.stinger();
+  assert.equal(oscillators.length, 8, 'audio may play again when enabled');
+  // A browser may reject stopping an already-finished oscillator. It must not
+  // prevent the remaining scheduled notes from being stopped and disconnected.
+  oscillators[4].stop = function(time) { this.stops.push(time); if (time === undefined) throw Error('already stopped'); };
+  document.hidden = true;
+  assert.doesNotThrow(() => handlers.visibilitychange());
+  for (const osc of oscillators.slice(4)) {
+    assert.equal(osc.stops.length, 2);
+    assert.equal(osc.stops[1], undefined, 'hiding the page cancels scheduled playback immediately');
+    assert.equal(osc.disconnected, 1);
+  }
+  handlers.visibilitychange();
+  assert.ok(oscillators.every(osc => osc.disconnected === 1), 'cleanup remains idempotent');
+});

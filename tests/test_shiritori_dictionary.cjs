@@ -659,3 +659,32 @@ test('fork-and-knife legacy credits the named fork and never the unrelated plate
   assert.equal(reloaded.has('plate','おさら'),false);
   assert.ok(JSON.parse(data.get(key+'.protected')).found.includes(oldKey));
 });
+
+test('dictionary retries a temporarily unavailable localStorage getter without losing discoveries',()=>{
+  const {window,storage,data}=harness();
+  const key='number-rush.shiritori.dictionary.v1';
+  data.set(key,JSON.stringify({version:1,found:['dog:いぬ','retired:よみ'],future:'keep'}));
+  data.set(key+'.protected',JSON.stringify({version:1,found:['dog:いぬ','legacy:よみ']}));
+  let blocked=true;
+  Object.defineProperty(window,'localStorage',{get(){if(blocked)throw Error('temporarily denied');return storage;}});
+  const E=(tag,cls='',text='')=>({tagName:tag.toUpperCase(),className:cls,textContent:text,
+    hidden:false,children:[],dataset:{},setAttribute(){},addEventListener(){},focus(){},replaceChildren(){}});
+  const add=(parent,...children)=>{parent.children.push(...children);return parent;};
+  const dict=window.createShiritoriDictionary({E,add,onClose(){}});
+  const catalog=[{id:'cat',words:['ねこ']},{id:'dog',words:['いぬ']}];
+  dict.collection.configure(catalog);
+  assert.equal(dict.collection.discover('cat','ねこ'),true);
+  assert.ok(dict.collection.warning);
+  assert.deepEqual(JSON.parse(data.get(key)).found,['dog:いぬ','retired:よみ']);
+  blocked=false;
+  assert.equal(dict.collection.sync(),true);
+  assert.equal(dict.collection.warning,'');
+  for(const storageKey of [key,key+'.protected']) {
+    const saved=JSON.parse(data.get(storageKey));
+    for(const found of ['cat:ねこ','dog:いぬ','retired:よみ','legacy:よみ']) assert.ok(saved.found.includes(found));
+    assert.equal(saved.future,'keep');
+  }
+  const reloaded=window.createShiritoriCollection(storage);reloaded.configure(catalog);
+  assert.equal(reloaded.has('cat','ねこ'),true);
+  assert.equal(reloaded.has('dog','いぬ'),true);
+});

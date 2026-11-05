@@ -161,8 +161,12 @@
     };
   };
   window.createShiritoriDictionary = function ({E, add, onClose}) {
-    let storage;
-    try { storage = window.localStorage; } catch (_) {}
+    // Storage access itself can temporarily throw, not just getItem/setItem.
+    // Resolve it per operation so a later retry can preserve pending finds.
+    const storage = {
+      getItem(key) { return window.localStorage.getItem(key); },
+      setItem(key, value) { return window.localStorage.setItem(key, value); }
+    };
     const collection = window.createShiritoriCollection(storage);
     const page = E('div','sh-dictionary nr-surface'); page.hidden = true;
     const title = E('h1','','読み方ずかん'), progress = E('p','sh-dict-progress');

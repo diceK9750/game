@@ -4,6 +4,7 @@
   const FADE_IN = 0.04;
   const FADE_OUT = 0.1;
   const LEVEL = 0.75;
+  const flourishNodes = new Set();
 
   function stop(immediate) {
     if (!source) return;
@@ -45,14 +46,34 @@
 
   document.addEventListener('pointerdown', unlock, { passive: true });
   document.addEventListener('keydown', unlock);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stop(true); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { stop(true); stopFlourishes(); }
+  });
+
+  function finishFlourish(node) {
+    if (!flourishNodes.delete(node)) return;
+    try { node.oscillator.disconnect(); } catch (_) {}
+    try { node.envelope.disconnect(); } catch (_) {}
+  }
+
+  function stopFlourishes() {
+    for (const node of flourishNodes) {
+      try { node.oscillator.stop(); } catch (_) { /* already stopped */ }
+      finishFlourish(node);
+    }
+  }
 
   function flourish(notes, level = 0.085) {
     if (!enabled || document.hidden || !context || context.state !== 'running') return;
-    try {
-      const now = context.currentTime;
-      notes.forEach(([offset, frequency, duration], index) => {
+    let now;
+    try { now = context.currentTime; } catch (_) { return; }
+    notes.forEach(([offset, frequency, duration], index) => {
+      let node;
+      try {
         const oscillator = context.createOscillator(), envelope = context.createGain();
+        node = {oscillator, envelope};
+        flourishNodes.add(node);
+        oscillator.onended = () => finishFlourish(node);
         oscillator.type = index % 2 ? 'sine' : 'triangle';
         oscillator.frequency.setValueAtTime(frequency, now + offset);
         envelope.gain.setValueAtTime(0, now + offset);
@@ -60,15 +81,20 @@
         envelope.gain.exponentialRampToValueAtTime(.001, now + offset + duration);
         oscillator.connect(envelope); envelope.connect(context.destination);
         oscillator.start(now + offset); oscillator.stop(now + offset + duration + .01);
-        oscillator.onended = () => { try { oscillator.disconnect(); envelope.disconnect(); } catch (_) {} };
-      });
-    } catch (_) { /* Audio failure must never block card interaction. */ }
+      } catch (_) {
+        // A partial audio graph must not leak or block subsequent interaction.
+        if (node) {
+          try { node.oscillator.stop(); } catch (_) {}
+          finishFlourish(node);
+        }
+      }
+    });
   }
 
   window.chainVoice = {
     setEnabled(value) {
       enabled = !!value;
-      if (!enabled) stop(true);
+      if (!enabled) { stop(true); stopFlourishes(); }
     },
     stinger() { flourish([[0, 392, .12], [.07, 523.25, .15], [.15, 659.25, .22], [.23, 783.99, .31]]); },
     counterCue() { flourish([[0, 466.16, .10], [.09, 622.25, .16]], .045); },
