@@ -214,6 +214,17 @@
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
     add(page, statusLive, counterLive, dictionarySaveLive, intro, stage, pause, result);
     let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false, keyboardCard = 0, boardCols = 4;
+    // Remember keyboard ownership before a card becomes disabled. A pointer,
+    // explicit focus change, window blur, or leaving play cancels recovery.
+    let keyboardInput = false, pendingCardFocus = null;
+    document.addEventListener?.('keydown', () => { keyboardInput = true; }, true);
+    document.addEventListener?.('pointerdown', () => { keyboardInput = false; pendingCardFocus = null; }, true);
+    document.addEventListener?.('focusin', event => {
+      if (pendingCardFocus !== null && event.target !== document.body &&
+          event.target !== document.documentElement && !slots.some(item => item.card === event.target)) pendingCardFocus = null;
+    }, true);
+    window.addEventListener?.('blur', () => { pendingCardFocus = null; });
+    document.addEventListener?.('visibilitychange', () => { if (document.hidden) pendingCardFocus = null; });
     let announcement = '', announcedCounterEvent = 0, hadLiveDictionaryWarning = false;
     const helpPage=E('div','sh-intro nr-help-card nr-surface');
     const closeHelp=E('button','nr-button nr-primary','戻る'); closeHelp.type='button';
@@ -361,6 +372,13 @@
         if (action==='retry' && ['playing','blocked'].includes(latest?.phase)) { restartRequested='sh_restart'; command('sh_pause'); }
       }, update(s) {
       if (!s) return;
+      const previous = latest;
+      if (s.phase !== 'playing' || previous?.phase !== 'playing' || s.mode !== previous?.mode) pendingCardFocus = null;
+      const focusedIndex = slots.findIndex(item => item.card === document.activeElement);
+      if (previous?.phase === 'playing' && s.phase === 'playing' && keyboardInput && focusedIndex >= 0) {
+        const nextCard = s.cards?.[focusedIndex];
+        if (!nextCard || nextCard.owner || (s.mode !== 'solo' && s.turn !== 'you')) pendingCardFocus = focusedIndex;
+      }
       latest = s;
       if (dictionary) {
         if (!catalogLoaded && s.catalog?.length) { dictionary.collection.configure(s.catalog); catalogLoaded=true; }
@@ -520,6 +538,26 @@
         card.dataset.cpuSelecting = String(i===cpuCursor);
         card.setAttribute('aria-label', `${hinted ? 'ヒント：' : missed ? 'ミス：' : refilled ? 'NEW補充：' : ''}絵札${i + 1} ${data.words[0]}${data.owner ? ' 使用済み' : ' タップで自動回答'}`);
       });
+      // Only reclaim focus that disappeared when this view disabled a card.
+      // Wait until the player can act; never override another focused control.
+      if (pendingCardFocus !== null && (page.closest('[hidden]') || document.hidden ||
+          (document.hasFocus && !document.hasFocus()))) pendingCardFocus = null;
+      if (pendingCardFocus !== null && s.phase === 'playing' && mine &&
+          !dictionaryOpen && !helpOpen && restartPage.hidden) {
+        const active = document.activeElement;
+        if (active === document.body || active === document.documentElement || active === slots[pendingCardFocus]?.card) {
+          const available = slots.map(item => !item.card.hidden && !item.card.disabled);
+          // Follow the reading order across row boundaries rather than jumping
+          // to the board start when the selected card was at the row end.
+          let index = available[pendingCardFocus] ? pendingCardFocus : -1;
+          for (let step = 1; index < 0 && step <= available.length; step++) {
+            const candidate = (pendingCardFocus + step) % available.length;
+            if (available[candidate]) index = candidate;
+          }
+          pendingCardFocus = null;
+          if (index >= 0) { keyboardCard = index; slots[index].card.focus({preventScroll:true}); }
+        } else pendingCardFocus = null;
+      }
       resultTitle.textContent = outcomeTitle;
       result.dataset.perfect = String(perfect);
       result.dataset.victory = String(!solo && perfect && s.winner === 'you');

@@ -4,7 +4,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 
 function harness(debug = false) {
-  const doc = {activeElement: null};
+  const doc = {activeElement: null, body: {}, documentElement: {}, events: {}, hasFocus: () => true,
+    addEventListener(key, fn) { this.events[key] = fn; },
+    emit(key, event = {}) { this.events[key]?.(event); }};
   class Element {
     constructor(tag, cls = '', text = '') {
       this.tagName = tag.toUpperCase(); this.className = cls; this.textContent = text; this.children = [];
@@ -1691,4 +1693,36 @@ test('dictionary write failure is visible during play, announced once, and clear
   const saved=JSON.parse(window.localStorage.getItem('number-rush.shiritori.dictionary.v1'));
   assert.equal(saved.found.length,2,'both in-memory discoveries survive the retry');
   assert.match(view.page.querySelectorAll('.sh-dict-open')[0].textContent,/2 \/ 3/);
+});
+
+
+test('keyboard card focus returns after CPU and same-turn claimed cards, respecting intentional navigation', () => {
+  const {view, state, doc} = harness();
+  const keyboard = () => doc.emit('keydown', {key:'Enter'});
+  const render = (turn, cards=state.cards) => view.update({...state, turn, cards});
+  render('you');
+  const cards = view.page.querySelectorAll('.sh-card');
+  const loseFocusWhenDisabled = card => {
+    let disabled = false;
+    Object.defineProperty(card, 'disabled', {configurable:true, get:()=>disabled,
+      set(value) { disabled=value; if (value && doc.activeElement===card) doc.activeElement=doc.body; }});
+  };
+  cards.forEach(loseFocusWhenDisabled);
+  cards[2].focus(); keyboard(); render('cpu');
+  assert.equal(doc.activeElement, doc.body, 'disabled focused card loses focus');
+  render('you'); assert.equal(doc.activeElement, cards[2], 'CPU return restores original available card');
+  const claimed = state.cards.map((c,i)=>i===2 ? {...c, owner:'you'} : c);
+  keyboard(); render('you', claimed);
+  assert.equal(doc.activeElement, cards[3], 'same-turn claimed card moves focus to the next available card');
+  cards[3].focus(); keyboard(); render('cpu');
+  const header = {tagName:'BUTTON'}; doc.activeElement=header; doc.emit('focusin',{target:header});
+  render('you'); assert.equal(doc.activeElement, header, 'explicit header focus is respected');
+  cards[3].focus(); keyboard(); render('cpu');
+  doc.emit('pointerdown',{}); render('you');
+  assert.equal(doc.activeElement, doc.body, 'pointer interaction cancels restoration');
+  cards[3].focus(); keyboard(); render('cpu');
+  view.update({...state, phase:'paused', turn:'cpu'});
+  const paused = doc.activeElement;
+  view.update({...state, phase:'intro', turn:'you'});
+  assert.notEqual(doc.activeElement, cards[3], 'old round does not regain focus');
 });

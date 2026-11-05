@@ -810,6 +810,9 @@
     const root = dialogTrapRoot(screen);
     return root ? dialogTabStops(root) : [];
   }
+  // Pyxel also listens for keypress and can cancel the browser's native
+  // Enter activation. Keep the default action inside the modern UI intact.
+  app.addEventListener('keypress', event => { event.stopPropagation(); });
   app.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
       // Toggle pause while playing; dismiss confirm without accepting quit/retry;

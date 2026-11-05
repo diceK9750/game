@@ -2486,3 +2486,10 @@ test('setup transitions, unavailable audio and successful picture saves do not w
   b.render('shiritori',{shiritori:{...settings,total:48},storage_saved:false,bgm:false,sfx:false,audio_available:false});
   assert.equal(toast().hidden,true,'returning to setup is not a change within setup');
 });
+
+
+test('keypress stays inside the modern UI without cancelling native activation', () => {
+  const b=browserHarness(); let stopped=0, prevented=0;
+  b.app.emit('keypress', {key:'Enter', stopPropagation(){stopped++}, preventDefault(){prevented++}});
+  assert.equal(stopped,1); assert.equal(prevented,0);
+});

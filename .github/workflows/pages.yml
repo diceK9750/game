@@ -42,6 +42,7 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid"' EXIT
           node tools/run-browser-layout.cjs
+          node tools/run-shiritori-focus.cjs
 
   deploy:
     needs: test
