@@ -765,9 +765,8 @@
   function safeUpdate() {
     try { update(); } catch (error) { fallback(); console.warn('Modern view unavailable; using Pyxel.', error); }
   }
-  // Keep Tab/Shift+Tab cycling inside confirm/help/finished/review/home/
-  // countdown/resuming so focus cannot escape to header chrome (♪) or a hidden
-  // board behind the overlay.
+  // Keep Tab/Shift+Tab inside modal and result controls. The home and ready
+  // pages remain non-modal, so native Tab can reach the shared header.
   function dialogTabStops(root) {
     const stops = [];
     (function visit(node) {
@@ -783,21 +782,12 @@
     if (screen === 'help') return helpScreen;
     if (screen === 'finished') return finished;
     if (screen === 'review') return review;
-    // Game chooser: trap among .nr-game-choices cards only (#53). Header ♪ /
-    // ゲーム選択 stay outside. Entry focus stays first enabled card (#51).
-    if (screen === 'home') return homeChoices;
     // Countdown cancel-only (#57 / entry #55): trap on the shared countdown
     // section. Resuming reuses the same DOM; button hide is handled in stops.
     if (screen === 'countdown' || screen === 'resuming') return countdown;
     return null;
   }
   function dialogTrapStops(screen) {
-    // Ready is a normal page: native Tab includes header, sound and FX settings.
-    if (screen === 'home') {
-      // Game chooser: cycle enabled .nr-game-card only. dialogTabStops skips
-      // disabled cards (絵しりとり unavailable → 数字さがし alone). Entry (#51).
-      return dialogTabStops(homeChoices);
-    }
     if (screen === 'countdown' || screen === 'resuming') {
       // Cancel-only ring: visible 「モード選択へ」. Resuming hides that button —
       // reclaim onto the countdown heading (tabIndex -1) so Tab cannot escape to
@@ -826,8 +816,8 @@
         command('back');
       }
     } else if (dialogTrapRoot(state?.screen) && event.key === 'Tab') {
-      // Cycle visible confirm/help/finished/review/home/countdown controls
-      // only (#45/#47/#48/#52/#53/#57). Esc (#16 help→back / confirm), entry (#43 help→戻る), finished
+      // Cycle visible confirm/help/finished/review/countdown controls
+      // only (#45/#47/#48/#52/#57). Esc (#16 help→back / confirm), entry (#43 help→戻る), finished
       // replay focus+Enter (#17), ready 「1から順番」 (#50), home first-card (#51),
       // countdown 「モード選択へ」 (#55), and pause→resume cell restore (#42) stay
       // intact. Resuming reclaims the heading when cancel is hidden.

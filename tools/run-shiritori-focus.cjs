@@ -1,6 +1,17 @@
 const {chromium}=require('playwright'); const assert=require('node:assert/strict');
 (async()=>{const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_BINARY,args:['--no-sandbox']});
 try {const p=await browser.newPage({viewport:{width:900,height:650}});await p.goto(process.argv[2] || 'http://127.0.0.1:8765/tests/browser-layout.html');await p.locator('#fixture').evaluate(el=>{el.style.width='892px';el.style.height='642px'});const f=p.frames().find(x=>x.url().includes('layout-fixture'));
+// Home is a normal page: browser Tab must reach the visible BGM control.
+const homeState=await p.evaluate(()=>snapshot('numbers','solo','setup'));
+await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),homeState);
+homeState.screen='home';await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),homeState);
+await p.waitForTimeout(60);
+const picture=f.locator('.nr-picture-game'), numbers=f.locator('.nr-number-game'), sound=f.getByRole('button',{name:'BGMのオン・オフ'});
+await picture.focus();await p.keyboard.press('Shift+Tab');assert.equal(await f.evaluate(()=>document.activeElement.getAttribute('aria-label')),'BGMのオン・オフ','Shift+Tab reaches BGM');
+await p.keyboard.press('Tab');assert.equal(await f.evaluate(()=>document.activeElement.classList.contains('nr-picture-game')),true,'Tab returns to picture game');
+await sound.focus();await picture.evaluate(el=>{el.disabled=true});await p.keyboard.press('Tab');assert.equal(await f.evaluate(()=>document.activeElement.classList.contains('nr-number-game')),true,'native Tab skips disabled game');
+await picture.evaluate(el=>{el.disabled=false});await numbers.focus();await p.keyboard.press('Tab');assert.notEqual(await f.evaluate(()=>document.activeElement.classList.contains('nr-game-card')),true,'Tab can leave the two game cards');
+homeState.audio_available=false;await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),homeState);await p.waitForTimeout(60);assert.equal(await sound.isDisabled(),true,'unavailable audio disables BGM');await picture.focus();await p.keyboard.press('Shift+Tab');assert.notEqual(await f.evaluate(()=>document.activeElement.getAttribute('aria-label')),'BGMのオン・オフ','native Tab skips disabled BGM');
 const state=await p.evaluate(()=>snapshot('shiritori','battle','play'));
 async function render(){await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),state);await p.waitForTimeout(60)}
 await render();const cards=f.locator('.sh-card');
