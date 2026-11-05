@@ -1965,6 +1965,52 @@ test('practice hint uses dedicated nr-hint affordance (not muted nr-setting)', (
   assert.match(player, /mobile-layout\.css\?v=shared-arena-114-2/);
 });
 
+test('number hint exposes valid practice position and refreshes only on deliberate repeat', () => {
+  const b = browserHarness();
+  const hint = walk(b.app).find(n => n.tagName === 'BUTTON' && String(n.className).includes('nr-hint'));
+  const live = walk(b.app).filter(n => n.getAttribute('aria-live') === 'polite' && n.className === 'nr-sr-only');
+  assert.equal(live.length, 2);
+  const [status, hintStatus] = live;
+  const round = b.render('playing', {kind:'practice', target:4, hint_index:null});
+  assert.equal(hintStatus.textContent, '');
+  assert.equal(b.cells()[3].getAttribute('aria-label'), '4');
+  round.hint_index = 3; b.render('playing', round);
+  assert.equal(hintStatus.textContent, 'ヒントは1行4列です。');
+  assert.match(b.cells()[3].getAttribute('aria-label'), /ヒント 1行4列/);
+  const before = status.textContent;
+  b.render('playing', {...round, elapsed:1.4});
+  assert.equal(status.textContent, before);
+  assert.equal(hintStatus.textContent, 'ヒントは1行4列です。');
+  hint.emit('click');
+  assert.equal(hintStatus.textContent, '', 'repeat clears old message before confirmed state');
+  b.render('playing', {...round, ack:1});
+  assert.equal(hintStatus.textContent, 'ヒントは1行4列です。', 'repeat announces again');
+  b.render('playing', {...round, hint_index:null});
+  assert.equal(hintStatus.textContent, '');
+  assert.equal(status.textContent, before, 'expiration does not repeat the main status');
+  assert.equal(b.cells()[3].getAttribute('aria-label'), '4');
+  b.render('playing', {...round, target:40, hint_index:39});
+  assert.equal(hintStatus.textContent, 'ヒントは5行8列です。');
+  b.render('playing', {...round, kind:'battle'});
+  assert.equal(hintStatus.textContent, '');
+  assert.doesNotMatch(b.cells()[3].getAttribute('aria-label'), /ヒント/);
+  for (const hint_index of [-1, 40, 3.5, '3']) {
+    b.render('playing', {...round, hint_index});
+    assert.equal(hintStatus.textContent, '', `invalid hint ${hint_index} is not announced`);
+  }
+  const claimed = {...round, cells:round.cells.map((c,i)=>i===3 ? {...c,owner:'you'} : c)};
+  b.render('playing', claimed);
+  assert.equal(hintStatus.textContent, '');
+  b.render('playing', {...round, target:5});
+  assert.equal(hintStatus.textContent, '', 'stale position for another target is not announced');
+  b.render('playing', {...round, target:null, cells:round.cells.map((c,i)=>i===3 ? {...c,n:null} : c)});
+  assert.equal(hintStatus.textContent, '', 'empty cells are never hinted');
+  b.render('confirm', {cells:[], kind:'practice', hint_index:3});
+  assert.equal(hintStatus.textContent, '');
+  b.render('finished', {...round, screen:'finished'});
+  assert.equal(hintStatus.textContent, '');
+});
+
 test('practice play shows mint hint control; battle hides it; used state updates aria', () => {
   const b = browserHarness();
   b.render('playing', {kind: 'practice', hint_used: false});

@@ -12,6 +12,25 @@ await p.keyboard.press('Tab');assert.equal(await f.evaluate(()=>document.activeE
 await sound.focus();await picture.evaluate(el=>{el.disabled=true});await p.keyboard.press('Tab');assert.equal(await f.evaluate(()=>document.activeElement.classList.contains('nr-number-game')),true,'native Tab skips disabled game');
 await picture.evaluate(el=>{el.disabled=false});await numbers.focus();await p.keyboard.press('Tab');assert.notEqual(await f.evaluate(()=>document.activeElement.classList.contains('nr-game-card')),true,'Tab can leave the two game cards');
 homeState.audio_available=false;await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),homeState);await p.waitForTimeout(60);assert.equal(await sound.isDisabled(),true,'unavailable audio disables BGM');await picture.focus();await p.keyboard.press('Shift+Tab');assert.notEqual(await f.evaluate(()=>document.activeElement.getAttribute('aria-label')),'BGMのオン・オフ','native Tab skips disabled BGM');
+// Number practice exposes hint position without reannouncing every frame.
+const numberState=await p.evaluate(()=>snapshot('numbers','solo','play'));
+numberState.target=numberState.cells[3].n; numberState.hint_index=null;
+async function renderNumber() { await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),numberState); await p.waitForTimeout(60); }
+await renderNumber();
+const numberHintLive=f.locator('#modern-app > .nr-sr-only').nth(1);
+assert.equal(await numberHintLive.textContent(),'');
+await f.evaluate(()=>{window.numberHintWrites=0;window.numberHintObserver=new MutationObserver(()=>window.numberHintWrites++);window.numberHintObserver.observe(document.querySelectorAll('#modern-app > .nr-sr-only')[1],{childList:true,characterData:true,subtree:true});});
+numberState.hint_index=3; await renderNumber();
+assert.equal(await numberHintLive.textContent(),'ヒントは1行4列です。');
+assert.match(await f.locator('.nr-cell').nth(3).getAttribute('aria-label'),/ヒント 1行4列/);
+const hintWrites=await f.evaluate(()=>window.numberHintWrites); await renderNumber();
+assert.equal(await f.evaluate(()=>window.numberHintWrites),hintWrites,'unchanged state does not reannounce');
+await f.locator('.nr-hint').click(); assert.equal(await numberHintLive.textContent(),'');
+numberState.ack=(numberState.ack||0)+1;await renderNumber();assert.equal(await numberHintLive.textContent(),'ヒントは1行4列です。','repeated hint reannounces');
+numberState.hint_index=null;await renderNumber();assert.equal(await numberHintLive.textContent(),'');
+assert.doesNotMatch(await f.locator('.nr-cell').nth(3).getAttribute('aria-label'),/ヒント/);
+numberState.kind='battle';numberState.hint_index=3;await renderNumber();assert.equal(await numberHintLive.textContent(),'');
+await f.evaluate(()=>window.numberHintObserver.disconnect());
 const state=await p.evaluate(()=>snapshot('shiritori','battle','play'));
 async function render(){await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),state);await p.waitForTimeout(60)}
 await render();const cards=f.locator('.sh-card');

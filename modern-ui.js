@@ -149,6 +149,9 @@
   }
   const live = E('div', 'nr-sr-only');
   live.setAttribute('role', 'status'); live.setAttribute('aria-live', 'polite'); live.setAttribute('aria-atomic', 'true');
+  const hintLive = E('div', 'nr-sr-only');
+  hintLive.setAttribute('role', 'status'); hintLive.setAttribute('aria-live', 'polite'); hintLive.setAttribute('aria-atomic', 'true');
+  let hintAnnouncement = '';
   const header = E('header', 'nr-header');
   const brand = add(E('div', 'nr-brand'), E('span', 'nr-brand-symbol', '✦'), add(E('div'), E('span', 'nr-brand-name', 'NUMBER RUSH'), E('span', 'nr-brand-sub', 'ランタン・リーグ')));
   const headerContext = E('span', 'nr-header-context');
@@ -185,7 +188,7 @@
     if (event.target !== settingsToast) return;
     hideSettingsToast();
   });
-  app.append(header, live, settingsToast);
+  app.append(header, live, hintLive, settingsToast);
 
   // Only the picture-game setup screen accepts the developer gesture.
   let debugTapCount = 0, debugTapStart = 0;
@@ -335,6 +338,13 @@
   const feedback = E('p', 'nr-feedback', 'お題を見て、落ち着いて。');
   const hint = button('ヒントを見る', 'hint', undefined, 'nr-hint');
   hint.setAttribute('aria-label', 'ヒントを見る（使うとベスト記録対象外）');
+  // A deliberate repeat must announce the same still-visible hint again.
+  hint.addEventListener('click', () => {
+    if (state?.screen === 'playing' && state.kind === 'practice' && Number.isInteger(state.hint_index)) {
+      hintAnnouncement = '';
+      hintLive.textContent = '';
+    }
+  });
   const middle = add(E('div', 'nr-stage-middle'), playStats, add(E('div', 'nr-cpu-row'), cpuClock, cpuTrack), feedback, hint);
   const timedChain = window.createTimedChainView?.({E, add, portraits:[playRin,playKoh]});
   if (timedChain) middle.append(timedChain.root);
@@ -539,6 +549,16 @@
     let recent = '';
     let recentStarted = -1;
     if (!playing) stageCopyFloor = -1;
+    const hintIndex = playing && state.kind === 'practice' && Number.isInteger(state.target) && Number.isInteger(state.hint_index) &&
+      state.hint_index >= 0 && state.hint_index < cells.length &&
+      state.cells[state.hint_index]?.n === state.target && !state.cells[state.hint_index]?.owner
+      ? state.hint_index : -1;
+    const hintPosition = hintIndex < 0 ? '' : `${Math.floor(hintIndex / 8) + 1}行${hintIndex % 8 + 1}列`;
+    const nextHintAnnouncement = hintPosition ? `ヒントは${hintPosition}です。` : '';
+    if (nextHintAnnouncement !== hintAnnouncement) {
+      hintAnnouncement = nextHintAnnouncement;
+      hintLive.textContent = hintAnnouncement;
+    }
     const cpuCursor = playing && battle ? window.rivalCursor?.(40,8,state.cells.findIndex(c=>c.n===state.target),cpuProgress) : null;
     if (!playing) cells.forEach(item=>{ item.cell.dataset.cpuSelecting='false'; });
     state.cells.forEach((data, index) => {
@@ -547,10 +567,10 @@
       item.cell.disabled = !playing || empty || claimed;
       item.cell.dataset.owner = data.owner || ''; item.cell.dataset.empty = String(empty);
       item.cell.dataset.feedback = data.effect || '';
-      item.cell.dataset.hint = String(playing && index === state.hint_index);
+      item.cell.dataset.hint = String(index === hintIndex);
       item.cell.dataset.cpuSelecting = String(index === cpuCursor);
       item.owner.textContent = data.owner === 'cpu' ? 'CPU' : claimed ? '✓' : '';
-      item.cell.setAttribute('aria-label', empty ? '空のマス' : `${data.n}${data.owner === 'cpu' ? ' CPUが獲得' : claimed ? ' 獲得済み' : ''}`);
+      item.cell.setAttribute('aria-label', empty ? '空のマス' : `${data.n}${data.owner === 'cpu' ? ' CPUが獲得' : claimed ? ' 獲得済み' : ''}${index === hintIndex ? ` ヒント ${hintPosition}` : ''}`);
       if (data.effect && data.effect_id !== item.effectId) {
         item.effectId = data.effect_id;
         const type = data.effect === 'wrong' ? 'wrong' : data.effect === 'cpu' ? 'cpu' : 'correct';
