@@ -117,6 +117,10 @@
     counterLive.setAttribute('role', 'status');
     counterLive.setAttribute('aria-live', 'polite');
     counterLive.setAttribute('aria-atomic', 'true');
+    const dictionarySaveLive = E('div', 'nr-sr-only');
+    dictionarySaveLive.setAttribute('role', 'status');
+    dictionarySaveLive.setAttribute('aria-live', 'polite');
+    dictionarySaveLive.setAttribute('aria-atomic', 'true');
     const stock = E('span', 'sh-stock'), completed = E('span');
     const board = E('div', 'sh-board'); board.setAttribute('role', 'group'); board.setAttribute('aria-label', 'しりとりの絵札');
     const boardSpace = add(E('div', 'sh-board-space'), board);
@@ -208,9 +212,9 @@
     add(result, perfectFx, resultTitle, add(E('div', 'sh-result-cast'), resultRin.wrap, resultScore, resultKoh.wrap), reason, resultSecondary,
       add(E('div', 'nr-result-actions'), resultRetry, resultSetup),
       add(E('details', 'sh-result-history'), E('summary', '', 'ことばと別の読み方を振り返る'), log));
-    add(page, statusLive, counterLive, intro, stage, pause, result);
+    add(page, statusLive, counterLive, dictionarySaveLive, intro, stage, pause, result);
     let lastPhase = '', historyKey = '', latest = null, helpOpen=false, restartRequested=false, keyboardCard = 0, boardCols = 4;
-    let announcement = '', announcedCounterEvent = 0;
+    let announcement = '', announcedCounterEvent = 0, hadLiveDictionaryWarning = false;
     const helpPage=E('div','sh-intro nr-help-card nr-surface');
     const closeHelp=E('button','nr-button nr-primary','戻る'); closeHelp.type='button';
     closeHelp.addEventListener('click',()=>{helpOpen=false; helpPage.hidden=true; intro.hidden=false; onNavigationChange(); intro.querySelector('h1').focus();});
@@ -427,7 +431,16 @@
       }
       clock.textContent = solo ? '時間無制限' : s.combo_active ? `連鎖 ${s.combo_remaining.toFixed(1)}秒` : mine ? `${s.remaining.toFixed(1)} 秒` : '…';
       clock.dataset.urgent = String(!solo && mine && (s.combo_active ? s.combo_remaining < 1.5 : s.remaining < 5));
-      status.textContent = s.message + (newFind ? ` · ${newFind}` : '');
+      // A failed dictionary write must be visible before a player leaves the game.
+      const liveDictionaryWarning = Boolean(live && dictionary?.collection.warning);
+      status.dataset.saveWarning = String(liveDictionaryWarning);
+      status.textContent = liveDictionaryWarning ? '⚠ 図鑑を保存できません' : s.message + (newFind ? ` · ${newFind}` : '');
+      if (liveDictionaryWarning !== hadLiveDictionaryWarning) {
+        dictionarySaveLive.textContent = liveDictionaryWarning
+          ? '図鑑を保存できません。保存されていない発見は、ページを閉じると失われます。'
+          : live ? '図鑑の保存が復旧しました。' : '';
+        hadLiveDictionaryWarning = liveDictionaryWarning;
+      }
       // Durable miss guidance feeds polite live region so SR hear「ちがう絵」even when
       // short-landscape .sh-status ellipsizes; visual strip + #65 outline stay non-live (#98).
       const missGuidance = live && s.miss_card != null

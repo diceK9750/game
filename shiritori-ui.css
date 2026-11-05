@@ -81,6 +81,7 @@
 .sh-clock { font-variant-numeric: tabular-nums; min-width: 64px; }
 .sh-clock[data-urgent='true'] { color: #ff9fae; }
 .sh-status { min-height: 22px; text-align: center; font-size: 13px; }
+#modern-app .sh-status[data-save-warning='true'] { color: #ffe0a3; font-weight: 700; }
 .sh-board { flex: 1; min-height: 200px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(44px, 1fr)); gap: 6px; }
 .sh-card { min-width: 0; padding: 2px; border-radius: 12px; border: 2px solid #d7ebe1; background: linear-gradient(#fffef4, #e3ece0); color: #19343b; display: flex; align-items: center; justify-content: center; gap: 4px; flex-direction: column; }
 .sh-icon { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif; font-size: clamp(30px, min(6vw, 10vh), 96px); line-height: 1.1; }

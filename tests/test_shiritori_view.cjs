@@ -1655,3 +1655,40 @@ test('debug toggle works for this session if browser storage is blocked', () => 
   assert.equal(view.toggleDebug(),false);
   assert.equal(view.page.querySelectorAll('button').find(b=>b.textContent==='DEBUG 完走サポート').hidden,true);
 });
+
+
+test('dictionary write failure is visible during play, announced once, and clears on recovery', () => {
+  const {view,state,window,queue}=harness();
+  view.update({...state,phase:'intro'});
+  const normalWrite=window.localStorage.setItem;
+  window.localStorage.setItem=()=>{throw new Error('storage blocked')};
+  const saveLive=view.page.querySelectorAll('.nr-sr-only')[2];
+  assert.equal(saveLive['aria-live'],'polite');
+  let liveText=saveLive.textContent, writes=0;
+  Object.defineProperty(saveLive,'textContent',{get:()=>liveText,set:value=>{writes++;liveText=value}});
+  const first={id:'apple',word:'りんご',owner:'you'};
+  const play={...state,history:[first]};
+  view.update(play);
+  const status=view.page.querySelector('.sh-status');
+  assert.equal(status.dataset.saveWarning,'true');
+  assert.equal(status.textContent,'⚠ 図鑑を保存できません');
+  assert.match(saveLive.textContent,/ページを閉じると失われます/);
+  assert.equal(writes,1);
+  view.update({...play,remaining:19});
+  view.update({...play,remaining:18,message:'次の絵をさがそう'});
+  assert.equal(writes,1,'ordinary play frames do not repeat the warning');
+  view.page.querySelectorAll('.sh-card')[0].click();
+  assert.equal(queue.at(-1).action,'sh_card','warning does not intercept card input');
+  window.localStorage.setItem=normalWrite;
+  const second={id:'apple',word:'くだもの',owner:'you'};
+  view.update({...play,history:[first,second]});
+  assert.equal(status.dataset.saveWarning,'false');
+  assert.match(status.textContent,/ずかんに新登録：くだもの/);
+  assert.match(saveLive.textContent,/保存が復旧/);
+  assert.equal(writes,2);
+  view.update({...play,history:[first,second],remaining:17});
+  assert.equal(writes,2,'recovery is announced once');
+  const saved=JSON.parse(window.localStorage.getItem('number-rush.shiritori.dictionary.v1'));
+  assert.equal(saved.found.length,2,'both in-memory discoveries survive the retry');
+  assert.match(view.page.querySelectorAll('.sh-dict-open')[0].textContent,/2 \/ 3/);
+});
