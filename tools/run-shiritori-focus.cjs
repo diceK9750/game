@@ -15,6 +15,16 @@ homeState.audio_available=false;await f.evaluate(s=>document.documentElement.set
 const state=await p.evaluate(()=>snapshot('shiritori','battle','play'));
 async function render(){await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),state);await p.waitForTimeout(60)}
 await render();const cards=f.locator('.sh-card');
+// Observe actual live-region mutations across a battle handoff, including unchanged snapshots.
+await f.evaluate(()=>{const live=document.querySelector('.sh-page .nr-sr-only');window.turnLiveWrites=0;window.turnLiveObserver=new MutationObserver(()=>window.turnLiveWrites++);window.turnLiveObserver.observe(live,{childList:true,characterData:true,subtree:true});});
+const live=f.locator('.sh-page .nr-sr-only').first();
+assert.match(await live.textContent(),/あなたの番。/);
+state.shiritori.turn='cpu';await render();assert.match(await live.textContent(),/ルナの番。/);
+const cpuWrites=await f.evaluate(()=>window.turnLiveWrites);assert.ok(cpuWrites>0,'CPU handoff updates live region');
+await render();assert.equal(await f.evaluate(()=>window.turnLiveWrites),cpuWrites,'same state does not reannounce');
+state.shiritori.turn='you';await render();assert.match(await live.textContent(),/あなたの番。/);
+assert.ok(await f.evaluate(()=>window.turnLiveWrites)>cpuWrites,'player handoff updates live region');
+await f.evaluate(()=>window.turnLiveObserver.disconnect());
 await f.evaluate(()=>{window.testClicks=0;document.querySelector('.sh-card').addEventListener('click',()=>window.testClicks++);document.addEventListener('keypress',e=>e.preventDefault());});
 await cards.nth(0).focus();await p.keyboard.press('Enter');assert.equal(await f.evaluate(()=>window.testClicks),1,'Enter sends one click');
 await p.keyboard.press('Space');assert.equal(await f.evaluate(()=>window.testClicks),2,'Space sends one native click');

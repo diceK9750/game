@@ -1078,6 +1078,41 @@ test('polite live region announces durable miss guidance; visual status stays no
   assert.match(live.textContent, /次は「り」/);
 });
 
+test('battle turn changes are announced once without changing solo or paused results', () => {
+  const {view, state} = harness();
+  const live = view.page.querySelector('.nr-sr-only');
+  let text = live.textContent, writes = 0;
+  Object.defineProperty(live, 'textContent', {get: () => text, set: value => { writes++; text = value; }});
+  const active = {...state, required:'り', completed:2, mistakes:1};
+  view.update(active);
+  assert.match(text, /^あなたの番。次は「り」。2枚つながった。ミス1回。/);
+  assert.equal(writes, 1);
+  view.update({...active, remaining: 19});
+  assert.equal(writes, 1, 'timer updates do not reannounce');
+  view.update({...active, turn:'cpu'});
+  assert.match(text, /^ルナの番。次は「り」/);
+  assert.equal(writes, 2, 'CPU handoff announces once');
+  view.update({...active, turn:'cpu', remaining: 17});
+  assert.equal(writes, 2, 'unchanged CPU handoff is not reannounced');
+  view.update({...active, turn:'you'});
+  assert.match(text, /^あなたの番。/);
+  assert.equal(writes, 3, 'player handoff announces once');
+  view.update({...active, miss_card:3});
+  assert.match(text, /ちがう絵！/);
+  view.update({...active, phase:'paused'});
+  assert.equal(text, '', 'pause clears play announcement');
+  view.update(active);
+  assert.match(text, /^あなたの番。/, 'resume repeats current state');
+  view.update({...active, phase:'finished', winner:'cpu'});
+  assert.equal(text, 'ルナの勝利！', 'results do not include a turn');
+  view.update({...active, mode:'solo'});
+  assert.match(text, /^次は「り」/);
+  assert.doesNotMatch(text, /あなたの番|ルナの番/);
+  const soloWrites = writes;
+  view.update({...active, mode:'solo', turn:'cpu', remaining:4});
+  assert.equal(writes, soloWrites, 'solo ignores a rival turn');
+});
+
 test('wrong-card miss outline stays non-live while statusLive carries guidance (#65/#98)', () => {
   const {view, state} = harness();
   view.update({...state, miss_card: 1, mistakes: 1, message: 'この絵は「り」につながらないよ'});

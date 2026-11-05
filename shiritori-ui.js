@@ -470,7 +470,7 @@
         ? solo ? 'PERFECT!' : s.winner === 'you' ? 'PERFECT VICTORY!' : 'PERFECT CLEAR'
         : solo ? s.winner === 'you' ? 'ぜんぶつながった！' : '今回のチャレンジ結果' : winnerCopy;
       const nextAnnouncement = live
-        ? `次は「${s.required}」。${s.completed || 0}枚つながった。ミス${s.mistakes || 0}回。${s.combo_active && mine ? 'コンボ中。続けて選べます。' : ''}${missGuidance}`
+        ? `${solo ? '' : mine ? 'あなたの番。' : 'ルナの番。'}次は「${s.required}」。${s.completed || 0}枚つながった。ミス${s.mistakes || 0}回。${s.combo_active && mine ? 'コンボ中。続けて選べます。' : ''}${missGuidance}`
         : s.phase === 'finished'
           ? perfect ? `${outcomeTitle} ${solo ? '' : winnerCopy} すべての絵をつないだ！` : outcomeTitle
           : '';
