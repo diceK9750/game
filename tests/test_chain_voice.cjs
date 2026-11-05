@@ -171,3 +171,57 @@ test('voice graph failures do not propagate and later playback still works', asy
   handlers.visibilitychange();
   assert.equal(sources.at(-1).stopped, 1, 'hiding still stops successful playback');
 });
+
+test('voice loading retries only failed files after cooldown and never duplicates in-flight requests', async () => {
+  const handlers = {}, registrations = {}, requests = new Map(), played = [];
+  const document = {hidden:false, addEventListener:(key, fn, options) => { handlers[key] = fn; registrations[key] = options; }};
+  let now = 100000, failing = true, completePending;
+  class Clock extends Date { static now(){ return now; } }
+  class AudioContext {
+    state = 'running'; destination = {}; currentTime = 1;
+    resume(){ return Promise.resolve(); }
+    decodeAudioData(value){
+      if (failing && value.endsWith('you-3.wav')) return Promise.reject(Error('decode'));
+      return Promise.resolve(value);
+    }
+    createGain(){return {gain:{value:0, setValueAtTime(){}, linearRampToValueAtTime(){}, cancelScheduledValues(){}}, connect(){}, disconnect(){}};}
+    createBufferSource(){return {connect(){}, disconnect(){}, start(){played.push(this.buffer);}, stop(){}};}
+  }
+  const fetch = url => {
+    requests.set(url, (requests.get(url) || 0) + 1);
+    if (failing && url.endsWith('you-1.wav')) throw Error('synchronous network failure');
+    if (failing && url.endsWith('you-2.wav')) return Promise.resolve({ok:false});
+    if (failing && url.endsWith('you-5.wav')) return Promise.reject(Error('asynchronous network failure'));
+    if (url.endsWith('cpu-7.wav')) return new Promise(resolve => { completePending = () => resolve({ok:true, arrayBuffer:async()=>url}); });
+    return Promise.resolve({ok:true, arrayBuffer:async()=>url});
+  };
+  const count = suffix => [...requests].find(([url]) => url.endsWith(suffix))?.[1] || 0;
+  const flush = () => new Promise(resolve => setImmediate(resolve));
+  const window = {AudioContext};
+  vm.runInNewContext(fs.readFileSync(require.resolve('../chain-voice.js'), 'utf8'), {window, document, fetch, Date:Clock});
+  await handlers.pointerdown(); await flush();
+  assert.equal(registrations.keydown?.capture, true, 'keyboard retry runs before the game stops bubbling');
+  assert.equal(requests.size, 14, 'normal startup attempts every local voice');
+  window.chainVoice.setEnabled(true);
+  window.chainVoice.play('you', 4);
+  assert.match(played.at(-1), /you-4\.wav$/, 'successful voices remain playable');
+  for (let i = 0; i < 20; i++) handlers.keydown();
+  await flush();
+  assert.equal(count('you-1.wav'), 1, 'rapid gestures do not bypass cooldown');
+  assert.equal(count('cpu-7.wav'), 1, 'pending fetch is never duplicated');
+  now += 15000; failing = false;
+  document.hidden = true; await handlers.pointerdown(); await flush();
+  assert.equal(count('you-1.wav'), 1, 'hidden pages do not retry');
+  document.hidden = false; window.chainVoice.setEnabled(false);
+  await handlers.pointerdown(); await flush();
+  assert.equal(count('you-1.wav'), 1, 'disabled sound does not retry');
+  window.chainVoice.setEnabled(true);
+  const keyEvent = {preventDefault(){throw Error('default must not be blocked');}, stopPropagation(){throw Error('propagation must not be blocked');}};
+  await Promise.all([handlers.keydown(keyEvent), handlers.pointerdown(), handlers.keydown(keyEvent)]); await flush();
+  for (const name of ['you-1.wav', 'you-2.wav', 'you-3.wav', 'you-5.wav']) assert.equal(count(name), 2, `${name} retried after failure`);
+  assert.equal(count('you-4.wav'), 1, 'successful voices are not fetched again');
+  assert.equal(count('cpu-7.wav'), 1, 'still-pending voice remains a single request');
+  completePending(); await flush();
+  window.chainVoice.play('you', 1); window.chainVoice.play('you', 2); window.chainVoice.play('you', 3); window.chainVoice.play('you', 5); window.chainVoice.play('cpu', 7);
+  assert.deepEqual(played.slice(-5).map(url => url.split('/').at(-1)), ['you-1.wav','you-2.wav','you-3.wav','you-5.wav','cpu-7.wav']);
+});

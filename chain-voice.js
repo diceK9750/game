@@ -5,6 +5,8 @@
   const FADE_OUT = 0.1;
   const LEVEL = 0.75;
   const flourishNodes = new Set();
+  const voicePending = new Set(), voiceRetryAt = new Map();
+  const VOICE_RETRY_DELAY = 15000;
 
   function stop(immediate) {
     if (!source) return;
@@ -25,27 +27,42 @@
     } catch (_) { /* already stopped */ }
   }
 
+  function loadVoices(isRetry) {
+    if (document.hidden || (isRetry && !enabled)) return;
+    const now = Date.now();
+    for (const owner of ['you', 'cpu']) for (let level = 1; level <= 7; level++) {
+      const key = `${owner}-${level}`;
+      if (buffers.has(key) || voicePending.has(key) || now < (voiceRetryAt.get(key) || 0)) continue;
+      voicePending.add(key);
+      // Starting in a promise also catches a synchronous fetch exception and
+      // still lets the other independently loadable voices proceed.
+      Promise.resolve().then(() => fetch(`assets/voices/cute-v2/${key}.wav`)).then(r => {
+        if (!r.ok) throw Error('voice unavailable');
+        return r.arrayBuffer();
+      }).then(b => context.decodeAudioData(b)).then(b => {
+        buffers.set(key, b);
+        voiceRetryAt.delete(key);
+      }).catch(() => { voiceRetryAt.set(key, Date.now() + VOICE_RETRY_DELAY); })
+        .finally(() => { voicePending.delete(key); });
+    }
+  }
+
   async function unlock() {
     if (window.numberRushAudio?.diagnostic.mode === 'silent') return;
     try {
       const Context = window.AudioContext || window.webkitAudioContext;
       if (!Context) return;
-      if (!context) {
-        context = new Context();
-        for (const owner of ['you', 'cpu']) for (let level = 1; level <= 7; level++) {
-          const key = `${owner}-${level}`;
-          fetch(`assets/voices/cute-v2/${key}.wav`).then(r => {
-            if (!r.ok) throw Error('voice unavailable');
-            return r.arrayBuffer();
-          }).then(b => context.decodeAudioData(b)).then(b => buffers.set(key, b)).catch(() => {});
-        }
-      }
+      const firstUnlock = !context;
+      if (firstUnlock) context = new Context();
+      loadVoices(!firstUnlock);
       await context.resume();
     } catch (_) { /* Sound restrictions must never prevent a panel selection. */ }
   }
 
   document.addEventListener('pointerdown', unlock, { passive: true });
-  document.addEventListener('keydown', unlock);
+  // The modern game UI stops bubbling keys to protect the Pyxel engine.
+  // Capture without cancelling so keyboard-only play can also retry voices.
+  document.addEventListener('keydown', unlock, { capture: true });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { stop(true); stopFlourishes(); }
   });
