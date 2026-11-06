@@ -36,7 +36,20 @@ const dictionaryState=await p.evaluate(()=>snapshot('shiritori','solo','setup'))
 dictionaryState.shiritori.catalog.push({id:'cat',icon:'🐈',words:['ねこ']});
 dictionaryState.shiritori.discoveries=[];
 async function renderDictionary(){dictionaryState.ack++;await f.evaluate(s=>document.documentElement.setAttribute('data-modern-state',JSON.stringify(s)),dictionaryState);await p.waitForTimeout(40)}
-await renderDictionary();await f.locator('.sh-dict-open').first().click();
+await renderDictionary();
+// Help closes back onto its invoking header control, for both Escape and click.
+const helpButton=f.getByRole('button',{name:'遊び方'}), helpBack=f.locator('.nr-help-card').getByRole('button',{name:'戻る'});
+await helpButton.focus();await p.keyboard.press('Enter');assert.equal(await helpBack.evaluate(el=>el===document.activeElement),true);
+await p.keyboard.press('Escape');assert.equal(await helpButton.evaluate(el=>el===document.activeElement),true,'Escape restores help invoker');
+await p.keyboard.press('Shift+Tab');assert.equal(await sound.evaluate(el=>el===document.activeElement),true,'Shift+Tab reaches previous header button');
+await p.keyboard.press('Tab');assert.equal(await helpButton.evaluate(el=>el===document.activeElement),true,'Tab returns to help button');
+await p.keyboard.press('Enter');await helpBack.click();assert.equal(await helpButton.evaluate(el=>el===document.activeElement),true,'back restores help invoker');
+// If an invoker cannot receive focus, a visible setup control works even when the intro is hidden.
+await p.locator('#fixture').evaluate(el=>{el.style.width='667px';el.style.height='300px'});
+await helpButton.click();await helpButton.evaluate(el=>{el.focus=()=>{}});await helpBack.click();
+assert.equal(await f.evaluate(()=>document.activeElement.closest('.sh-mode-settings')!==null),true,'compact fallback lands on a visible mode control');
+await helpButton.evaluate(el=>{delete el.focus});await p.locator('#fixture').evaluate(el=>{el.style.width='892px';el.style.height='642px'});
+await f.locator('.sh-dict-open').first().click();
 const dictNotice=f.locator('.sh-dict-notice'), resultDiscovery=f.locator('.sh-discovery');
 await f.evaluate(()=>{window.dictNoticeWrites=0;window.resultDiscoveryWrites=0;window.dictNoticeObserver=new MutationObserver(records=>window.dictNoticeWrites+=records.length);window.resultDiscoveryObserver=new MutationObserver(records=>window.resultDiscoveryWrites+=records.length);window.dictNoticeObserver.observe(document.querySelector('.sh-dict-notice'),{childList:true,characterData:true,subtree:true});window.resultDiscoveryObserver.observe(document.querySelector('.sh-discovery'),{childList:true,characterData:true,subtree:true});});
 for(let i=0;i<5;i++)await renderDictionary();

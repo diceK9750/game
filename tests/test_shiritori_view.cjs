@@ -792,6 +792,27 @@ test('shiritori overlay Tab cycles dialog controls and does not escape (parity #
 });
 
 
+test('closing help returns focus to its available invoker or a setup control', () => {
+  const {view,state,doc}=harness();
+  view.update({...state,phase:'intro',cards:[]});
+  const invoker=view.page.querySelector('.sh-ready').querySelectorAll('button')[0];
+  const fallback=view.page.querySelector('.sh-ready').querySelectorAll('button')[1];
+  const helpPage=view.page.querySelector('.nr-help-card');
+  const back=helpPage.querySelectorAll('button').find(b=>b.textContent==='戻る');
+  view.headerAction('help',invoker);
+  assert.equal(doc.activeElement,back);
+  view.page.emit('keydown',{key:'Escape'});
+  assert.equal(helpPage.hidden,true);
+  assert.equal(doc.activeElement,invoker,'Escape returns to the invoker');
+  view.headerAction('help',invoker);
+  back.click();
+  assert.equal(doc.activeElement,invoker,'back returns to the invoker');
+  view.headerAction('help',invoker);
+  invoker.disabled=true;
+  back.click();
+  assert.equal(doc.activeElement,fallback,'unavailable invoker falls back to an enabled setup control');
+});
+
 test('intro allows native Tab while overlays retain their trap', () => {
   const {view,state,doc}=harness();
   for(const mode of ['battle','solo']) {

@@ -99,7 +99,7 @@
   function command(action, value, index) {
     if (!state) return;
     if (state.screen === 'shiritori') {
-      if (['help', 'retry'].includes(action)) { shiritori.headerAction(action); update(); return; }
+      if (['help', 'retry'].includes(action)) { shiritori.headerAction(action, action === 'help' ? help : undefined); update(); return; }
       if (action === 'home') action = 'sh_exit';
       if (action === 'pause') action = 'sh_pause';
     }

@@ -289,7 +289,20 @@
     let announcement = '', announcedCounterEvent = 0, hadLiveDictionaryWarning = false;
     const helpPage=E('div','sh-intro nr-help-card nr-surface');
     const closeHelp=E('button','nr-button nr-primary','戻る'); closeHelp.type='button';
-    closeHelp.addEventListener('click',()=>{helpOpen=false; helpPage.hidden=true; intro.hidden=false; onNavigationChange(); intro.querySelector('h1').focus();});
+    let helpInvoker = null;
+    closeHelp.addEventListener('click',()=>{
+      helpOpen=false; helpPage.hidden=true; intro.hidden=false; onNavigationChange();
+      const invoker = helpInvoker; helpInvoker = null;
+      if (invoker && invoker.isConnected !== false && !invoker.disabled && !invoker.closest('[hidden]')) {
+        invoker.focus({preventScroll:true});
+      }
+      if (document.activeElement !== invoker) {
+        // The intro heading is hidden in compact layouts; use a visible setup control.
+        const fallback = modeButtons.find(item => !item.disabled && !item.closest('[hidden]') &&
+          (!item.getClientRects || item.getClientRects().length));
+        fallback?.focus({preventScroll:true});
+      }
+    });
     guide.open=true;
     add(helpPage,E('span','nr-eyebrow','HOW TO PLAY'),E('h1','','遊び方'),guide,closeHelp);
     const restartPage=E('div','sh-intro nr-dialog nr-surface');
@@ -428,8 +441,8 @@
     });
     return {page, isOverlayOpen:()=>dictionaryOpen || helpOpen, trapOverlayTab,
       toggleDebug() { return setDebugEnabled(!debugEnabled); },
-      headerAction(action) {
-        if (action==='help' && latest?.phase==='intro' && !dictionaryOpen) { helpOpen=true; intro.hidden=true; helpPage.hidden=false; closeHelp.focus(); }
+      headerAction(action, invoker) {
+        if (action==='help' && latest?.phase==='intro' && !dictionaryOpen) { helpInvoker=invoker || null; helpOpen=true; intro.hidden=true; helpPage.hidden=false; closeHelp.focus(); }
         if (action==='retry' && ['playing','blocked'].includes(latest?.phase)) { restartRequested='sh_restart'; command('sh_pause'); }
       }, update(s) {
       if (!s) return;
