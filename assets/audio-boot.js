@@ -46,5 +46,6 @@
     }
   };
   document.addEventListener('pointerdown', resume, {passive: true});
-  document.addEventListener('keydown', resume);
+  // Modern UI stops bubbling keydown to Pyxel; listen before it reaches the UI.
+  document.addEventListener('keydown', resume, {capture: true});
 })();

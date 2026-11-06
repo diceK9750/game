@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 function boot({rate=48000, reject=false, constructorFailure=false, absent=false}={}) {
-  const calls=[], handlers={}, contexts=[];
+  const calls=[], handlers={}, contexts=[], options={};
   class Context {
     constructor(...args) {
       calls.push(['constructor',...args]);
@@ -20,9 +20,9 @@ function boot({rate=48000, reject=false, constructorFailure=false, absent=false}
   }
   const window={AudioContext:absent?undefined:Context};
   vm.runInNewContext(fs.readFileSync(require.resolve('../assets/audio-boot.js'),'utf8'), {
-    window,document:{addEventListener:(name,fn)=>handlers[name]=fn},console:{info(){},warn(){}}
+    window,document:{addEventListener:(name,fn,opts)=>{handlers[name]=fn;options[name]=opts;}},console:{info(){},warn(){}}
   });
-  return {audio:window.numberRushAudio,calls,contexts,handlers};
+  return {audio:window.numberRushAudio,calls,contexts,handlers,options};
 }
 test('audio preflight retains the native context/rate and hands SDL a real validated silence buffer',()=>{
   for(const rate of [22050,44100,48000,96000]) {
@@ -60,4 +60,13 @@ test('missing or rejected AudioContext does not propagate an exception',()=>{
 test('user gesture retries resume on the accepted context',()=>{
   const b=boot(); b.audio.prepare({});b.handlers.pointerdown();b.handlers.keydown();
   assert.equal(b.calls.filter(x=>x[0]==='resume').length,3);
+});
+
+test('keyboard resume uses capture without consuming native keyboard input',()=>{
+  const b=boot(); b.audio.prepare({});
+  assert.equal(b.options.keydown.capture,true);
+  let prevented=false,stopped=false;
+  b.handlers.keydown({preventDefault(){prevented=true;},stopPropagation(){stopped=true;}});
+  assert.equal(prevented,false); assert.equal(stopped,false);
+  assert.equal(b.calls.filter(x=>x[0]==='resume').length,2);
 });

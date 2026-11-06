@@ -152,5 +152,26 @@ assert.equal((await readCommands()).filter(x=>x.action==='sh_card').length,1,'to
 await cards.nth(1).focus();await p.keyboard.press('Enter');
 pointerCommands=(await readCommands()).filter(x=>x.action==='sh_card');assert.equal(pointerCommands.length,2,'keyboard remains available');
 await cdp.detach();
+// The actual UI stops keydown bubbling before it reaches document.  Audio
+// resume must run in capture without cancelling Tab or Enter's default action.
+const audioPage=await browser.newPage();
+try {
+  await audioPage.setContent('<div id="app"><button id="first">first</button><button id="second">second</button></div>');
+  await audioPage.evaluate(()=>{
+    window.resumeCalls=0; window.clickCalls=0;
+    window.AudioContext=class {constructor(){this.sampleRate=48000;this.state='suspended';}createBuffer(){return {};}resume(){window.resumeCalls++;return Promise.resolve();}};
+    document.querySelector('#app').addEventListener('keydown',e=>e.stopPropagation());
+    document.querySelector('#second').addEventListener('click',()=>window.clickCalls++);
+  });
+  await audioPage.addScriptTag({path:'assets/audio-boot.js'});
+  await audioPage.evaluate(()=>window.numberRushAudio.prepare({}));
+  await audioPage.locator('#first').focus(); await audioPage.keyboard.press('Tab');
+  assert.equal(await audioPage.evaluate(()=>document.activeElement.id),'second','Tab keeps native behavior');
+  await audioPage.keyboard.press('Enter');
+  assert.equal(await audioPage.evaluate(()=>window.clickCalls),1,'Enter keeps native activation');
+  assert.equal(await audioPage.evaluate(()=>window.resumeCalls),3,'audio receives both keyboard gestures despite bubbling stop');
+  await audioPage.locator('#second').click();
+  assert.equal(await audioPage.evaluate(()=>window.resumeCalls),4,'pointer still resumes audio');
+} finally { await audioPage.close(); }
 console.log('PASS real DOM: CPU recovery, same-turn claimed, intentional focus, pointer cancellation, stale touch, solo refill/reduced-motion, pause/navigation');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
