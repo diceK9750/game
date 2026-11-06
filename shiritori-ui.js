@@ -392,6 +392,7 @@
         if (!nextCard || nextCard.owner || (s.mode !== 'solo' && s.turn !== 'you')) pendingCardFocus = focusedIndex;
       }
       latest = s;
+      let nextDiscovery = '';
       if (dictionary) {
         if (!catalogLoaded && s.catalog?.length) { dictionary.collection.configure(s.catalog); catalogLoaded=true; }
         const earned=s.discoveries || s.history;
@@ -403,7 +404,8 @@
         if (s.phase==='intro' && lastPhase!=='intro') newFind='';
         const c=dictionary.collection;
         dictIntro.textContent=dictResult.textContent=`読み方ずかん ${c.count} / ${c.total}`;
-        discovery.textContent=c.warning || (c.total&&c.count===c.total?'🏆 読み方ずかんコンプリート！':newFind);
+        nextDiscovery=s.phase==='finished' && !dictionaryOpen
+          ? c.warning || (c.total&&c.count===c.total?'🏆 読み方ずかんコンプリート！':newFind) : '';
         if (dictionaryOpen) dictionary.refresh();
       }
       const solo = s.mode === 'solo', live = ['playing','blocked'].includes(s.phase);
@@ -436,6 +438,8 @@
       if (wasConfirmHidden && !restartPage.hidden) confirmAction.focus({preventScroll: true});
       if (!restartPage.hidden) pause.hidden=true;
       if (dictionaryOpen || helpOpen) intro.hidden=result.hidden=true;
+      // Announce when the result is visible, then only on actual changes.
+      if (discovery.textContent !== nextDiscovery) discovery.textContent=nextDiscovery;
       pressed(modeButtons, ['battle','solo'], s.mode); pressed(countButtons, counts, s.total); pressed(levelButtons, ['easy','normal','hard'], s.difficulty);
       pressed(styleButtons, styleValues, s.rival_style || 'chain');
       modeHint.textContent = solo ? '時間無制限。自分のペースで最後までつなごう。' : '正解後は連鎖ゲージが切れるまで同じ側が続けて回答！';

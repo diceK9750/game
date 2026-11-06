@@ -213,7 +213,8 @@
     function render() {
       const count=collection.count, total=collection.total;
       progress.textContent=`${count} / ${total} 読み方 · ${total?(count/total*100).toFixed(1):'0.0'}%`;
-      notice.textContent=count===total&&total?'🏆 全読み方コンプリート！ ことばマスター！':`あと${total-count}種類でコンプリート！`;
+      const nextNotice=count===total&&total?'🏆 全読み方コンプリート！ ことばマスター！':`あと${total-count}種類でコンプリート！`;
+      if (notice.textContent !== nextNotice) notice.textContent=nextNotice;
       warning.textContent=collection.warning; warning.hidden=!collection.warning;
       retry.hidden=!collection.warning;
       filter.textContent=onlyMissing?'すべての絵を表示':'未完成の絵だけ表示'; filter.setAttribute('aria-pressed',String(onlyMissing));
