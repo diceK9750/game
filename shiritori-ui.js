@@ -133,8 +133,57 @@
     // Read the same container-selected columns as the rendered cards. Reading
     // at input time also covers rotation between two engine snapshots.
     const renderedColumns = () => Number(window.getComputedStyle?.(board).getPropertyValue('--board-cols')) || boardCols;
+    // A held pointer belongs to the picture and turn where it went down, not
+    // a different picture that may be refilled before the native click fires.
+    let interactionEpoch = 0;
+    const pointerOwners = new Map();
+    // A release outside its original button cannot validate a later click.
+    document.addEventListener?.('pointerup', event => {
+      const owner = pointerOwners.get(event.pointerId);
+      if (owner && !owner.card.contains(event.target)) {
+        owner.cancel(event.pointerId); pointerOwners.delete(event.pointerId);
+      }
+    }, true);
+    document.addEventListener?.('pointercancel', event => {
+      const owner = pointerOwners.get(event.pointerId);
+      if (owner) { owner.cancel(event.pointerId); pointerOwners.delete(event.pointerId); }
+    }, true);
     const slots = Array.from({length:24}, (_, i) => {
-      const card = button('', 'sh_card', i, 'sh-card');
+      const card = E('button', 'nr-button sh-card'); card.type = 'button';
+      const presses = new Map(); let released = null;
+      const cancelPress = id => { presses.delete(id); released = {pointerId:id, invalid:true}; };
+      card.addEventListener('pointerdown', event => {
+        pointerOwners.get(event.pointerId)?.cancel(event.pointerId);
+        released = null;
+        presses.set(event.pointerId, {pointerId:event.pointerId, epoch:interactionEpoch,
+          id:latest?.cards?.[i]?.id, deal:latest?.deal_id});
+        pointerOwners.set(event.pointerId, {card, cancel:cancelPress});
+      });
+      card.addEventListener('pointerup', event => {
+        const press = presses.get(event.pointerId);
+        released = press ? {...press, ended:true} : {pointerId:event.pointerId, invalid:true};
+        presses.delete(event.pointerId); pointerOwners.delete(event.pointerId);
+      });
+      card.addEventListener('pointercancel', event => {
+        cancelPress(event.pointerId); pointerOwners.delete(event.pointerId);
+      });
+      card.addEventListener('click', event => {
+        // Keyboard and assistive clicks commonly have detail=0. Preserve
+        // those, plus genuinely untracked assistive clicks, without guessing.
+        if (event.detail) {
+          const knownId = Number.isInteger(event.pointerId) && event.pointerId >= 0;
+          const releasedHere = released && (!knownId || released.pointerId === event.pointerId);
+          const activePress = knownId ? presses.get(event.pointerId) :
+            presses.size === 1 ? presses.values().next().value : null;
+          const tracked = releasedHere ? released : activePress;
+          const evidence = released || presses.size;
+          released = null;
+          if ((evidence && !tracked) || (tracked && (!tracked.ended || tracked.invalid ||
+              tracked.epoch !== interactionEpoch || tracked.id !== latest?.cards?.[i]?.id ||
+              tracked.deal !== latest?.deal_id))) return;
+        }
+        command('sh_card', i);
+      });
       const icon = E('span', 'sh-icon'), mark = E('small'); icon.setAttribute('aria-hidden', 'true');
       const hintLabel = E('span', 'sh-hint-label', '◆ ヒント'); hintLabel.hidden = true; hintLabel.setAttribute('aria-hidden', 'true');
       add(card, icon, mark, hintLabel); board.append(card); return {card, icon, mark, hintLabel, identity:null};
@@ -385,6 +434,7 @@
       }, update(s) {
       if (!s) return;
       const previous = latest;
+      if (previous && (s.phase !== previous.phase || s.turn !== previous.turn || s.deal_id !== previous.deal_id)) interactionEpoch++;
       if (s.phase !== 'playing' || previous?.phase !== 'playing' || s.mode !== previous?.mode) pendingCardFocus = null;
       const focusedIndex = slots.findIndex(item => item.card === document.activeElement);
       if (previous?.phase === 'playing' && s.phase === 'playing' && keyboardInput && focusedIndex >= 0) {

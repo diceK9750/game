@@ -134,5 +134,23 @@ state.shiritori.turn='cpu';await render();state.shiritori.phase='paused';await r
 assert.notEqual(await f.evaluate(()=>document.activeElement.tagName),'BODY','pause takes focus');
 const paused=await f.evaluate(()=>document.activeElement.textContent);state.shiritori.phase='intro';state.shiritori.turn='you';await render();
 assert.notEqual(await f.evaluate(()=>document.activeElement.className),'sh-card','old game does not reclaim focus after leaving');
-console.log('PASS real DOM: CPU recovery, same-turn claimed, intentional focus, pointer cancellation, solo refill/reduced-motion, pause/navigation');
+// A real touch held across a CPU handoff must not choose a refilled picture.
+state.shiritori.phase='playing';state.shiritori.mode='battle';state.shiritori.turn='you';state.shiritori.deal_id=9;
+state.shiritori.cards[0]={id:'apple',icon:'🍎',words:['りんご'],owner:null};await render();
+await f.evaluate(()=>document.documentElement.setAttribute('data-modern-commands','[]'));
+const cdp=await p.context().newCDPSession(p);await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:2});
+const touchAt=async (index,type,id)=>{const r=await cards.nth(index).boundingBox();await cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'||type==='touchCancel'?[]:[{x:r.x+r.width/2,y:r.y+r.height/2,id}]});};
+const readCommands=()=>f.evaluate(()=>JSON.parse(document.documentElement.getAttribute('data-modern-commands')||'[]'));
+await touchAt(0,'touchStart',10);state.shiritori.turn='cpu';await render();
+state.shiritori.cards[0]={id:'bird',icon:'🐦',words:['とり'],owner:null};await render();
+state.shiritori.turn='you';await render();await touchAt(0,'touchEnd',10);await p.waitForTimeout(60);
+assert.equal((await readCommands()).filter(x=>x.action==='sh_card').length,0,'held touch cannot choose CPU-refilled picture');
+await touchAt(0,'touchStart',11);await touchAt(0,'touchEnd',11);await p.waitForTimeout(60);
+let pointerCommands=(await readCommands()).filter(x=>x.action==='sh_card');assert.equal(pointerCommands.length,1,'ordinary touch works');assert.equal(pointerCommands[0].card_id,'bird');
+await touchAt(1,'touchStart',12);await touchAt(1,'touchCancel',12);await p.waitForTimeout(60);
+assert.equal((await readCommands()).filter(x=>x.action==='sh_card').length,1,'touchcancel does not activate');
+await cards.nth(1).focus();await p.keyboard.press('Enter');
+pointerCommands=(await readCommands()).filter(x=>x.action==='sh_card');assert.equal(pointerCommands.length,2,'keyboard remains available');
+await cdp.detach();
+console.log('PASS real DOM: CPU recovery, same-turn claimed, intentional focus, pointer cancellation, stale touch, solo refill/reduced-motion, pause/navigation');
 }finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});

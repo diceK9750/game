@@ -1798,3 +1798,41 @@ test('picture hint announces the visible card once and repeats only on request',
   view.update({...hinted, mode:'solo'}); assert.match(text, /4番目/, 'relink highlight is announced when play resumes');
   view.update({...hinted, phase:'finished'}); assert.equal(text, '');
 });
+
+
+test('picture pointer activation rejects a replaced card or changed turn without blocking ordinary input', () => {
+  const {view,state,queue,doc}=harness();
+  const base={...state,deal_id:7,cards:state.cards.map(c=>({...c}))};
+  const render = patch => view.update({...base,...patch});
+  render({}); const card=view.page.querySelectorAll('.sh-card')[0];
+  const down=id=>card.emit('pointerdown',{pointerId:id,button:0});
+  const up=id=>card.emit('pointerup',{pointerId:id,button:0});
+  const activate=id=>card.emit('click',{pointerId:id,detail:1});
+  down(1);render({remaining:19});up(1);activate(1);
+  assert.equal(queue.length,1,'unchanged picture permits ordinary tap');
+  down(2);const replacement=base.cards.map(c=>({...c}));replacement[0]={id:'bird',icon:'🐦',words:['とり'],owner:null};
+  render({cards:replacement});up(2);activate(2);
+  assert.equal(queue.length,1,'refill while held does not select replacement');
+  render({});down(3);render({turn:'cpu'});render({turn:'you'});up(3);activate(3);
+  assert.equal(queue.length,1,'a handoff invalidates the old press even with the same picture');
+  down(4);render({deal_id:8});up(4);activate(4);
+  assert.equal(queue.length,1,'new deal invalidates the old press');
+  render({});down(5);card.emit('pointercancel',{pointerId:5});activate(5);
+  assert.equal(queue.length,1,'cancelled pointer cannot trigger a stale click');
+  down(6);up(6);activate(6);assert.equal(queue.length,2,'cancel does not block a new pointer');
+  down(7);render({turn:'cpu'});render({turn:'you'});activate(7);
+  assert.equal(queue.length,2,'missing pointerup cannot bypass the stale-press guard');
+  down(8);up(9);activate(9);assert.equal(queue.length,2,'a different pointerup cannot validate the press');
+  card.emit('pointercancel',{pointerId:8});
+  down(9);doc.emit('pointerup',{pointerId:9,target:doc.body});activate(9);
+  assert.equal(queue.length,2,'a pointer released outside cannot activate the card');
+  down(10);down(11);up(11);activate(11);up(10);activate(10);
+  assert.equal(queue.length,4,'distinct ordinary pointers remain independent');
+  down(12);up(12);card.emit('click',{detail:1});
+  assert.equal(queue.length,5,'pointer clicks without pointerId work');
+  down(13);card.emit('pointercancel',{pointerId:13});card.emit('click',{detail:1});
+  assert.equal(queue.length,5,'cancelled pointer is rejected even without click pointerId');
+  down(14);up(14);card.emit('click',{detail:1});
+  assert.equal(queue.length,6,'a fresh pointer works after a cancel');
+  card.emit('click',{detail:0});assert.equal(queue.length,7,'keyboard and assistive click stays available');
+});
